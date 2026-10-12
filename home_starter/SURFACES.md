@@ -61,6 +61,9 @@ activity with no control widgets, actionable taps or room navigation.
 Rooms use existing HA areas. Their native navigation buttons and templated summaries
 reference only admitted items; hidden controls cannot reappear through automatic
 Area-card summaries. Room details are subviews, not extra main tabs.
+Unassigned controls are local with unknown location, not assumed whole-house.
+Phone/tablet keep them under Other controls unless pinned or explicitly marked
+whole-house. Fixed-room screens require a known matching room for local controls.
 
 ## Catalogue and native rendering
 

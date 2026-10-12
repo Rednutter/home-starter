@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.1
+
+- A missing room no longer implies whole-house scope. Unassigned controls remain
+  deliberately reachable under Other controls, or can be pinned on a phone/tablet.
+- Fixed-room screens exclude controls whose local position is unknown, unless
+  explicitly given whole-house scope. Safety interruptions retain precedence.
+
 ## 0.3.0
 
 - Make the house usable: people, seven screen profiles, semantic admission,

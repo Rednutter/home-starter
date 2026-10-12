@@ -166,6 +166,27 @@ def test_catalogue_is_honest_about_absent_sources():
     assert CATALOGUE["media_favourites"][1] == "source_required"
 
 
+def test_missing_room_is_not_whole_house_and_has_deliberate_detail_access():
+    inv, states = inventory()
+    inv["unattached_entities"][0]["area_id"] = None
+    classified = classify(inv, states, {})
+    light = next(i for i in classified if i["id"] == "light.kitchen")
+    assert light["scope"] == "local"
+    house = household()
+    generated = generate(house, house["surfaces"][0], classified, inv["areas"])
+    main = str(generated["config"]["views"][0])
+    assert "Other controls" in main and "Quick actions" not in main
+    detail = next(v for v in generated["config"]["views"] if v["path"] == "other-controls")
+    assert "light.kitchen" in str(detail)
+    fixed = household("specialist")
+    assert not admitted(light, fixed["surfaces"][0], fixed, preferences(fixed, fixed["surfaces"][0]))
+    fixed["preferences"]["alex"] = {"pin": [light["id"]], "hide": [], "order": []}
+    assert not admitted(light, fixed["surfaces"][0], fixed, preferences(fixed, fixed["surfaces"][0]))
+    house["preferences"]["alex"] = {"pin": [light["id"]], "hide": [], "order": []}
+    pinned = generate(house, house["surfaces"][0], classified, inv["areas"])
+    assert "Quick actions" in str(pinned["config"]["views"][0])
+
+
 RULE = {"id": "washer", "name": "Washer", "entity_id": "sensor.washer", "from_state": "running", "to_state": "complete"}
 
 

@@ -2,4 +2,4 @@
 
 import os
 
-__version__ = os.environ.get("HOME_STARTER_VERSION", "0.3.0")
+__version__ = os.environ.get("HOME_STARTER_VERSION", "0.3.1")

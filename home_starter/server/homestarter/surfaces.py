@@ -112,7 +112,7 @@ def classify(inventory: dict, states: list[dict], overrides: dict) -> list[dict]
                 "name": override.get("name", e["name"]),
                 "area_id": area,
                 "function": function,
-                "scope": override.get("scope", "local" if area else "whole_house"),
+                "scope": override.get("scope", "whole_house" if domain in ("weather", "calendar", "person", "scene", "script") and not area else "local"),
                 "interaction": interaction,
                 "importance": "safety" if level == 0 else "technical" if level == 5 else "important" if level == 1 else "routine",
                 "frequency": "frequent" if level == 2 else "occasional",
@@ -148,8 +148,10 @@ def admitted(item: dict, surface: dict, house: dict, pref: dict) -> bool:
         return False
     if item["level"] != 0 and item["id"] in pref["hide"]:
         return False
-    if surface["profile"] in ("specialist", "kitchen", "bedside") and item["area_id"] and surface["area_id"] != item["area_id"]:
-        return item["level"] == 0 or item["scope"] == "whole_house"
+    if surface["profile"] in ("specialist", "kitchen", "bedside") and item["scope"] == "local" and item["level"] != 0:
+        # Unknown location is not evidence that a control is near this fixed screen.
+        if not item["area_id"] or surface["area_id"] != item["area_id"]:
+            return False
     return True
 
 
@@ -302,7 +304,7 @@ def generate(house: dict, surface: dict, items: list[dict], areas: list[dict], a
     profile = surface["profile"]
     path = "home-starter-" + surface["id"].replace("_", "-")
     base = "/" + path
-    sections, details = [], []
+    sections, details, other_access = [], [], []
     if profile in ("wall", "kitchen", "bedside"):
         sections.append(section("Today", [{"type": "clock", "clock_size": "large"}]))
     alerts = [exception_card(i, surface) for i in eligible if i["level"] == 0 or i["domain"] == "alarm_control_panel"]
@@ -319,7 +321,28 @@ def generate(house: dict, surface: dict, items: list[dict], areas: list[dict], a
             )
         )
     if profile not in ("wall",):
-        quick = [i for i in eligible if i["level"] == 2 and (i["id"] in pref["pin"] or not i["area_id"])]
+        quick = [i for i in eligible if i["level"] == 2 and (i["id"] in pref["pin"] or i["scope"] == "whole_house")]
+        unplaced = [i for i in eligible if i["level"] in (2, 4) and not i["area_id"] and i not in quick]
+        if unplaced:
+            # Still reachable deliberately, without flooding the main screen.
+            other_access = [
+                {
+                    "type": "button",
+                    "name": "Other controls",
+                    "icon": "mdi:dots-horizontal",
+                    "tap_action": {"action": "navigate", "navigation_path": base + "/other-controls"},
+                    "hold_action": {"action": "none"},
+                }
+            ]
+            details.append(
+                {
+                    "type": "sections",
+                    "title": "Other controls",
+                    "path": "other-controls",
+                    "subview": True,
+                    "sections": [section("Other controls", [card_for(i, surface) for i in unplaced])],
+                }
+            )
         quick = [i for i in quick if not (profile == "specialist" and i in climate)]
         if quick:
             sections.append(section("Quick actions", [card_for(i, surface) for i in quick]))
@@ -346,6 +369,8 @@ def generate(house: dict, surface: dict, items: list[dict], areas: list[dict], a
             card_for({"entity_id": a["entity_id"], "name": a["name"] + " cycles today", "domain": "sensor", "interaction": "status"}, surface) for a in activity
         ]
         sections.append(section("Activity today", cards))
+    if other_access:
+        sections.append(section("More controls", other_access))
     if not sections:
         sections.append(
             section("Home", [{"type": "markdown", "content": "No available household controls yet. Review rooms and household names in Home Starter."}])
