@@ -164,6 +164,27 @@ def test_catalogue_is_honest_about_absent_sources():
     assert len(CATALOGUE) == 25
     assert CATALOGUE["calling_contact"][1] == "source_required"
     assert CATALOGUE["media_favourites"][1] == "source_required"
+    assert CATALOGUE["camera"][1] == "source_required"
+    assert CATALOGUE["room_summary"][0] == "vertical-stack"
+
+
+def test_safety_cannot_be_hidden_by_global_name_inclusion_or_audience():
+    inv, states = inventory()
+    inv["unattached_entities"].append({"entity_id": "alarm_control_panel.home", "name": "Alarm", "state": "triggered", "observed": True})
+    states.append({"entity_id": "alarm_control_panel.home", "state": "triggered", "attributes": {}})
+    house = household("kitchen", "everyone")
+    house["overrides"] = {
+        "binary_sensor.leak": {"include": False, "audience": "admin", "name": "Water leak"},
+        "alarm_control_panel.home": {"include": False, "audience": "admin"},
+        "light.kitchen": {"include": False},
+    }
+    classified = classify(inv, states, house["overrides"])
+    leak = next(i for i in classified if i["id"] == "binary_sensor.leak")
+    assert leak["usable"] is True and leak["audience"] == "everyone"
+    generated = generate(house, house["surfaces"][0], classified, inv["areas"])
+    ids = {i["id"] for i in generated["admitted"]}
+    assert {"binary_sensor.leak", "alert:alarm_control_panel.home"} <= ids
+    assert "light.kitchen" not in ids
 
 
 @pytest.mark.parametrize("profile", ["phone", "tablet", "specialist", "kitchen", "entry", "bedside", "wall"])

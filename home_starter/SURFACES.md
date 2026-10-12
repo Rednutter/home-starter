@@ -91,6 +91,9 @@ Critical security interruptions are safety signals on every profile, including
 kitchen and bedside screens. Explicit whole-house controls remain suitable on touch
 surfaces without admitting ordinary unrelated context; pure action items are not
 suitable for a non-touch wall.
+Household renaming preserves current inclusion. Enabled critical safety signals stay
+included regardless of local name/inclusion/audience overrides; disabled, hidden or
+unavailable HA sources still respect their actual source availability.
 
 ## Publication and verification
 

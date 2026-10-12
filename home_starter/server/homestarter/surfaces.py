@@ -125,13 +125,14 @@ def classify(inventory: dict, states: list[dict], overrides: dict) -> list[dict]
             "importance": "safety" if level == 0 else "technical" if level == 5 else "important" if level == 1 else "routine",
             "frequency": "frequent" if level == 2 else "occasional",
             "visibility": visibility,
-            "audience": "admin" if level == 5 else override.get("audience", audience),
+            "audience": "everyone" if level == 0 else "admin" if level == 5 else override.get("audience", audience),
             "level": level,
             "component": component,
             "state": e.get("state"),
             "domain": domain,
             "device_class": dc,
-            "usable": bool(usable) and override.get("include") is not False,
+            "available": bool(usable),
+            "usable": bool(usable) and (level == 0 or override.get("include") is not False),
             "reason": reason,
         }
         item["surfaces"] = [profile for profile in PROFILES if suitable(item, profile)]
@@ -303,7 +304,7 @@ def generate(house: dict, surface: dict, items: list[dict], areas: list[dict], a
     eligible = [i for i in items if admitted(i, surface, house, pref)]
     # Alarm interruption is informational for everyone; its control remains adult-only.
     for item in items:
-        if item["domain"] == "alarm_control_panel" and item["usable"]:
+        if item["domain"] == "alarm_control_panel" and item.get("available", item["usable"]):
             alert = {
                 **item,
                 "id": "alert:" + item["id"],
@@ -316,6 +317,7 @@ def generate(house: dict, surface: dict, items: list[dict], areas: list[dict], a
                 "function": "safety",
                 "surfaces": list(PROFILES),
                 "reason": "An informational security interruption, shown only while triggered.",
+                "usable": True,
             }
             if admitted(alert, surface, house, pref):
                 eligible.append(alert)

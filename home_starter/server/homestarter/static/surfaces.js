@@ -132,11 +132,19 @@ export function initSurfaces({ h, api, navigateHA }) {
   }
   function renderNames() {
     const candidates = data.items.filter(i => i.level < 5 || ["scene", "script", "switch", "input_boolean"].includes(i.domain));
-    const choice = select("Household control to name", candidates.map(i => [i.id, i.name]), candidates[0]?.id || "");
+    const choice = select("Household control to name", candidates.map(i => [i.id, i.name]), candidates[0]?.id || "", () => {
+      const current = candidates.find(i => i.id === choice.value);
+      const override = draft.overrides[current?.id] || {};
+      name.value = override.name || current?.name || "";
+      include.checked = current?.level === 0 || (override.include ?? (current?.level < 5));
+      include.disabled = current?.level === 0;
+    });
     const name = input("Household control name", "", { placeholder: "e.g. Goodnight" });
-    const include = h("input", { type: "checkbox", "aria-label": "Include this control" });
+    const first = candidates[0];
+    const include = h("input", { type: "checkbox", "aria-label": "Include this control",
+      checked: first?.level === 0 || (draft.overrides[first?.id]?.include ?? (first?.level < 5)), disabled: first?.level === 0 });
     return h("details", {}, h("summary", {}, "Household names and additional actions"),
-      h("p", { class: "small muted" }, "Use names people recognise. Additional switches and actions stay out until you choose them. Review their effect in Home Assistant first."),
+      h("p", { class: "small muted" }, "Use names people recognise. Renaming keeps included controls included. Safety alerts stay included. Additional switches and actions stay out until you choose them; review their effect in Home Assistant first."),
       h("div", { class: "screen-fields" }, field("Existing control", choice), field("Household name", name)),
       h("label", {}, include, " Include this control"),
       button("Apply household name", () => { if (!choice.value || !name.value.trim()) { name.focus(); return; } draft.overrides[choice.value] = { ...draft.overrides[choice.value], name: name.value.trim(), include: include.checked }; changed(); setStatus("Name change staged. Save it, then refresh to see the updated list."); }));

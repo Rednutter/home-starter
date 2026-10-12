@@ -7,6 +7,9 @@
 - Explicitly reviewed whole-house actions remain suitable for specialist panels;
   pure action items stay out of wall displays. Catalogue descriptors now match
   the implemented room summary and deferred camera support.
+- Household renaming preserves existing inclusion. Safety source availability
+  is separate from control inclusion, so names or audience overrides cannot
+  accidentally hide an enabled critical interruption.
 
 ## 0.3.2
 
