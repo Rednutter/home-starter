@@ -1,10 +1,10 @@
 # https://developers.home-assistant.io/docs/apps/configuration#app-configuration
 name: Home Starter
-version: "0.2.0"
+version: "0.3.0"
 slug: home_starter
 description: >-
-  Get the house ready, review rooms and devices, and set up useful things
-  starting with music around the house (Music Assistant).
+  Get the house ready, review rooms and devices, set up music,
+  and generate native household screens for people and places.
 url: https://github.com/Rednutter/home-starter
 arch:
   - aarch64
@@ -18,7 +18,8 @@ ingress: true
 panel_icon: mdi:rocket-launch-outline
 panel_title: Home Starter
 
-# Registry reads and explicit, admin-only device room assignments through Core.
+# Registry reads, confirmed room/dashboard changes, and explicitly configured
+# activity sensors through Core. Dashboard controls use the viewing HA account.
 homeassistant_api: true
 
 # Supervisor API. `manager` is the lowest role that may list installed apps,

@@ -111,6 +111,9 @@ class MockSupervisor:
         self.ws_calls: list[dict[str, Any]] = []
         self.devices = core_fix("device_registry_list.json")
         self.entity_registry = core_fix("inventory_entity_registry_list.json")
+        self.dashboard_configs: dict[str, Any] = {}
+        self.dashboards: list[dict] = []
+        self.activity_states: dict[str, dict] = {}
         self.role = "default" if scenario == "default_role" else "manager"
         self.repos = sup("store_repositories.json" if scenario != "no_repo" else "store_repositories_without_ma.json")
         self.store = sup("store_addons.json" if scenario != "no_repo" else "store_addons_without_ma_repo.json")["addons"]
@@ -320,17 +323,34 @@ class MockSupervisor:
         tail = request.match_info["tail"]
         if self.core_url:
             async with aiohttp.ClientSession() as s:
-                async with s.get(f"{self.core_url}/api/{tail}", headers={"Authorization": f"Bearer {self.core_token}"}) as r:
+                body = await request.json() if request.method == "POST" else None
+                async with s.request(
+                    request.method, f"{self.core_url}/api/{tail}", params=request.query, json=body, headers={"Authorization": f"Bearer {self.core_token}"}
+                ) as r:
                     return web.Response(body=await r.read(), status=r.status, content_type="application/json")
         if tail == "config":
             return web.json_response(core_fix("api_config.json"))
         if tail == "states":
-            return web.json_response(core_fix("api_states.json"))
+            return web.json_response(core_fix("api_states.json") + list(self.activity_states.values()))
+        if tail.startswith("states/sensor.home_starter_activity_") and request.method == "POST":
+            entity_id = tail.removeprefix("states/")
+            self.activity_states[entity_id] = {"entity_id": entity_id, **await request.json()}
+            return web.json_response(self.activity_states[entity_id], status=201)
         return web.Response(status=404)
 
     def _fake_ws_result(self, msg: dict[str, Any]) -> Any:
         t = msg.get("type")
         self.ws_calls.append(copy.deepcopy(msg))
+        if t == "lovelace/dashboards/list":
+            return self.dashboards
+        if t == "lovelace/dashboards/create":
+            self.dashboards.append({"id": msg["url_path"], **{k: v for k, v in msg.items() if k not in ("id", "type")}})
+            return self.dashboards[-1]
+        if t == "lovelace/config/save":
+            self.dashboard_configs[msg["url_path"]] = msg["config"]
+            return None
+        if t == "lovelace/config":
+            return self.dashboard_configs[msg["url_path"]]
         if t == "config/device_registry/list":
             return self.devices
         if t == "config/device_registry/update":
@@ -436,6 +456,7 @@ class MockSupervisor:
         r.add_post("/store/addons/{slug}/install", self.install)
         r.add_get("/jobs/{uuid}", self.job)
         r.add_get("/core/api/{tail:.*}", self.core_api)
+        r.add_post("/core/api/{tail:.*}", self.core_api)
         r.add_get("/core/websocket", self.core_ws)
         r.add_get("/_mock/state", self.mock_state)
         r.add_post("/_mock/confirm_integration", self.mock_confirm)

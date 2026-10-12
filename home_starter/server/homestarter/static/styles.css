@@ -144,3 +144,26 @@ ul.plain li { margin: 2px 0; overflow-wrap: anywhere; }
 @media (max-width: 340px) {
   .tiles { grid-template-columns: 1fr; }
 }
+
+#surfaces-body > details { margin: 16px 0; }
+.screen-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 12px 0; }
+.screen-field { display: grid; gap: 5px; margin: 12px 0; font-size: .9rem; }
+.screen-field input, .screen-field select, #screen-item-search { width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--text); font: inherit; }
+.screen-fields .screen-field { margin: 0; }
+.screen-row { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.preference-list { max-height: 420px; overflow: auto; margin: 12px 0; }
+.screen-item { display: grid; grid-template-columns: minmax(140px, 1fr) auto auto; align-items: center; gap: 10px; padding: 12px 4px; border-bottom: 1px solid var(--line); }
+.screen-item > span { min-width: 0; overflow-wrap: anywhere; }
+.screen-item .btn { grid-row: 2; font-size: .8rem; }
+.screen-reason { display: block; }
+.screen-preview { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--line); }
+.preview-nav { display: flex; gap: 20px; flex-wrap: wrap; margin: 16px 0; color: var(--muted); }
+.preview-nav span:first-child { color: var(--text); font-weight: 600; }
+.preview-sections { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin: 16px 0; }
+.preview-phone, .preview-specialist, .preview-bedside { max-width: 440px; grid-template-columns: 1fr; }
+.preview-section h4 { margin: 0 0 10px; font-size: 1rem; }
+.preview-item, .preview-room { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.preview-room { flex-direction: column; gap: 4px; }
+.preview-climate { padding: 24px 0; font-size: 1.2rem; }
+.preview-clock { font-size: clamp(2rem, 7vw, 4rem); font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) { .screen-fields, .preview-sections { grid-template-columns: 1fr; } .screen-item { grid-template-columns: minmax(0, 1fr) auto auto; } }

@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.3.0
+
+- Make the house usable: people, seven screen profiles, semantic admission,
+  a 25-element capability catalogue, native Sections generation and room detail.
+- Separate personal and physical-screen Pin / Hide / Reorder settings, stored
+  locally in the App's backed-up `/data` directory.
+- Administrator-reviewed dashboard creation/update with exact preview tokens,
+  readback verification and protection for dashboards edited outside Home Starter.
+- Explicit appliance completion transitions from HA recorder history; persistent
+  last_run / runs_today / ran_today, daily rollover in HA's timezone and live
+  Home Starter activity sensors. Missing history remains unknown.
+- No dashboard projects, HA accounts, cloud analytics, inferred chores, calling
+  service, entity removal or changes to existing inventory/MA flows.
+
 ## 0.2.0
 
 - Fresh Batteries: optional household preparation and rescan at any time.

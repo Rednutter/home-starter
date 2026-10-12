@@ -4,8 +4,10 @@ An open-source Home Assistant helper for a house that grew piecemeal. Get things
 awake, see what HA knows about your rooms and devices, review explainable findings,
 then take a small explicit action and check whether it worked.
 
-V0.2 adds **Fresh Batteries + House Inventory** and preserves the V0.1.1
-**Music around the house → Music Assistant** flow.
+V0.3 adds **Make the house usable**: generated native household screens for people
+and places, saved Pin / Hide / Reorder, and explicit appliance activity today.
+It preserves **Fresh Batteries + House Inventory** and **Music around the house**.
+Read [surface rules and limits](home_starter/SURFACES.md).
 
 ## Install
 

@@ -70,6 +70,7 @@ def build_inventory(sources: dict[str, dict[str, Any]]) -> dict[str, Any]:
                 "config_entry_id": entry.get("config_entry_id"),
                 "disabled_by": entry.get("disabled_by"),
                 "hidden_by": entry.get("hidden_by"),
+                "entity_category": entry.get("entity_category"),
                 "state": live.get("state"),
                 "observed": entity_id in states,
             }

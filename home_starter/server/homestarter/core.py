@@ -60,6 +60,27 @@ class CoreClient:
     async def config(self) -> dict[str, Any]:
         return await self.rest_get("/config")
 
+    async def activity_state(self, entity_id: str, payload: dict) -> None:
+        """Publish only Home Starter's explicitly configured virtual activity sensors."""
+        import re
+
+        if not re.fullmatch(r"sensor\.home_starter_activity_[a-f0-9]{12}", entity_id):
+            raise ValueError("Activity sensor namespace required.")
+        try:
+            async with self._session.post(
+                f"{self._api}/states/{entity_id}",
+                json=payload,
+                headers={"Authorization": f"Bearer {self._token.reveal()}"},
+                timeout=REST_TIMEOUT,
+            ) as response:
+                if response.status not in (200, 201):
+                    raise CoreError("api", "Could not publish appliance activity to Home Assistant.")
+                saved = await response.json()
+                if saved.get("state") != payload["state"] or saved.get("attributes") != payload["attributes"]:
+                    raise CoreError("api", "Activity state could not be verified.")
+        except (TimeoutError, aiohttp.ClientError, OSError, ValueError) as err:
+            raise CoreError("unreachable", f"Activity state write failed ({type(err).__name__}).") from None
+
     async def states(self) -> list[dict[str, Any]]:
         return list(await self.rest_get("/states") or [])
 

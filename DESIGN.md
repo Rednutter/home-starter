@@ -1,0 +1,161 @@
+---
+name: Home Starter
+description: Existing administrator setup styling and native household dashboard generation.
+colors:
+  bg: "#f4f5f7"
+  card: "#ffffff"
+  text: "#1c1f24"
+  muted: "#5f6672"
+  line: "#e2e5ea"
+  accent: "#0b6fb8"
+  accent-ink: "#ffffff"
+  ok: "#1f7a4d"
+  warn: "#9a5b00"
+  bad: "#b3261e"
+  info: "#0b6fb8"
+  tile: "#f7f8fa"
+  dark-bg: "#111317"
+  dark-card: "#1a1d22"
+  dark-text: "#e8eaed"
+  dark-muted: "#a0a7b2"
+  dark-line: "#2b3038"
+  dark-accent: "#4aa3e6"
+  dark-accent-ink: "#0b1620"
+  dark-ok: "#5fcf96"
+  dark-warn: "#f0b45a"
+  dark-bad: "#ff8a80"
+  dark-info: "#7dbdf0"
+  dark-tile: "#20242a"
+typography:
+  body:
+    fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+    lineHeight: 1.45
+  headline:
+    fontSize: "1.45rem"
+    letterSpacing: "-0.01em"
+  section:
+    fontSize: "1.05rem"
+  title:
+    fontSize: "1.15rem"
+  small:
+    fontSize: "0.875rem"
+  tile-label:
+    fontSize: "0.78rem"
+    letterSpacing: "0.04em"
+  preview-clock:
+    fontSize: "clamp(2rem, 7vw, 4rem)"
+rounded:
+  input: "8px"
+  button: "10px"
+  confirmation: "12px"
+  card: "14px"
+  badge: "999px"
+spacing:
+  action-gap: "8px"
+  field-gap: "12px"
+  section-gap: "16px"
+  card-padding: "18px"
+components:
+  button-primary:
+    backgroundColor: "{colors.accent}"
+    textColor: "{colors.accent-ink}"
+    rounded: "{rounded.button}"
+    padding: "9px 14px"
+  button-default:
+    backgroundColor: "{colors.card}"
+    textColor: "{colors.text}"
+    rounded: "{rounded.button}"
+    padding: "9px 14px"
+  button-ghost:
+    backgroundColor: "transparent"
+    textColor: "{colors.text}"
+    rounded: "{rounded.button}"
+    padding: "9px 14px"
+  input:
+    backgroundColor: "{colors.card}"
+    textColor: "{colors.text}"
+    rounded: "{rounded.input}"
+    padding: "10px"
+  card:
+    backgroundColor: "{colors.card}"
+    textColor: "{colors.text}"
+    rounded: "{rounded.card}"
+    padding: "{spacing.card-padding}"
+---
+
+# Design System: Home Starter
+
+## Overview
+
+**Creative North Star: "Code-led Operate"**
+
+Preserve the incumbent Home Assistant-like administration interface: compact system typography, blue actions, neutral bordered cards and progressive disclosure. The household screen setup extends this identity rather than introducing another visual world.
+
+Home Starter owns the administrator setup and its non-operating layout preview. Generated household dashboards use native Home Assistant cards and the viewer's theme. Their chrome, typography, card styling and sidebar are Home Assistant's responsibility; do not treat those screenshot values as Home Starter tokens. V0.3 establishes admission, hierarchy and generation boundaries, not a finished visual design for every household profile. Operational limits live in [SURFACES.md](home_starter/SURFACES.md).
+
+**Key Characteristics:**
+- Compact administration with collapsible details.
+- Explicit settings, preview and publication states.
+- Native household controls with room-based compression.
+- Quiet exceptions and a dedicated air-conditioning hierarchy.
+
+## Colors
+
+The admin palette uses blue for actions and focus, neutral surfaces for structure, and semantic color for status. Frontmatter records the light palette and the exact dark overrides from `styles.css`; `prefers-color-scheme: dark` switches them together.
+
+### Primary
+- Accent blue: links, primary buttons, selected outlines, text selection and focus rings.
+- Accent ink: text on accent-filled controls, including the dark scheme's darker ink.
+
+### Secondary
+- Ready green, warning amber and error red: established status semantics. Informational blue supports notices and progress; color accompanies text rather than replacing it.
+
+### Neutral
+- Page background, card white and tile tint separate surfaces.
+- Main ink and muted text distinguish labels from explanation.
+- Pale divider lines provide card boundaries and row separation.
+
+## Typography
+
+Use the existing system font stack throughout administration. Heading levels remain modest: page heading, section heading and title use the corresponding frontmatter roles; small text explains status, suitability and preview limits. Tile labels are uppercase with tracked letters. Preview clocks use responsive sizing and tabular numerals. Native dashboard typography remains theme-owned.
+
+## Layout
+
+Admin content is centered in a (920px) maximum-width wrapper with (20px 16px 48px) padding. Cards use the documented padding and (16px) bottom separation. Actions wrap; screen fields use an auto-fit grid with (200px) minimum columns. Preference rows keep item identity and Pin/Hide together, with explicit move buttons below; their list scrolls above (420px) height.
+
+At (560px) and below, cards use (14px) padding, screen fields and preview sections become one column, and action buttons flex to the available width. Existing overview tiles become two columns, then one at (340px). Phone, specialist and bedside layout previews cap at (440px) and use one column.
+
+Generated native dashboards use Sections. Phone, bedside and specialist Home views allow one column; other profiles allow up to three. Rooms group only admitted entities into a native navigation Button plus templated Markdown summary, then open a room subview. They do not rely on automatic Area-card summaries. Tablet navigation adds only supported Climate, Media, Security and Household groups to Home. Conditional exception content and its section headings disappear in normal states.
+
+## Elevation & Depth
+
+Admin cards and rows use borders and tonal layering. There is no ambient card shadow. The selected outcome uses an inset accent stroke; confirmation panels use accent borders. Preserve visible focus outlines: (3px) accent with (2px) offset for buttons and (3px) for fields, links and summaries.
+
+Progress width transitions over (0.4s ease); indeterminate progress uses (1.4s ease-in-out). Reduced motion stops that animation. Native dashboard elevation and motion remain theme-owned.
+
+## Shapes
+
+Use the existing gently rounded cards, smaller rounded inputs and buttons, and pill badges. Row dividers carry dense lists; do not wrap every preference or preview item in another card.
+
+## Components
+
+Admin buttons have primary, default and transparent ghost variants. Hover changes the border; disabled controls use (0.55) opacity. Fields retain visible labels, native select behavior and full-width screen inputs. Navigation uses wrapping underlined links; collapsible details keep advanced settings discoverable without crowding the main flow.
+
+Household setup identifies screen type, room and person before generation. Preferences explicitly distinguish person choices that follow a person from physical-screen choices that stay with a display. Pin, Hide and move controls never bypass suitability or account permissions; safety Hide is disabled.
+
+Save settings precedes Generate screen; unsaved changes invalidate the preview. The preview explains that controls become live in Home Assistant and that templates/calendar contents must be checked there. Review publication requires an explicit add/update action. Successful save/readback exposes Open dashboard and asks for control verification on the intended screen. Do not present preview readiness as verified publication.
+
+Native Sections, Tile, Markdown, Clock, Thermostat and Calendar form the household screen vocabulary, with native Media control and Weather where supported. Specialist screens put alerts before dominant air-conditioning thermostats. Wall dashboards use a large clock and informational context, exceptions and activity, with no generated control widgets, actionable taps or room navigation. This constraint applies to generated dashboard content; native Home Assistant chrome remains present.
+
+## Do's and Don'ts
+
+- Do preserve the incumbent admin tokens and progressive disclosure.
+- Do distinguish layout preview, verified publication and native control verification.
+- Do compress admitted household items into room summaries and native subviews.
+- Do retain person-versus-physical-screen preference ownership and suitability explanations.
+- Don't apply admin CSS tokens to native Home Assistant dashboards.
+- Don't show normal-state exception sections or populate unsupported catalogue sources.
+- Don't introduce control widgets or room links into generated wall content.
+- Don't treat duplicate test sidebar links or simulated host chrome as Home Starter design patterns.
+
+Evidence: `home_starter/server/homestarter/static/{styles.css,index.html,surfaces.js}`, `home_starter/server/homestarter/surfaces.py`, and final captures in `screens/v3-ui/`: `setup-desktop.png`, `setup-mobile.png`, `setup-phone-mobile.png`, `native-phone-mobile.png`, `native-specialist-desktop.png`, `native-wall-desktop.png`. Captures are local, ignored test artifacts; code remains the reproducible source of truth.

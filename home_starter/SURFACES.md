@@ -1,0 +1,141 @@
+# Household screens — V0.3
+
+Home Starter translates the existing house into native Home Assistant dashboards.
+Setup stays in the administrator-only App; household screens use the viewer's HA
+account. No frontend projects, custom cards or extra integrations are installed.
+
+## People and places
+
+Versioned `household.json` in the App's backed-up `/data` stores people, physical
+screens, preferences, household names/inclusions and explicit activity rules.
+Profiles: personal phone, shared tablet, specialist, kitchen, entry, bedside and
+non-touch wall. A screen combines a person with a room and physical purpose. These
+records do not create users or devices.
+
+Person preferences follow that person; `surface:<id>` preferences stay with a screen.
+Each supports `pin`, `hide` and `order`. Hide wins over pin except for safety signals.
+Personal order takes precedence, then physical order, then stable alphabetical order.
+Pin never bypasses function, location, audience or diagnostic exclusions. Adult
+controls require an adult screen and, if selected, an adult person. Audience choices
+arrange screens: they do not change HA account access or create a kiosk boundary.
+
+The setup UI adds people/screens, edits a screen's requirements, assigns household
+names, explicitly includes additional actions and saves preferences. Local/floor/
+whole_house/personal scope is represented; V0.3 location admission uses local versus
+explicitly whole-house scope. Floor/personal refinement and automatic panel discovery
+remain future work. This release establishes generation rules, not every final design.
+
+Revision preconditions and atomic file replacement protect settings. Unreadable or
+corrupt data is preserved and reported, never reset silently. There is no DB, plugin
+engine, usage analytics or network discovery. Preference changes do not rewrite
+published dashboards automatically: save, generate, review and publish again.
+
+## Admission and hierarchy
+
+Classification uses HA domains, explicit device classes, registry/device areas,
+disabled/hidden flags and diagnostic/config categories. It records area, function,
+scope, interaction, importance, frequency, visibility, audience and suitability, with
+a reason. Unknown/unavailable sources are excluded, not declared absent forever.
+Refresh/regenerate after recovery. Incomplete inventory blocks publication.
+
+- Level 0: smoke/CO/gas/leak/safety signals, recent doorbell events and informational
+  triggered security alarms. Cannot be hidden.
+- Level 1: conditional openings, unlocked doors, active media, running climate,
+  lights/fans on and vacuum errors. Normal states and their sections disappear.
+- Level 2: room controls and explicitly included household actions.
+- Level 3: weather, calendar, room temperature/humidity, presence and timers.
+- Level 4: room subviews and native detailed controls.
+- Level 5: diagnostics, configuration and ambiguous signals stay in administration.
+
+Names alone cannot turn a switch/action/status into a household control. An
+administrator must include ambiguous actions and review their effect first. Pinning
+or renaming never upgrades battery/config diagnostics. Safety screens do not replace
+working certified alarms. Native more-info may show technical detail when opened.
+
+Phone: alerts, quick actions, rooms, activity and context. Tablet adds at most Home /
+Climate / Media / Security / Household. Specialist: alerts, then large thermostats,
+nearby and whole-house controls. Kitchen/bedside: clock, local controls and context.
+Entry: access/security, presence and context. Wall: clock, context, exceptions and
+activity with no control widgets, actionable taps or room navigation.
+
+Rooms use existing HA areas. Their native navigation buttons and templated summaries
+reference only admitted items; hidden controls cannot reappear through automatic
+Area-card summaries. Room details are subviews, not extra main tabs.
+
+## Catalogue and native rendering
+
+`surfaces.py` names 25 canonical elements: room summary, quick action, alert, climate
+control/summary, light control, media now-playing/favourites, calendar agenda,
+clock/weather, weather summary, access, camera, doorbell event, appliance status,
+activity today, presence, status chip, timer, notice, security summary, action group,
+bedside clock, calling contact and room detail. The catalogue is a capability contract,
+not a claim that absent household sources are installed.
+
+Rendering uses native Sections, Tile, Button, Markdown, Thermostat, Media control,
+Calendar, Clock and Weather cards. Compact/normal/large are catalogue vocabulary;
+native sizing/widget differences are used where meaningful. Camera selection,
+favourites, calling/contact, event takeover and recipes/shopping/sport notices need
+supported, reviewed sources and are not populated automatically. Calling and media
+favourites are explicitly `source_required`; no calling platform is installed.
+
+State/template conditions are verified with official Core 2026.10.0. Climate tests
+`hvac_action`, not just selected HVAC mode. Doorbell events show for two minutes.
+Unavailable states do not become false hazard alarms. Lights/switches use native
+toggle; selected actions require native confirmation. Doors/locks/security open native
+detail, with no generated one-tap opening, unlocking or disarming. Wall templates
+have no service actions.
+
+## Publication and verification
+
+The preview reviews layout/data; it never operates hardware. Native HA evaluates
+templates, calendar content and controls. Publication accepts only an exact, recent
+server-held preview for the same ingress administrator and settings revision. It
+does not accept arbitrary browser-supplied services, dashboard configs or URLs.
+
+HA commands: `lovelace/dashboards/create`, `lovelace/config/save`, and forced
+`lovelace/config` readback. Addresses start `home-starter-`, derived from validated
+screen IDs. Existing untracked dashboards are protected. Updating requires current
+content to match the last published fingerprint; external edits stop the update.
+HA has no atomic compare-and-save command: an external edit between check and save
+can still race. Writes inside this App are serialized. Renaming changes dashboard
+content title; existing sidebar metadata is not rewritten automatically.
+
+Timeout/storage/readback failure stays unverified: a dashboard may be partially
+created/saved. Inspect it in HA before retrying. Untracked partial dashboards remain
+protected; choose a new screen rather than overwrite blindly. Home Starter does not
+delete dashboards or entities. Removing local preferences/activity rules does not
+remove published dashboards or synthetic sensors; handle that later in deliberate
+HA administration.
+
+## Appliance activity today
+
+Choose an existing status and its documented running → completed transition. No
+appliance-name guesses, inferred human completion or chores. Tracking starts when
+the background monitor first loads a saved rule (within 30 seconds, or immediately
+on generation). An already-running source can form the initial baseline; only a
+later explicit completion counts. Changing the source/transition resets tracking.
+
+The monitor reads recorder history every 30 seconds, including short cycles between
+polls. It persists the consumed timestamp before publishing, preventing double counts
+from overlaps/restarts. Unknown/unavailable breaks continuity. `last_run`, `runs_today`
+and `ran_today` persist locally; daily count rolls in HA's timezone, including DST,
+within one poll of midnight. Missing/excluded recorder history reports unknown.
+
+Only virtual `sensor.home_starter_activity_<hash>` states are written through HA's
+REST state API. Existing states without the matching ownership marker are protected.
+They are not registry devices/helpers; Core restart may remove them, and the App
+recreates them from its persistent records. Generated cards update from those sensors
+without republishing. Tracking never calls an appliance service. Retention, recorder
+exclusions, delayed history and outages limit coverage: counts describe retained
+observed transitions since tracking began, not lifetime activity or guaranteed coverage
+during missing-history intervals.
+
+## Acceptance
+
+Tests cover seven profiles, safety/audience/location boundaries, hidden diagnostics,
+precise native targets, stale settings/publication, failed readback, persistent count
+deduplication and Sydney day rollover. `devtools/v3_core_config.yaml` is for a disposable
+official Core only: simulated lamp, thermostat and washer. `e2e_surfaces.py` exercises
+setup/publication; `e2e_native_surfaces.py` checks loaded cards and climate control;
+`verify_v3_activity.py` checks two real recorder completion transitions. Private test
+credentials, runtime records and screenshots remain ignored under `screens/`.

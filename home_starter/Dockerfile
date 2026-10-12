@@ -5,7 +5,7 @@
 ARG BUILD_FROM=ghcr.io/home-assistant/base-python:3.13-alpine3.23
 FROM ${BUILD_FROM}
 
-ARG BUILD_VERSION=0.2.0
+ARG BUILD_VERSION=0.3.0
 
 COPY server/requirements.txt /tmp/requirements.txt
 RUN pip3 install --no-cache-dir --disable-pip-version-check -r /tmp/requirements.txt \

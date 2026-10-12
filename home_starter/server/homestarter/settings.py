@@ -57,6 +57,7 @@ class Settings:
     allowed_peers: tuple[str, ...] = (INGRESS_PEER,)
     # Music Assistant's server answers GET /info without auth on this port.
     music_assistant_port: int = 8095
+    data_dir: str = "/data"
 
     @property
     def allow_any_peer(self) -> bool:
@@ -76,4 +77,5 @@ class Settings:
             port=int(env.get("HOME_STARTER_PORT", "8099")),
             allowed_peers=_peers_from_env(env.get("HOME_STARTER_ALLOWED_PEERS")),
             music_assistant_port=int(env.get("HOME_STARTER_MA_PORT", "8095")),
+            data_dir=env.get("HOME_STARTER_DATA_DIR", "/data"),
         )

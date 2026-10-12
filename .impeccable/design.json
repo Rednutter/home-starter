@@ -1,0 +1,471 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-12T12:34:53Z",
+  "title": "Design System: Home Starter",
+  "extensions": {
+    "colorMeta": {
+      "bg": {
+        "role": "neutral",
+        "displayName": "bg",
+        "tonalRamp": [
+          "oklch(15% 0.0029 264.54)",
+          "oklch(26% 0.0029 264.54)",
+          "oklch(38% 0.0029 264.54)",
+          "oklch(49% 0.0029 264.54)",
+          "oklch(61% 0.0029 264.54)",
+          "oklch(72% 0.0029 264.54)",
+          "oklch(84% 0.0029 264.54)",
+          "oklch(95% 0.0029 264.54)"
+        ]
+      },
+      "card": {
+        "role": "neutral",
+        "displayName": "card",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.88)",
+          "oklch(26% 0.0000 89.88)",
+          "oklch(38% 0.0000 89.88)",
+          "oklch(49% 0.0000 89.88)",
+          "oklch(61% 0.0000 89.88)",
+          "oklch(72% 0.0000 89.88)",
+          "oklch(84% 0.0000 89.88)",
+          "oklch(95% 0.0000 89.88)"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "text",
+        "tonalRamp": [
+          "oklch(15% 0.0106 260.69)",
+          "oklch(26% 0.0106 260.69)",
+          "oklch(38% 0.0106 260.69)",
+          "oklch(49% 0.0106 260.69)",
+          "oklch(61% 0.0106 260.69)",
+          "oklch(72% 0.0106 260.69)",
+          "oklch(84% 0.0106 260.69)",
+          "oklch(95% 0.0106 260.69)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "muted",
+        "tonalRamp": [
+          "oklch(15% 0.0209 261.29)",
+          "oklch(26% 0.0209 261.29)",
+          "oklch(38% 0.0209 261.29)",
+          "oklch(49% 0.0209 261.29)",
+          "oklch(61% 0.0209 261.29)",
+          "oklch(72% 0.0209 261.29)",
+          "oklch(84% 0.0209 261.29)",
+          "oklch(95% 0.0209 261.29)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "line",
+        "tonalRamp": [
+          "oklch(15% 0.0075 260.73)",
+          "oklch(26% 0.0075 260.73)",
+          "oklch(38% 0.0075 260.73)",
+          "oklch(49% 0.0075 260.73)",
+          "oklch(61% 0.0075 260.73)",
+          "oklch(72% 0.0075 260.73)",
+          "oklch(84% 0.0075 260.73)",
+          "oklch(95% 0.0075 260.73)"
+        ]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "accent",
+        "tonalRamp": [
+          "oklch(15% 0.1403 248.50)",
+          "oklch(26% 0.1403 248.50)",
+          "oklch(38% 0.1403 248.50)",
+          "oklch(49% 0.1403 248.50)",
+          "oklch(61% 0.1403 248.50)",
+          "oklch(72% 0.1403 248.50)",
+          "oklch(84% 0.1403 248.50)",
+          "oklch(95% 0.1403 248.50)"
+        ]
+      },
+      "accent-ink": {
+        "role": "primary",
+        "displayName": "accent ink",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.88)",
+          "oklch(26% 0.0000 89.88)",
+          "oklch(38% 0.0000 89.88)",
+          "oklch(49% 0.0000 89.88)",
+          "oklch(61% 0.0000 89.88)",
+          "oklch(72% 0.0000 89.88)",
+          "oklch(84% 0.0000 89.88)",
+          "oklch(95% 0.0000 89.88)"
+        ]
+      },
+      "ok": {
+        "role": "secondary",
+        "displayName": "ok",
+        "tonalRamp": [
+          "oklch(15% 0.1102 156.80)",
+          "oklch(26% 0.1102 156.80)",
+          "oklch(38% 0.1102 156.80)",
+          "oklch(49% 0.1102 156.80)",
+          "oklch(61% 0.1102 156.80)",
+          "oklch(72% 0.1102 156.80)",
+          "oklch(84% 0.1102 156.80)",
+          "oklch(95% 0.1102 156.80)"
+        ]
+      },
+      "warn": {
+        "role": "secondary",
+        "displayName": "warn",
+        "tonalRamp": [
+          "oklch(15% 0.1190 65.12)",
+          "oklch(26% 0.1190 65.12)",
+          "oklch(38% 0.1190 65.12)",
+          "oklch(49% 0.1190 65.12)",
+          "oklch(61% 0.1190 65.12)",
+          "oklch(72% 0.1190 65.12)",
+          "oklch(84% 0.1190 65.12)",
+          "oklch(95% 0.1190 65.12)"
+        ]
+      },
+      "bad": {
+        "role": "secondary",
+        "displayName": "bad",
+        "tonalRamp": [
+          "oklch(15% 0.1783 28.70)",
+          "oklch(26% 0.1783 28.70)",
+          "oklch(38% 0.1783 28.70)",
+          "oklch(49% 0.1783 28.70)",
+          "oklch(61% 0.1783 28.70)",
+          "oklch(72% 0.1783 28.70)",
+          "oklch(84% 0.1783 28.70)",
+          "oklch(95% 0.1783 28.70)"
+        ]
+      },
+      "info": {
+        "role": "secondary",
+        "displayName": "info",
+        "tonalRamp": [
+          "oklch(15% 0.1403 248.50)",
+          "oklch(26% 0.1403 248.50)",
+          "oklch(38% 0.1403 248.50)",
+          "oklch(49% 0.1403 248.50)",
+          "oklch(61% 0.1403 248.50)",
+          "oklch(72% 0.1403 248.50)",
+          "oklch(84% 0.1403 248.50)",
+          "oklch(95% 0.1403 248.50)"
+        ]
+      },
+      "tile": {
+        "role": "neutral",
+        "displayName": "tile",
+        "tonalRamp": [
+          "oklch(15% 0.0029 264.54)",
+          "oklch(26% 0.0029 264.54)",
+          "oklch(38% 0.0029 264.54)",
+          "oklch(49% 0.0029 264.54)",
+          "oklch(61% 0.0029 264.54)",
+          "oklch(72% 0.0029 264.54)",
+          "oklch(84% 0.0029 264.54)",
+          "oklch(95% 0.0029 264.54)"
+        ]
+      },
+      "dark-bg": {
+        "role": "neutral",
+        "displayName": "dark bg",
+        "tonalRamp": [
+          "oklch(15% 0.0088 264.34)",
+          "oklch(26% 0.0088 264.34)",
+          "oklch(38% 0.0088 264.34)",
+          "oklch(49% 0.0088 264.34)",
+          "oklch(61% 0.0088 264.34)",
+          "oklch(72% 0.0088 264.34)",
+          "oklch(84% 0.0088 264.34)",
+          "oklch(95% 0.0088 264.34)"
+        ]
+      },
+      "dark-card": {
+        "role": "neutral",
+        "displayName": "dark card",
+        "tonalRamp": [
+          "oklch(15% 0.0107 260.68)",
+          "oklch(26% 0.0107 260.68)",
+          "oklch(38% 0.0107 260.68)",
+          "oklch(49% 0.0107 260.68)",
+          "oklch(61% 0.0107 260.68)",
+          "oklch(72% 0.0107 260.68)",
+          "oklch(84% 0.0107 260.68)",
+          "oklch(95% 0.0107 260.68)"
+        ]
+      },
+      "dark-text": {
+        "role": "neutral",
+        "displayName": "dark text",
+        "tonalRamp": [
+          "oklch(15% 0.0046 258.33)",
+          "oklch(26% 0.0046 258.33)",
+          "oklch(38% 0.0046 258.33)",
+          "oklch(49% 0.0046 258.33)",
+          "oklch(61% 0.0046 258.33)",
+          "oklch(72% 0.0046 258.33)",
+          "oklch(84% 0.0046 258.33)",
+          "oklch(95% 0.0046 258.33)"
+        ]
+      },
+      "dark-muted": {
+        "role": "neutral",
+        "displayName": "dark muted",
+        "tonalRamp": [
+          "oklch(15% 0.0178 259.42)",
+          "oklch(26% 0.0178 259.42)",
+          "oklch(38% 0.0178 259.42)",
+          "oklch(49% 0.0178 259.42)",
+          "oklch(61% 0.0178 259.42)",
+          "oklch(72% 0.0178 259.42)",
+          "oklch(84% 0.0178 259.42)",
+          "oklch(95% 0.0178 259.42)"
+        ]
+      },
+      "dark-line": {
+        "role": "neutral",
+        "displayName": "dark line",
+        "tonalRamp": [
+          "oklch(15% 0.0160 259.80)",
+          "oklch(26% 0.0160 259.80)",
+          "oklch(38% 0.0160 259.80)",
+          "oklch(49% 0.0160 259.80)",
+          "oklch(61% 0.0160 259.80)",
+          "oklch(72% 0.0160 259.80)",
+          "oklch(84% 0.0160 259.80)",
+          "oklch(95% 0.0160 259.80)"
+        ]
+      },
+      "dark-accent": {
+        "role": "primary",
+        "displayName": "dark accent",
+        "tonalRamp": [
+          "oklch(15% 0.1303 244.17)",
+          "oklch(26% 0.1303 244.17)",
+          "oklch(38% 0.1303 244.17)",
+          "oklch(49% 0.1303 244.17)",
+          "oklch(61% 0.1303 244.17)",
+          "oklch(72% 0.1303 244.17)",
+          "oklch(84% 0.1303 244.17)",
+          "oklch(95% 0.1303 244.17)"
+        ]
+      },
+      "dark-accent-ink": {
+        "role": "primary",
+        "displayName": "dark accent ink",
+        "tonalRamp": [
+          "oklch(15% 0.0259 246.97)",
+          "oklch(26% 0.0259 246.97)",
+          "oklch(38% 0.0259 246.97)",
+          "oklch(49% 0.0259 246.97)",
+          "oklch(61% 0.0259 246.97)",
+          "oklch(72% 0.0259 246.97)",
+          "oklch(84% 0.0259 246.97)",
+          "oklch(95% 0.0259 246.97)"
+        ]
+      },
+      "dark-ok": {
+        "role": "secondary",
+        "displayName": "dark ok",
+        "tonalRamp": [
+          "oklch(15% 0.1326 158.80)",
+          "oklch(26% 0.1326 158.80)",
+          "oklch(38% 0.1326 158.80)",
+          "oklch(49% 0.1326 158.80)",
+          "oklch(61% 0.1326 158.80)",
+          "oklch(72% 0.1326 158.80)",
+          "oklch(84% 0.1326 158.80)",
+          "oklch(95% 0.1326 158.80)"
+        ]
+      },
+      "dark-warn": {
+        "role": "secondary",
+        "displayName": "dark warn",
+        "tonalRamp": [
+          "oklch(15% 0.1274 75.27)",
+          "oklch(26% 0.1274 75.27)",
+          "oklch(38% 0.1274 75.27)",
+          "oklch(49% 0.1274 75.27)",
+          "oklch(61% 0.1274 75.27)",
+          "oklch(72% 0.1274 75.27)",
+          "oklch(84% 0.1274 75.27)",
+          "oklch(95% 0.1274 75.27)"
+        ]
+      },
+      "dark-bad": {
+        "role": "secondary",
+        "displayName": "dark bad",
+        "tonalRamp": [
+          "oklch(15% 0.1435 26.08)",
+          "oklch(26% 0.1435 26.08)",
+          "oklch(38% 0.1435 26.08)",
+          "oklch(49% 0.1435 26.08)",
+          "oklch(61% 0.1435 26.08)",
+          "oklch(72% 0.1435 26.08)",
+          "oklch(84% 0.1435 26.08)",
+          "oklch(95% 0.1435 26.08)"
+        ]
+      },
+      "dark-info": {
+        "role": "secondary",
+        "displayName": "dark info",
+        "tonalRamp": [
+          "oklch(15% 0.0984 243.56)",
+          "oklch(26% 0.0984 243.56)",
+          "oklch(38% 0.0984 243.56)",
+          "oklch(49% 0.0984 243.56)",
+          "oklch(61% 0.0984 243.56)",
+          "oklch(72% 0.0984 243.56)",
+          "oklch(84% 0.0984 243.56)",
+          "oklch(95% 0.0984 243.56)"
+        ]
+      },
+      "dark-tile": {
+        "role": "neutral",
+        "displayName": "dark tile",
+        "tonalRamp": [
+          "oklch(15% 0.0127 258.37)",
+          "oklch(26% 0.0127 258.37)",
+          "oklch(38% 0.0127 258.37)",
+          "oklch(49% 0.0127 258.37)",
+          "oklch(61% 0.0127 258.37)",
+          "oklch(72% 0.0127 258.37)",
+          "oklch(84% 0.0127 258.37)",
+          "oklch(95% 0.0127 258.37)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "body": {
+        "displayName": "System body",
+        "purpose": "Administrator interface."
+      },
+      "preview-clock": {
+        "displayName": "Layout preview clock",
+        "purpose": "Preview only; native Clock is theme-owned."
+      }
+    },
+    "shadows": [
+      {
+        "name": "selected-outcome",
+        "value": "inset 0 0 0 1px var(--accent)",
+        "purpose": "Selected outcome stroke; no ambient card shadow."
+      }
+    ],
+    "motion": [
+      {
+        "name": "progress-width",
+        "value": "width 0.4s ease",
+        "purpose": "Progress bar updates."
+      },
+      {
+        "name": "indeterminate",
+        "value": "slide 1.4s ease-in-out infinite",
+        "purpose": "Progress only; disabled for reduced motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "compact",
+        "value": "560px"
+      },
+      {
+        "name": "narrow",
+        "value": "340px"
+      }
+    ],
+    "scope": "Administrator primitives only. Native Home Assistant card/chrome styling is not owned here. Tonal ramps are synthesized panel previews, not implemented palette tokens.",
+    "sources": [
+      "home_starter/server/homestarter/static/styles.css",
+      "home_starter/server/homestarter/static/index.html",
+      "home_starter/server/homestarter/static/surfaces.js",
+      "home_starter/server/homestarter/surfaces.py",
+      "home_starter/SURFACES.md"
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Save settings or confirm publication.",
+      "html": "<button class=\"ds-btn ds-primary\">Save household settings</button>",
+      "css": ".ds-btn{font-family:system-ui,-apple-system,\"Segoe UI\",Roboto,\"Helvetica Neue\",Arial,sans-serif;font-size:1rem;line-height:1.45;border-radius:10px;padding:9px 14px;border:1px solid var(--line,#e2e5ea);background:var(--card,#ffffff);color:var(--text,#1c1f24);cursor:pointer}.ds-btn:hover:not(:disabled){border-color:var(--accent,#0b6fb8)}.ds-btn:focus-visible{outline:3px solid var(--accent,#0b6fb8);outline-offset:2px}.ds-btn:disabled{opacity:.55;cursor:default}.ds-primary{background:var(--accent,#0b6fb8);border-color:var(--accent,#0b6fb8);color:var(--accent-ink,#ffffff);font-weight:600}"
+    },
+    {
+      "name": "Default button",
+      "kind": "button",
+      "refersTo": "button-default",
+      "description": "Generate a screen or move a preference.",
+      "html": "<button class=\"ds-btn\">Generate screen</button>",
+      "css": ".ds-btn{font-family:system-ui,-apple-system,\"Segoe UI\",Roboto,\"Helvetica Neue\",Arial,sans-serif;font-size:1rem;line-height:1.45;border-radius:10px;padding:9px 14px;border:1px solid var(--line,#e2e5ea);background:var(--card,#ffffff);color:var(--text,#1c1f24);cursor:pointer}.ds-btn:hover:not(:disabled){border-color:var(--accent,#0b6fb8)}.ds-btn:focus-visible{outline:3px solid var(--accent,#0b6fb8);outline-offset:2px}.ds-btn:disabled{opacity:.55;cursor:default}"
+    },
+    {
+      "name": "Ghost button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary section action.",
+      "html": "<button class=\"ds-btn ds-ghost\">Refresh screens</button>",
+      "css": ".ds-btn{font-family:system-ui,-apple-system,\"Segoe UI\",Roboto,\"Helvetica Neue\",Arial,sans-serif;font-size:1rem;line-height:1.45;border-radius:10px;padding:9px 14px;border:1px solid var(--line,#e2e5ea);background:var(--card,#ffffff);color:var(--text,#1c1f24);cursor:pointer}.ds-btn:hover:not(:disabled){border-color:var(--accent,#0b6fb8)}.ds-btn:focus-visible{outline:3px solid var(--accent,#0b6fb8);outline-offset:2px}.ds-btn:disabled{opacity:.55;cursor:default}.ds-ghost{background:transparent}"
+    },
+    {
+      "name": "Screen field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Visible label and full-width input.",
+      "html": "<label class=\"ds-field\">Name<input value=\"Kitchen screen\"></label>",
+      "css": ".ds-field{font-family:system-ui,-apple-system,\"Segoe UI\",Roboto,\"Helvetica Neue\",Arial,sans-serif;font-size:1rem;line-height:1.45;display:grid;gap:5px;margin:12px 0;color:var(--text,#1c1f24);font-size:.9rem}.ds-field input{width:100%;padding:10px;border:1px solid var(--line,#e2e5ea);border-radius:8px;background:var(--card,#ffffff);color:var(--text,#1c1f24);font:inherit;caret-color:var(--accent,#0b6fb8)}.ds-field input:focus-visible{outline:3px solid var(--accent,#0b6fb8);outline-offset:3px}"
+    },
+    {
+      "name": "Section navigation",
+      "kind": "nav",
+      "description": "Wrapping underlined links between administrator sections.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Home Starter sections\"><a href=\"#house\">Your house</a><a href=\"#surfaces\">Make the house usable</a></nav>",
+      "css": ".ds-nav{font-family:system-ui,-apple-system,\"Segoe UI\",Roboto,\"Helvetica Neue\",Arial,sans-serif;font-size:1rem;line-height:1.45;display:flex;flex-wrap:wrap;gap:12px 24px;margin:12px 0 24px}.ds-nav a{color:var(--accent,#0b6fb8);text-underline-offset:4px}.ds-nav a:focus-visible{outline:3px solid var(--accent,#0b6fb8);outline-offset:3px}"
+    },
+    {
+      "name": "Admin card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Flat bordered section container.",
+      "html": "<section class=\"ds-card\"><h2>Make the house usable</h2><p>Rooms, useful controls and today’s information, arranged for the person and the screen.</p></section>",
+      "css": ".ds-card{font-family:system-ui,-apple-system,\"Segoe UI\",Roboto,\"Helvetica Neue\",Arial,sans-serif;font-size:1rem;line-height:1.45;background:var(--card,#ffffff);color:var(--text,#1c1f24);border:1px solid var(--line,#e2e5ea);border-radius:var(--radius,14px);padding:18px;margin-bottom:16px}.ds-card h2{font-size:1.05rem;margin:0 0 12px}.ds-card p{margin:0 0 8px}@media(max-width:560px){.ds-card{padding:14px}}"
+    },
+    {
+      "name": "Badge",
+      "kind": "chip",
+      "description": "Small neutral status label.",
+      "html": "<span class=\"ds-badge\">Later</span>",
+      "css": ".ds-badge{font-family:system-ui,-apple-system,\"Segoe UI\",Roboto,\"Helvetica Neue\",Arial,sans-serif;font-size:1rem;line-height:1.45;font-size:.72rem;border:1px solid var(--line,#e2e5ea);border-radius:999px;padding:1px 8px;color:var(--muted,#5f6672);flex:none}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Code-led Operate",
+    "overview": "Preserve the incumbent Home Assistant-like administration interface: compact system typography, blue actions, neutral bordered cards and progressive disclosure. The household screen setup extends this identity rather than introducing another visual world.\n\nHome Starter owns the administrator setup and its non-operating layout preview. Generated household dashboards use native Home Assistant cards and the viewer's theme. Their chrome, typography, card styling and sidebar are Home Assistant's responsibility; do not treat those screenshot values as Home Starter tokens. V0.3 establishes admission, hierarchy and generation boundaries, not a finished visual design for every household profile. Operational limits live in [SURFACES.md](home_starter/SURFACES.md).",
+    "keyCharacteristics": [
+      "Compact administration with collapsible details.",
+      "Explicit settings, preview and publication states.",
+      "Native household controls with room-based compression.",
+      "Quiet exceptions and a dedicated air-conditioning hierarchy."
+    ],
+    "rules": [],
+    "dos": [
+      "Do preserve the incumbent admin tokens and progressive disclosure.",
+      "Do distinguish layout preview, verified publication and native control verification.",
+      "Do compress admitted household items into room summaries and native subviews.",
+      "Do retain person-versus-physical-screen preference ownership and suitability explanations."
+    ],
+    "donts": [
+      "Don't apply admin CSS tokens to native Home Assistant dashboards.",
+      "Don't show normal-state exception sections or populate unsupported catalogue sources.",
+      "Don't introduce control widgets or room links into generated wall content.",
+      "Don't treat duplicate test sidebar links or simulated host chrome as Home Starter design patterns."
+    ]
+  }
+}

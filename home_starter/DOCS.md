@@ -22,6 +22,11 @@
      setup or music provider sign-in is still open.
 5. When everything checks out you'll see **Music Assistant is ready** and an
    **Open Music Assistant** button.
+6. **Make the house usable**: add people and screens, choose their room and audience,
+   save settings, then generate and review a native dashboard. Pin, hide and reorder
+   belong either to a person or the physical screen. Publication creates its own
+   dashboard and verifies it by reading it back. Open that dashboard on its intended
+   device and check the useful controls. Read [surface rules and limits](SURFACES.md).
 
 If any step can't be done directly, Home Starter sends you to the matching
 Home Assistant screen instead, and re-checks when you come back.
@@ -55,6 +60,13 @@ uninstalls apps, changes other apps' settings, edits your configuration, or
 removes integrations, devices or entities, or changes automations. The only
 inventory write is a reviewed device room assignment. Read [inventory rules and
 limits](INVENTORY.md) for details.
+
+Screen settings and dashboard publication also require a verified active administrator.
+The app saves only its own reviewed dashboard addresses and refuses externally edited
+dashboards. Explicit activity tracking publishes virtual sensors in its own namespace;
+it does not call appliance services. Native dashboard controls use the viewing HA
+account, not the App's Supervisor credential. Person/audience settings are layout
+preferences, not account permissions or a kiosk security boundary.
 
 ## Limitations
 
