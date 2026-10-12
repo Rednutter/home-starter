@@ -1,0 +1,334 @@
+[
+  {
+    "attributes": {
+      "device_trackers": [],
+      "editable": true,
+      "friendly_name": "Test Home",
+      "icon": "mdi:home",
+      "latitude": 0.0,
+      "longitude": 0.0,
+      "passive": false,
+      "persons": [],
+      "radius": 100
+    },
+    "context": {
+      "id": "01M4PC67Y34J4E7YTSM1Z7TT0V",
+      "parent_id": null,
+      "user_id": null
+    },
+    "entity_id": "zone.home",
+    "last_changed": "2026-10-11T20:59:07.587819+00:00",
+    "last_reported": "2026-10-11T20:59:07.587819+00:00",
+    "last_updated": "2026-10-11T20:59:07.587819+00:00",
+    "state": "0"
+  },
+  {
+    "attributes": {
+      "friendly_name": "Kitchen temperature",
+      "unit_of_measurement": "\u00b0C"
+    },
+    "context": {
+      "id": "01M4PC695Y0X20NNT11CX2HX62",
+      "parent_id": null,
+      "user_id": null
+    },
+    "entity_id": "sensor.kitchen_temperature",
+    "last_changed": "2026-10-11T20:59:08.862179+00:00",
+    "last_reported": "2026-10-11T20:59:08.865402+00:00",
+    "last_updated": "2026-10-11T20:59:08.862179+00:00",
+    "state": "21.5"
+  },
+  {
+    "attributes": {
+      "friendly_name": "Garage door battery"
+    },
+    "context": {
+      "id": "01M4PC695YFGW7VD2KTD85EHAE",
+      "parent_id": null,
+      "user_id": null
+    },
+    "entity_id": "sensor.garage_door_battery",
+    "last_changed": "2026-10-11T20:59:08.862450+00:00",
+    "last_reported": "2026-10-11T20:59:08.865437+00:00",
+    "last_updated": "2026-10-11T20:59:08.862450+00:00",
+    "state": "unavailable"
+  },
+  {
+    "attributes": {
+      "friendly_name": "Pool pump power"
+    },
+    "context": {
+      "id": "01M4PC695YKJY6WT13S0QH2WJM",
+      "parent_id": null,
+      "user_id": null
+    },
+    "entity_id": "sensor.pool_pump_power",
+    "last_changed": "2026-10-11T20:59:08.862620+00:00",
+    "last_reported": "2026-10-11T20:59:08.865457+00:00",
+    "last_updated": "2026-10-11T20:59:08.862620+00:00",
+    "state": "unavailable"
+  },
+  {
+    "attributes": {
+      "friendly_name": "Front door"
+    },
+    "context": {
+      "id": "01M4PC695YJB2PKSASF4DP1KX3",
+      "parent_id": null,
+      "user_id": null
+    },
+    "entity_id": "binary_sensor.front_door",
+    "last_changed": "2026-10-11T20:59:08.862713+00:00",
+    "last_reported": "2026-10-11T20:59:08.865476+00:00",
+    "last_updated": "2026-10-11T20:59:08.862713+00:00",
+    "state": "off"
+  },
+  {
+    "attributes": {
+      "friendly_name": "Home Assistant",
+      "supported_features": 1
+    },
+    "context": {
+      "id": "01M4PC68V8H3CQEDSM3YYJ1KH9",
+      "parent_id": null,
+      "user_id": null
+    },
+    "entity_id": "conversation.home_assistant",
+    "last_changed": "2026-10-11T20:59:08.520351+00:00",
+    "last_reported": "2026-10-11T20:59:08.520351+00:00",
+    "last_updated": "2026-10-11T20:59:08.520351+00:00",
+    "state": "unknown"
+  },
+  {
+    "attributes": {
+      "event_type": null,
+      "event_types": [
+        "completed",
+        "failed",
+        "in_progress"
+      ],
+      "friendly_name": "Backup Automatic backup"
+    },
+    "context": {
+      "id": "01M4PC6966SX34TPARVR8AY54G",
+      "parent_id": null,
+      "user_id": null
+    },
+    "entity_id": "event.backup_automatic_backup",
+    "last_changed": "2026-10-11T20:59:08.870705+00:00",
+    "last_reported": "2026-10-11T20:59:08.870825+00:00",
+    "last_updated": "2026-10-11T20:59:08.870705+00:00",
+    "state": "unknown"
+  },
+  {
+    "attributes": {
+      "device_class": "enum",
+      "friendly_name": "Backup Backup Manager state",
+      "options": [
+        "idle",
+        "create_backup",
+        "blocked",
+        "receive_backup",
+        "restore_backup"
+      ]
+    },
+    "context": {
+      "id": "01M4PC6967V5XBPWJF8ACH2T5V",
+      "parent_id": null,
+      "user_id": null
+    },
+    "entity_id": "sensor.backup_backup_manager_state",
+    "last_changed": "2026-10-11T20:59:08.871289+00:00",
+    "last_reported": "2026-10-11T20:59:08.871387+00:00",
+    "last_updated": "2026-10-11T20:59:08.871289+00:00",
+    "state": "idle"
+  },
+  {
+    "attributes": {
+      "device_class": "timestamp",
+      "friendly_name": "Backup Next scheduled automatic backup"
+    },
+    "context": {
+      "id": "01M4PC6967Z4GPDZX55VS5TESN",
+      "parent_id": null,
+      "user_id": null
+    },
+    "entity_id": "sensor.backup_next_scheduled_automatic_backup",
+    "last_changed": "2026-10-11T20:59:08.871639+00:00",
+    "last_reported": "2026-10-11T20:59:08.871716+00:00",
+    "last_updated": "2026-10-11T20:59:08.871639+00:00",
+    "state": "unknown"
+  },
+  {
+    "attributes": {
+      "device_class": "timestamp",
+      "friendly_name": "Backup Last successful automatic backup"
+    },
+    "context": {
+      "id": "01M4PC6967PD0M4T0R2RN59J30",
+      "parent_id": null,
+      "user_id": null
+    },
+    "entity_id": "sensor.backup_last_successful_automatic_backup",
+    "last_changed": "2026-10-11T20:59:08.871894+00:00",
+    "last_reported": "2026-10-11T20:59:08.871966+00:00",
+    "last_updated": "2026-10-11T20:59:08.871894+00:00",
+    "state": "unknown"
+  },
+  {
+    "attributes": {
+      "device_class": "timestamp",
+      "friendly_name": "Backup Last attempted automatic backup"
+    },
+    "context": {
+      "id": "01M4PC6968KMJ7JMW7V208W1A2",
+      "parent_id": null,
+      "user_id": null
+    },
+    "entity_id": "sensor.backup_last_attempted_automatic_backup",
+    "last_changed": "2026-10-11T20:59:08.872194+00:00",
+    "last_reported": "2026-10-11T20:59:08.872266+00:00",
+    "last_updated": "2026-10-11T20:59:08.872194+00:00",
+    "state": "unknown"
+  },
+  {
+    "attributes": {
+      "device_trackers": [],
+      "editable": true,
+      "friendly_name": "Fixture Owner",
+      "id": "fixture_owner",
+      "in_zones": [],
+      "user_id": "4453c6f46640442497e3fc6b4d3344ba"
+    },
+    "context": {
+      "id": "01M4PC6ENP6CRS9Q9JAAHRQDMY",
+      "parent_id": null,
+      "user_id": null
+    },
+    "entity_id": "person.fixture_owner",
+    "last_changed": "2026-10-11T20:59:14.486291+00:00",
+    "last_reported": "2026-10-11T20:59:14.487566+00:00",
+    "last_updated": "2026-10-11T20:59:14.486291+00:00",
+    "state": "unknown"
+  },
+  {
+    "attributes": {
+      "azimuth": 87.05,
+      "elevation": 16.46,
+      "friendly_name": "Sun",
+      "next_dawn": "2026-10-12T19:03:46.825102+00:00",
+      "next_dusk": "2026-10-12T08:53:34.689470+00:00",
+      "next_midnight": "2026-10-12T13:58:49+00:00",
+      "next_noon": "2026-10-12T01:59:04+00:00",
+      "next_rising": "2026-10-12T19:30:35.202035+00:00",
+      "next_setting": "2026-10-12T08:26:44.604613+00:00",
+      "rising": true
+    },
+    "context": {
+      "id": "01M4PC6EP91Z71YGEJA7ZA2FKP",
+      "parent_id": null,
+      "user_id": null
+    },
+    "entity_id": "sun.sun",
+    "last_changed": "2026-10-11T20:59:14.505583+00:00",
+    "last_reported": "2026-10-11T20:59:14.505583+00:00",
+    "last_updated": "2026-10-11T20:59:14.505583+00:00",
+    "state": "above_horizon"
+  },
+  {
+    "attributes": {
+      "device_class": "timestamp",
+      "friendly_name": "Sun Next dawn"
+    },
+    "context": {
+      "id": "01M4PC6EPA6V23HX4BS8ZZBW7D",
+      "parent_id": null,
+      "user_id": null
+    },
+    "entity_id": "sensor.sun_next_dawn",
+    "last_changed": "2026-10-11T20:59:14.506976+00:00",
+    "last_reported": "2026-10-11T20:59:14.507137+00:00",
+    "last_updated": "2026-10-11T20:59:14.506976+00:00",
+    "state": "2026-10-12T19:03:46+00:00"
+  },
+  {
+    "attributes": {
+      "device_class": "timestamp",
+      "friendly_name": "Sun Next dusk"
+    },
+    "context": {
+      "id": "01M4PC6EPB9NDMWASSCJN7QCP8",
+      "parent_id": null,
+      "user_id": null
+    },
+    "entity_id": "sensor.sun_next_dusk",
+    "last_changed": "2026-10-11T20:59:14.507360+00:00",
+    "last_reported": "2026-10-11T20:59:14.507510+00:00",
+    "last_updated": "2026-10-11T20:59:14.507360+00:00",
+    "state": "2026-10-12T08:53:34+00:00"
+  },
+  {
+    "attributes": {
+      "device_class": "timestamp",
+      "friendly_name": "Sun Next midnight"
+    },
+    "context": {
+      "id": "01M4PC6EPBWE4ZHP9DFD71FMPF",
+      "parent_id": null,
+      "user_id": null
+    },
+    "entity_id": "sensor.sun_next_midnight",
+    "last_changed": "2026-10-11T20:59:14.507739+00:00",
+    "last_reported": "2026-10-11T20:59:14.507827+00:00",
+    "last_updated": "2026-10-11T20:59:14.507739+00:00",
+    "state": "2026-10-12T13:58:49+00:00"
+  },
+  {
+    "attributes": {
+      "device_class": "timestamp",
+      "friendly_name": "Sun Next noon"
+    },
+    "context": {
+      "id": "01M4PC6EPC6RG4HA0G0Y8QN9BP",
+      "parent_id": null,
+      "user_id": null
+    },
+    "entity_id": "sensor.sun_next_noon",
+    "last_changed": "2026-10-11T20:59:14.508094+00:00",
+    "last_reported": "2026-10-11T20:59:14.508207+00:00",
+    "last_updated": "2026-10-11T20:59:14.508094+00:00",
+    "state": "2026-10-12T01:59:04+00:00"
+  },
+  {
+    "attributes": {
+      "device_class": "timestamp",
+      "friendly_name": "Sun Next rising"
+    },
+    "context": {
+      "id": "01M4PC6EPCS681SABXHPD7QXWV",
+      "parent_id": null,
+      "user_id": null
+    },
+    "entity_id": "sensor.sun_next_rising",
+    "last_changed": "2026-10-11T20:59:14.508508+00:00",
+    "last_reported": "2026-10-11T20:59:14.508631+00:00",
+    "last_updated": "2026-10-11T20:59:14.508508+00:00",
+    "state": "2026-10-12T19:30:35+00:00"
+  },
+  {
+    "attributes": {
+      "device_class": "timestamp",
+      "friendly_name": "Sun Next setting"
+    },
+    "context": {
+      "id": "01M4PC6EPC8M078PV03GE3KH1R",
+      "parent_id": null,
+      "user_id": null
+    },
+    "entity_id": "sensor.sun_next_setting",
+    "last_changed": "2026-10-11T20:59:14.508955+00:00",
+    "last_reported": "2026-10-11T20:59:14.509864+00:00",
+    "last_updated": "2026-10-11T20:59:14.508955+00:00",
+    "state": "2026-10-12T08:26:44+00:00"
+  }
+]

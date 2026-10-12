@@ -1,0 +1,120 @@
+{
+  "result": "ok",
+  "data": {
+    "name": "Music Assistant",
+    "slug": "d5369777_music_assistant",
+    "hostname": "d5369777-music-assistant",
+    "dns": [
+      "d5369777-music-assistant.local.hass.io"
+    ],
+    "description": "The Music Assistant server is a free, opensource Media library manager that connects to your streaming services and a wide range of connected speakers.",
+    "long_description": "",
+    "stage": "stable",
+    "repository": "d5369777",
+    "version_latest": "2.10.6",
+    "protected": true,
+    "rating": 4,
+    "boot_config": "auto",
+    "boot": "auto",
+    "options": {
+      "log_level": "info",
+      "safe_mode": false
+    },
+    "schema": [
+      {
+        "name": "log_level",
+        "required": true,
+        "type": "select",
+        "options": [
+          [
+            "debug",
+            "debug"
+          ],
+          [
+            "info",
+            "info"
+          ],
+          [
+            "warning",
+            "warning"
+          ],
+          [
+            "error",
+            "error"
+          ]
+        ]
+      },
+      {
+        "name": "safe_mode",
+        "required": true,
+        "type": "boolean"
+      }
+    ],
+    "arch": [
+      "aarch64",
+      "amd64"
+    ],
+    "machine": [],
+    "homeassistant": null,
+    "url": "https://music-assistant.io",
+    "detached": false,
+    "available": true,
+    "build": false,
+    "network": null,
+    "network_description": null,
+    "host_network": true,
+    "host_pid": false,
+    "host_ipc": false,
+    "host_uts": false,
+    "host_dbus": false,
+    "privileged": [
+      "SYS_ADMIN",
+      "DAC_READ_SEARCH"
+    ],
+    "full_access": false,
+    "apparmor": "default",
+    "icon": true,
+    "logo": true,
+    "changelog": true,
+    "documentation": true,
+    "stdin": false,
+    "hassio_api": true,
+    "hassio_role": "manager",
+    "auth_api": true,
+    "homeassistant_api": true,
+    "gpio": false,
+    "usb": false,
+    "uart": false,
+    "kernel_modules": false,
+    "devicetree": false,
+    "udev": false,
+    "docker_api": false,
+    "video": false,
+    "audio": true,
+    "startup": "application",
+    "services": [],
+    "discovery": [
+      "music_assistant"
+    ],
+    "translations": {},
+    "ingress": true,
+    "signed": false,
+    "state": "stopped",
+    "webui": null,
+    "ingress_entry": "/api/hassio_ingress/Q7wE4rT1yU8iO5pA2sD9fG6hJ3kL0zX7cV4bN1mQ",
+    "ingress_url": "/api/hassio_ingress/Q7wE4rT1yU8iO5pA2sD9fG6hJ3kL0zX7cV4bN1mQ/",
+    "ingress_port": 8094,
+    "ingress_panel": true,
+    "audio_input": null,
+    "audio_output": null,
+    "auto_update": false,
+    "ip_address": "172.30.32.1",
+    "version": "2.10.6",
+    "update_available": false,
+    "watchdog": false,
+    "devices": [],
+    "system_managed": false,
+    "system_managed_config_entry": null,
+    "advanced": false
+  }
+}

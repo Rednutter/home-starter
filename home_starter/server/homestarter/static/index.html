@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!--BASE-->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Home Starter</title>
+  <link rel="icon" href="static/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="static/styles.css">
+  <script type="module" src="static/app.js"></script>
+</head>
+<body>
+  <main id="app" class="wrap" aria-live="polite">
+    <header class="top">
+      <div class="brand">
+        <img src="static/icon.svg" alt="" width="36" height="36">
+        <div>
+          <h1>Home Starter</h1>
+          <p class="sub">Useful things for your home, set up the Home Assistant way.</p>
+        </div>
+      </div>
+      <button id="rescan" class="btn ghost" type="button" disabled>Rescan</button>
+    </header>
+
+    <section id="system" class="card" aria-labelledby="system-h">
+      <h2 id="system-h">Your Home Assistant</h2>
+      <p class="muted" id="scan-status">Scanning…</p>
+      <div id="system-body"></div>
+    </section>
+
+    <section class="card" aria-labelledby="outcomes-h">
+      <h2 id="outcomes-h">What do you want to do?</h2>
+      <div id="outcomes" class="outcomes"></div>
+    </section>
+
+    <section id="music" class="card outcome-panel" hidden aria-labelledby="music-h">
+      <h2 id="music-h">Music around the house</h2>
+      <div id="music-body"><p class="muted">Checking Music Assistant…</p></div>
+    </section>
+
+    <noscript><p class="card">Home Starter needs JavaScript.</p></noscript>
+  </main>
+</body>
+</html>

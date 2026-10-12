@@ -1,0 +1,14 @@
+[
+  {
+    "context": {
+      "source": "hassio",
+      "title_placeholders": {
+        "name": "Music Assistant"
+      },
+      "unique_id": "5f3c2a1b9d8e4f70a6b5c4d3e2f1a0b9"
+    },
+    "flow_id": "01K7MAFLOW0000000000000000",
+    "handler": "music_assistant",
+    "step_id": "hassio_confirm"
+  }
+]

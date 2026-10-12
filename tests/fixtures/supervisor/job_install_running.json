@@ -1,0 +1,16 @@
+{
+  "result": "ok",
+  "data": {
+    "name": "app_manager_install",
+    "reference": "d5369777_music_assistant",
+    "uuid": "3f2b8c9d0e1a4b5c6d7e8f9a0b1c2d3e",
+    "progress": 42.5,
+    "stage": null,
+    "done": false,
+    "parent_id": null,
+    "errors": [],
+    "created": "2026-10-11T21:10:00.000000+00:00",
+    "extra": null,
+    "child_jobs": []
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "result": "ok",
+  "data": {
+    "supervisor": "2026.10.1",
+    "homeassistant": "2026.10.1",
+    "hassos": "17.0",
+    "docker": "28.3.3",
+    "hostname": "homeassistant",
+    "operating_system": "Home Assistant OS 17.0",
+    "features": [
+      "reboot",
+      "shutdown",
+      "services",
+      "network",
+      "hostname",
+      "timedate",
+      "os_agent",
+      "haos",
+      "resolved",
+      "journal",
+      "disk",
+      "mount"
+    ],
+    "machine": "generic-x86-64",
+    "machine_id": "8b6f1c2d9e0a4b7c8d1e2f3a4b5c6d7e",
+    "arch": "amd64",
+    "state": "running",
+    "supported_arch": [
+      "amd64"
+    ],
+    "supported": true,
+    "channel": "stable",
+    "logging": "info",
+    "timezone": "Australia/Melbourne"
+  }
+}

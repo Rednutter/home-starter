@@ -1,0 +1,35 @@
+{
+  "issues": [
+    {
+      "breaks_in_ha_version": "2027.2.0",
+      "created": "2026-10-11T20:59:07.551042+00:00",
+      "dismissed_version": null,
+      "domain": "http",
+      "ignored": false,
+      "is_fixable": false,
+      "issue_domain": null,
+      "issue_id": "deprecated_yaml",
+      "learn_more_url": null,
+      "severity": "warning",
+      "translation_key": "deprecated_yaml",
+      "translation_placeholders": null
+    },
+    {
+      "breaks_in_ha_version": null,
+      "created": "2026-10-11T20:59:08.863318+00:00",
+      "dismissed_version": null,
+      "domain": "homeassistant",
+      "ignored": false,
+      "is_fixable": false,
+      "issue_domain": null,
+      "issue_id": "deprecated_method",
+      "learn_more_url": "https://www.home-assistant.io/blog/2025/05/22/deprecating-core-and-supervised-installation-methods-and-32-bit-systems/",
+      "severity": "warning",
+      "translation_key": "deprecated_method",
+      "translation_placeholders": {
+        "arch": "x86_64",
+        "installation_type": "Core"
+      }
+    }
+  ]
+}

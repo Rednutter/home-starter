@@ -1,0 +1,45 @@
+{
+  "result": "ok",
+  "data": {
+    "advanced": false,
+    "arch": [
+      "aarch64",
+      "amd64"
+    ],
+    "available": true,
+    "build": false,
+    "description": "The Music Assistant server is a free, opensource Media library manager that connects to your streaming services and a wide range of connected speakers.",
+    "documentation": true,
+    "homeassistant": null,
+    "icon": true,
+    "installed": false,
+    "logo": true,
+    "name": "Music Assistant",
+    "repository": "d5369777",
+    "slug": "d5369777_music_assistant",
+    "stage": "stable",
+    "update_available": false,
+    "url": "https://music-assistant.io",
+    "version_latest": "2.10.6",
+    "version": null,
+    "apparmor": "default",
+    "auth_api": true,
+    "detached": false,
+    "docker_api": false,
+    "full_access": false,
+    "hassio_api": true,
+    "hassio_role": "manager",
+    "homeassistant_api": true,
+    "host_network": true,
+    "host_pid": false,
+    "ingress": true,
+    "long_description": "",
+    "rating": 4,
+    "signed": false,
+    "state": "unknown",
+    "options": {
+      "log_level": "info",
+      "safe_mode": false
+    }
+  }
+}

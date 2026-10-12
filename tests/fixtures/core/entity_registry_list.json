@@ -1,0 +1,522 @@
+[
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": null,
+    "config_subentry_id": null,
+    "created_at": 1791752347.791015,
+    "device_id": null,
+    "disabled_by": null,
+    "entity_category": null,
+    "entity_id": "sensor.kitchen_temperature",
+    "has_entity_name": false,
+    "hidden_by": null,
+    "icon": null,
+    "id": "cd5c176ab1dc8b5aa8f0d407ea185bd6",
+    "labels": [],
+    "modified_at": 1791752348.865131,
+    "name": null,
+    "next_name_part": null,
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Kitchen temperature",
+    "platform": "template",
+    "translation_key": null,
+    "unique_id": "kitchen_temp"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": null,
+    "config_subentry_id": null,
+    "created_at": 1791752347.79148,
+    "device_id": null,
+    "disabled_by": null,
+    "entity_category": null,
+    "entity_id": "sensor.garage_door_battery",
+    "has_entity_name": false,
+    "hidden_by": null,
+    "icon": null,
+    "id": "f5b8a8b8b1d61350c3a391924c69acab",
+    "labels": [],
+    "modified_at": 1791752348.865208,
+    "name": null,
+    "next_name_part": null,
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Garage door battery",
+    "platform": "template",
+    "translation_key": null,
+    "unique_id": "garage_battery"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": null,
+    "config_subentry_id": null,
+    "created_at": 1791752347.791776,
+    "device_id": null,
+    "disabled_by": null,
+    "entity_category": null,
+    "entity_id": "sensor.pool_pump_power",
+    "has_entity_name": false,
+    "hidden_by": null,
+    "icon": null,
+    "id": "b14347fd3e2a00a52d331658c6e471fa",
+    "labels": [],
+    "modified_at": 1791752348.865241,
+    "name": null,
+    "next_name_part": null,
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Pool pump power",
+    "platform": "template",
+    "translation_key": null,
+    "unique_id": "pool_power"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": null,
+    "config_subentry_id": null,
+    "created_at": 1791752347.792254,
+    "device_id": null,
+    "disabled_by": null,
+    "entity_category": null,
+    "entity_id": "binary_sensor.front_door",
+    "has_entity_name": false,
+    "hidden_by": null,
+    "icon": null,
+    "id": "f21c7e3492630b13a2d1789b410a2702",
+    "labels": [],
+    "modified_at": 1791752348.865264,
+    "name": null,
+    "next_name_part": null,
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Front door",
+    "platform": "template",
+    "translation_key": null,
+    "unique_id": "front_door"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01M4PC6962NNJ8TZTPXQPP36BK",
+    "config_subentry_id": null,
+    "created_at": 1791752348.870465,
+    "device_id": "60e92e29c8afdf55fc8a7f2dec509ee9",
+    "disabled_by": null,
+    "entity_category": null,
+    "entity_id": "event.backup_automatic_backup",
+    "has_entity_name": true,
+    "hidden_by": null,
+    "icon": null,
+    "id": "26090d99167158e89c9bdcb7a8ef55f5",
+    "labels": [],
+    "modified_at": 1791752348.870764,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Automatic backup",
+    "platform": "backup",
+    "translation_key": "automatic_backup_event",
+    "unique_id": "automatic_backup_event"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01M4PC6962NNJ8TZTPXQPP36BK",
+    "config_subentry_id": null,
+    "created_at": 1791752348.871144,
+    "device_id": "60e92e29c8afdf55fc8a7f2dec509ee9",
+    "disabled_by": null,
+    "entity_category": null,
+    "entity_id": "sensor.backup_backup_manager_state",
+    "has_entity_name": true,
+    "hidden_by": null,
+    "icon": null,
+    "id": "9ca9f3e244cc6a913d6809f2e534b7c9",
+    "labels": [],
+    "modified_at": 1791752348.87133,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Backup Manager state",
+    "platform": "backup",
+    "translation_key": "backup_manager_state",
+    "unique_id": "backup_manager_state"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01M4PC6962NNJ8TZTPXQPP36BK",
+    "config_subentry_id": null,
+    "created_at": 1791752348.87148,
+    "device_id": "60e92e29c8afdf55fc8a7f2dec509ee9",
+    "disabled_by": null,
+    "entity_category": null,
+    "entity_id": "sensor.backup_next_scheduled_automatic_backup",
+    "has_entity_name": true,
+    "hidden_by": null,
+    "icon": null,
+    "id": "f98c19aee4c8a797eef1fae8eb3f115c",
+    "labels": [],
+    "modified_at": 1791752348.871669,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Next scheduled automatic backup",
+    "platform": "backup",
+    "translation_key": "next_scheduled_automatic_backup",
+    "unique_id": "next_scheduled_automatic_backup"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01M4PC6962NNJ8TZTPXQPP36BK",
+    "config_subentry_id": null,
+    "created_at": 1791752348.8718,
+    "device_id": "60e92e29c8afdf55fc8a7f2dec509ee9",
+    "disabled_by": null,
+    "entity_category": null,
+    "entity_id": "sensor.backup_last_successful_automatic_backup",
+    "has_entity_name": true,
+    "hidden_by": null,
+    "icon": null,
+    "id": "e1957e3e7ec9f1eabf327b3bec814e69",
+    "labels": [],
+    "modified_at": 1791752348.87192,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Last successful automatic backup",
+    "platform": "backup",
+    "translation_key": "last_successful_automatic_backup",
+    "unique_id": "last_successful_automatic_backup"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01M4PC6962NNJ8TZTPXQPP36BK",
+    "config_subentry_id": null,
+    "created_at": 1791752348.872042,
+    "device_id": "60e92e29c8afdf55fc8a7f2dec509ee9",
+    "disabled_by": null,
+    "entity_category": null,
+    "entity_id": "sensor.backup_last_attempted_automatic_backup",
+    "has_entity_name": true,
+    "hidden_by": null,
+    "icon": null,
+    "id": "ebcfd08bd4125c823f4942b97136f6c4",
+    "labels": [],
+    "modified_at": 1791752348.872222,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Last attempted automatic backup",
+    "platform": "backup",
+    "translation_key": "last_attempted_automatic_backup",
+    "unique_id": "last_attempted_automatic_backup"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": null,
+    "config_subentry_id": null,
+    "created_at": 1791752354.485748,
+    "device_id": null,
+    "disabled_by": null,
+    "entity_category": null,
+    "entity_id": "person.fixture_owner",
+    "has_entity_name": false,
+    "hidden_by": null,
+    "icon": null,
+    "id": "2fd30083c4ffe7d7581cb945c593c584",
+    "labels": [],
+    "modified_at": 1791752354.487473,
+    "name": null,
+    "next_name_part": null,
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Fixture Owner",
+    "platform": "person",
+    "translation_key": null,
+    "unique_id": "fixture_owner"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01M4PC6EP5K7Y1DFMAYB4AF3VW",
+    "config_subentry_id": null,
+    "created_at": 1791752354.506206,
+    "device_id": "2d5b91a55a225291fb81749e220d7a07",
+    "disabled_by": "integration",
+    "entity_category": "diagnostic",
+    "entity_id": "binary_sensor.sun_solar_rising",
+    "has_entity_name": true,
+    "hidden_by": null,
+    "icon": null,
+    "id": "72bcb882e56276f9526de448a410866f",
+    "labels": [],
+    "modified_at": 1791752354.506291,
+    "name": null,
+    "next_name_part": "device",
+    "options": {},
+    "original_name": "Solar rising",
+    "platform": "sun",
+    "translation_key": "solar_rising",
+    "unique_id": "01M4PC6EP5K7Y1DFMAYB4AF3VW-solar_rising"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01M4PC6EP5K7Y1DFMAYB4AF3VW",
+    "config_subentry_id": null,
+    "created_at": 1791752354.506779,
+    "device_id": "2d5b91a55a225291fb81749e220d7a07",
+    "disabled_by": null,
+    "entity_category": "diagnostic",
+    "entity_id": "sensor.sun_next_dawn",
+    "has_entity_name": true,
+    "hidden_by": null,
+    "icon": null,
+    "id": "aa774a70da1ac6adca269bcc10067950",
+    "labels": [],
+    "modified_at": 1791752354.50703,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Next dawn",
+    "platform": "sun",
+    "translation_key": "next_dawn",
+    "unique_id": "01M4PC6EP5K7Y1DFMAYB4AF3VW-next_dawn"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01M4PC6EP5K7Y1DFMAYB4AF3VW",
+    "config_subentry_id": null,
+    "created_at": 1791752354.507234,
+    "device_id": "2d5b91a55a225291fb81749e220d7a07",
+    "disabled_by": null,
+    "entity_category": "diagnostic",
+    "entity_id": "sensor.sun_next_dusk",
+    "has_entity_name": true,
+    "hidden_by": null,
+    "icon": null,
+    "id": "4ea47784a691461c2c64db83e368fa93",
+    "labels": [],
+    "modified_at": 1791752354.507399,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Next dusk",
+    "platform": "sun",
+    "translation_key": "next_dusk",
+    "unique_id": "01M4PC6EP5K7Y1DFMAYB4AF3VW-next_dusk"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01M4PC6EP5K7Y1DFMAYB4AF3VW",
+    "config_subentry_id": null,
+    "created_at": 1791752354.50763,
+    "device_id": "2d5b91a55a225291fb81749e220d7a07",
+    "disabled_by": null,
+    "entity_category": "diagnostic",
+    "entity_id": "sensor.sun_next_midnight",
+    "has_entity_name": true,
+    "hidden_by": null,
+    "icon": null,
+    "id": "890d01c175b0388a4a442b3e50426158",
+    "labels": [],
+    "modified_at": 1791752354.50777,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Next midnight",
+    "platform": "sun",
+    "translation_key": "next_midnight",
+    "unique_id": "01M4PC6EP5K7Y1DFMAYB4AF3VW-next_midnight"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01M4PC6EP5K7Y1DFMAYB4AF3VW",
+    "config_subentry_id": null,
+    "created_at": 1791752354.50794,
+    "device_id": "2d5b91a55a225291fb81749e220d7a07",
+    "disabled_by": null,
+    "entity_category": "diagnostic",
+    "entity_id": "sensor.sun_next_noon",
+    "has_entity_name": true,
+    "hidden_by": null,
+    "icon": null,
+    "id": "ccc70733495e7469a3ebae13781e0491",
+    "labels": [],
+    "modified_at": 1791752354.508131,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Next noon",
+    "platform": "sun",
+    "translation_key": "next_noon",
+    "unique_id": "01M4PC6EP5K7Y1DFMAYB4AF3VW-next_noon"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01M4PC6EP5K7Y1DFMAYB4AF3VW",
+    "config_subentry_id": null,
+    "created_at": 1791752354.508324,
+    "device_id": "2d5b91a55a225291fb81749e220d7a07",
+    "disabled_by": null,
+    "entity_category": "diagnostic",
+    "entity_id": "sensor.sun_next_rising",
+    "has_entity_name": true,
+    "hidden_by": null,
+    "icon": null,
+    "id": "0dfac04e26aa5e406baefa23b371c65a",
+    "labels": [],
+    "modified_at": 1791752354.508553,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Next rising",
+    "platform": "sun",
+    "translation_key": "next_rising",
+    "unique_id": "01M4PC6EP5K7Y1DFMAYB4AF3VW-next_rising"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01M4PC6EP5K7Y1DFMAYB4AF3VW",
+    "config_subentry_id": null,
+    "created_at": 1791752354.508748,
+    "device_id": "2d5b91a55a225291fb81749e220d7a07",
+    "disabled_by": null,
+    "entity_category": "diagnostic",
+    "entity_id": "sensor.sun_next_setting",
+    "has_entity_name": true,
+    "hidden_by": null,
+    "icon": null,
+    "id": "afc3845b3ce4b0babf942bb17b329497",
+    "labels": [],
+    "modified_at": 1791752354.508994,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Next setting",
+    "platform": "sun",
+    "translation_key": "next_setting",
+    "unique_id": "01M4PC6EP5K7Y1DFMAYB4AF3VW-next_setting"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01M4PC6EP5K7Y1DFMAYB4AF3VW",
+    "config_subentry_id": null,
+    "created_at": 1791752354.510001,
+    "device_id": "2d5b91a55a225291fb81749e220d7a07",
+    "disabled_by": "integration",
+    "entity_category": "diagnostic",
+    "entity_id": "sensor.sun_solar_elevation",
+    "has_entity_name": true,
+    "hidden_by": null,
+    "icon": null,
+    "id": "97af5623f9cba14bcdbcd39ffd3586da",
+    "labels": [],
+    "modified_at": 1791752354.510052,
+    "name": null,
+    "next_name_part": "device",
+    "options": {},
+    "original_name": "Solar elevation",
+    "platform": "sun",
+    "translation_key": "solar_elevation",
+    "unique_id": "01M4PC6EP5K7Y1DFMAYB4AF3VW-solar_elevation"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01M4PC6EP5K7Y1DFMAYB4AF3VW",
+    "config_subentry_id": null,
+    "created_at": 1791752354.510193,
+    "device_id": "2d5b91a55a225291fb81749e220d7a07",
+    "disabled_by": "integration",
+    "entity_category": "diagnostic",
+    "entity_id": "sensor.sun_solar_azimuth",
+    "has_entity_name": true,
+    "hidden_by": null,
+    "icon": null,
+    "id": "ae6c8877457f86af71c100e429ae5d54",
+    "labels": [],
+    "modified_at": 1791752354.510234,
+    "name": null,
+    "next_name_part": "device",
+    "options": {},
+    "original_name": "Solar azimuth",
+    "platform": "sun",
+    "translation_key": "solar_azimuth",
+    "unique_id": "01M4PC6EP5K7Y1DFMAYB4AF3VW-solar_azimuth"
+  }
+]

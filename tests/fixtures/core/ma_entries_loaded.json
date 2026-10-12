@@ -1,0 +1,26 @@
+[
+  {
+    "created_at": 1791752355.096361,
+    "disabled_by": null,
+    "domain": "music_assistant",
+    "entry_id": "01MASTER0000000000000000AB",
+    "error_reason_translation_domain": "met",
+    "error_reason_translation_key": "update_failed",
+    "error_reason_translation_placeholders": {
+      "error": ""
+    },
+    "modified_at": 1791752355.096363,
+    "num_subentries": 0,
+    "pref_disable_new_entities": false,
+    "pref_disable_polling": false,
+    "reason": null,
+    "source": "hassio",
+    "state": "loaded",
+    "supported_subentry_types": {},
+    "supports_options": false,
+    "supports_reconfigure": false,
+    "supports_remove_device": true,
+    "supports_unload": true,
+    "title": "Music Assistant"
+  }
+]

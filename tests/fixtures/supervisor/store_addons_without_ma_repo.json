@@ -1,0 +1,145 @@
+{
+  "result": "ok",
+  "data": {
+    "addons": [
+      {
+        "advanced": false,
+        "arch": [
+          "aarch64",
+          "amd64"
+        ],
+        "available": true,
+        "build": false,
+        "description": "An Open Source MQTT broker",
+        "documentation": true,
+        "homeassistant": null,
+        "icon": true,
+        "installed": true,
+        "logo": true,
+        "name": "Mosquitto broker",
+        "repository": "core",
+        "slug": "core_mosquitto",
+        "stage": "stable",
+        "update_available": false,
+        "url": null,
+        "version_latest": "6.5.2",
+        "version": "6.5.2"
+      },
+      {
+        "advanced": false,
+        "arch": [
+          "aarch64",
+          "amd64"
+        ],
+        "available": true,
+        "build": false,
+        "description": "Simple browser-based file editor for Home Assistant",
+        "documentation": true,
+        "homeassistant": null,
+        "icon": true,
+        "installed": true,
+        "logo": true,
+        "name": "File editor",
+        "repository": "core",
+        "slug": "core_configurator",
+        "stage": "stable",
+        "update_available": false,
+        "url": null,
+        "version_latest": "5.9.0",
+        "version": "5.8.0"
+      },
+      {
+        "advanced": false,
+        "arch": [
+          "aarch64",
+          "amd64"
+        ],
+        "available": true,
+        "build": false,
+        "description": "Expose Home Assistant folders with SMB/CIFS",
+        "documentation": true,
+        "homeassistant": null,
+        "icon": true,
+        "installed": false,
+        "logo": true,
+        "name": "Samba share",
+        "repository": "core",
+        "slug": "core_samba",
+        "stage": "stable",
+        "update_available": false,
+        "url": null,
+        "version_latest": "12.5.4",
+        "version": null
+      },
+      {
+        "advanced": false,
+        "arch": [
+          "aarch64",
+          "amd64"
+        ],
+        "available": true,
+        "build": false,
+        "description": "Fully featured VSCode experience",
+        "documentation": true,
+        "homeassistant": null,
+        "icon": true,
+        "installed": true,
+        "logo": true,
+        "name": "Studio Code Server",
+        "repository": "a0d7b954",
+        "slug": "a0d7b954_vscode",
+        "stage": "stable",
+        "update_available": false,
+        "url": null,
+        "version_latest": "6.0.1",
+        "version": "6.0.1"
+      },
+      {
+        "advanced": false,
+        "arch": [
+          "aarch64",
+          "amd64"
+        ],
+        "available": true,
+        "build": false,
+        "description": "Build ESPHome devices",
+        "documentation": true,
+        "homeassistant": null,
+        "icon": true,
+        "installed": false,
+        "logo": true,
+        "name": "ESPHome Device Builder",
+        "repository": "5c53de3b",
+        "slug": "5c53de3b_esphome",
+        "stage": "stable",
+        "update_available": false,
+        "url": null,
+        "version_latest": "2026.10.0",
+        "version": null
+      },
+      {
+        "advanced": false,
+        "arch": [
+          "aarch64",
+          "amd64"
+        ],
+        "available": true,
+        "build": false,
+        "description": "A simple wizard that scans your Home Assistant and sets up useful outcomes.",
+        "documentation": true,
+        "homeassistant": null,
+        "icon": true,
+        "installed": true,
+        "logo": true,
+        "name": "Home Starter",
+        "repository": "8a7b9c1d",
+        "slug": "8a7b9c1d_home_starter",
+        "stage": "stable",
+        "update_available": false,
+        "url": null,
+        "version_latest": "0.1.0",
+        "version": "0.1.0"
+      }
+    ]
+  }
+}

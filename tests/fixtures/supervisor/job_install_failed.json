@@ -1,0 +1,24 @@
+{
+  "result": "ok",
+  "data": {
+    "name": "app_manager_install",
+    "reference": "d5369777_music_assistant",
+    "uuid": "3f2b8c9d0e1a4b5c6d7e8f9a0b1c2d3e",
+    "progress": 12.0,
+    "stage": null,
+    "done": true,
+    "parent_id": null,
+    "errors": [
+      {
+        "type": "DockerError",
+        "message": "Can't install ghcr.io/music-assistant/server:2.10.6: 500 Server Error: no space left on device",
+        "stage": null,
+        "error_key": null,
+        "extra_fields": null
+      }
+    ],
+    "created": "2026-10-11T21:10:00.000000+00:00",
+    "extra": null,
+    "child_jobs": []
+  }
+}

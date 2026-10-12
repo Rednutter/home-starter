@@ -1,0 +1,8 @@
+{
+  "result": "error",
+  "message": "Can't add https://github.com/music-assistant/home-assistant-addon, already in the store",
+  "error_key": "store_repository_already_added_error",
+  "extra_fields": {
+    "url": "https://github.com/music-assistant/home-assistant-addon"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "result": "error",
+  "message": "App d5369777_music_assistant not supported on this platform, supported architectures: aarch64, amd64",
+  "error_key": "app_not_supported_architecture_error",
+  "extra_fields": {
+    "app": "d5369777_music_assistant",
+    "architectures": "aarch64, amd64"
+  }
+}

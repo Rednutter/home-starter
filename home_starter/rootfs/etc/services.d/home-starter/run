@@ -1,0 +1,8 @@
+#!/usr/bin/with-contenv bashio
+# ==============================================================================
+# Start the Home Starter web server (ingress only, port 8099).
+# with-contenv makes SUPERVISOR_TOKEN available to the process; it is never
+# printed or logged.
+# ==============================================================================
+bashio::log.info "Starting Home Starter..."
+exec python3 -m homestarter
