@@ -227,6 +227,22 @@ def test_explicit_whole_house_light_control_is_available_at_entry():
     assert any(c.get("entity") == "light.kitchen" for c in quick["cards"])
 
 
+def test_reviewed_never_run_scene_is_not_mistaken_for_unavailable():
+    inv, states = inventory()
+    inv["unattached_entities"].append({"entity_id": "scene.goodnight", "name": "Goodnight", "state": "unknown", "observed": True})
+    states.append({"entity_id": "scene.goodnight", "state": "unknown", "attributes": {}})
+    house = household("phone")
+    house["surfaces"][0]["audience"] = "adult"
+    house["overrides"] = {"scene.goodnight": {"include": True}}
+    classified = classify(inv, states, house["overrides"])
+    scene = next(i for i in classified if i["id"] == "scene.goodnight")
+    assert scene["available"] and scene["usable"]
+    card = card_for(scene, house["surfaces"][0])
+    assert card["tap_action"]["perform_action"] == "scene.turn_on" and card["tap_action"]["confirmation"]
+    inv["unattached_entities"][-1]["state"] = "unavailable"
+    assert not classify(inv, states, house["overrides"])[-1]["usable"]
+
+
 def test_missing_room_is_not_whole_house_and_has_deliberate_detail_access():
     inv, states = inventory()
     inv["unattached_entities"][0]["area_id"] = None

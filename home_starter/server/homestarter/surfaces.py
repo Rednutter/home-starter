@@ -113,7 +113,13 @@ def classify(inventory: dict, states: list[dict], overrides: dict) -> list[dict]
         if dc in ("battery", "signal_strength") or category in ("diagnostic", "config"):
             function, level, interaction, visibility, audience, component = "maintenance", 5, "status", "drill_down", "admin", "status_chip"
             reason = "Home Assistant marks this as maintenance or configuration."
-        usable = e.get("observed") and not e.get("disabled_by") and not e.get("hidden_by") and e.get("state") not in (None, "unknown", "unavailable")
+        usable = (
+            e.get("observed")
+            and not e.get("disabled_by")
+            and not e.get("hidden_by")
+            and e.get("state") not in (None, "unavailable")
+            and (domain == "scene" or e.get("state") != "unknown")
+        )
         item = {
             "id": entity_id,
             "entity_id": entity_id,

@@ -37,6 +37,9 @@ disabled/hidden flags and diagnostic/config categories. It records area, functio
 scope, interaction, importance, frequency, visibility, audience and suitability, with
 a reason. Unknown/unavailable sources are excluded, not declared absent forever.
 Refresh/regenerate after recovery. Incomplete inventory blocks publication.
+An explicitly reviewed scene is an action: its normal never-run timestamp may be
+unknown without making the action unavailable. Disabled/hidden/unavailable scenes
+remain excluded.
 
 - Level 0: smoke/CO/gas/leak/safety signals, recent doorbell events and informational
   triggered security alarms. Cannot be hidden.

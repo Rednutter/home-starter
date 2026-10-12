@@ -10,6 +10,8 @@
 - Household renaming preserves existing inclusion. Safety source availability
   is separate from control inclusion, so names or audience overrides cannot
   accidentally hide an enabled critical interruption.
+- Reviewed scenes that have never been run remain usable; their normal unknown
+  activation timestamp is not treated as an unavailable control.
 
 ## 0.3.2
 
