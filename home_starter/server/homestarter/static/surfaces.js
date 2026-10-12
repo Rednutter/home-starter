@@ -1,4 +1,10 @@
 // Screen setup is administration. Generated household screens live in native HA.
+export function newItemId(prefix, random = crypto) {
+  // getRandomValues works on ordinary HTTP HA ingress; randomUUID requires HTTPS.
+  const bytes = random.getRandomValues(new Uint8Array(8));
+  return `${prefix}-${[...bytes].map(value => value.toString(16).padStart(2, "0")).join("")}`;
+}
+
 export function moveItem(order, id, direction) {
   const result = [...order], at = result.indexOf(id), next = at + direction;
   if (at < 0 || next < 0 || next >= result.length) return result;
@@ -13,7 +19,7 @@ export function initSurfaces({ h, api, navigateHA }) {
   const field = (label, control) => h("label", { class: "screen-field" }, h("span", {}, label), control);
   const input = (label, value = "", attrs = {}) => h("input", { "aria-label": label, value, maxlength: 80, ...attrs });
   const select = (label, options, value, onchange) => h("select", { "aria-label": label, onchange }, options.map(([id, name]) => h("option", { value: id, selected: id === value }, name)));
-  const id = prefix => `${prefix}-${crypto.randomUUID().slice(0, 8)}`;
+  const id = newItemId;
   const changed = () => {
     dirty = true; preview = null; status.textContent = "Unsaved changes. Save before generating a screen.";
     root.querySelectorAll('button').forEach(el => {

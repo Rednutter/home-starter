@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.2
+
+- Fix first-use person/screen/activity creation on HTTP Home Assistant ingress.
+  Generate record IDs with `crypto.getRandomValues`; `randomUUID` requires HTTPS.
+
 ## 0.3.1
 
 - A missing room no longer implies whole-house scope. Unassigned controls remain
