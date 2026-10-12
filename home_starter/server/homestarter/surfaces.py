@@ -296,7 +296,16 @@ def generate(house: dict, surface: dict, items: list[dict], areas: list[dict], a
     # Alarm interruption is informational for everyone; its control remains adult-only.
     for item in items:
         if item["domain"] == "alarm_control_panel" and item["usable"]:
-            alert = {**item, "id": "alert:" + item["id"], "level": 0, "audience": "everyone", "interaction": "status", "name": "Security alarm"}
+            alert = {
+                **item,
+                "id": "alert:" + item["id"],
+                "level": 0,
+                "audience": "everyone",
+                "interaction": "status",
+                "name": "Security alarm",
+                "visibility": "when_abnormal",
+                "component": "alert",
+            }
             if admitted(alert, surface, house, pref):
                 eligible.append(alert)
     rank = {item: pos for pos, item in enumerate(pref["order"])}
@@ -379,7 +388,11 @@ def generate(house: dict, surface: dict, items: list[dict], areas: list[dict], a
     views = [home]
     if profile == "tablet":
         for title, function in (("Climate", "climate"), ("Media", "media"), ("Security", "access"), ("Household", "information")):
-            group = [i for i in eligible if i["function"] == function or title == "Security" and i["function"] == "security"]
+            group = [
+                i
+                for i in eligible
+                if i["level"] > 0 and i["visibility"] == "always" and (i["function"] == function or title == "Security" and i["function"] == "security")
+            ]
             if group:
                 views.append(
                     {

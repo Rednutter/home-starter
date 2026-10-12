@@ -166,6 +166,19 @@ def test_catalogue_is_honest_about_absent_sources():
     assert CATALOGUE["media_favourites"][1] == "source_required"
 
 
+def test_shared_security_alarm_is_only_an_informational_interruption():
+    inv, states = inventory()
+    inv["unattached_entities"].append({"entity_id": "alarm_control_panel.home", "name": "Alarm", "state": "disarmed", "observed": True})
+    states.append({"entity_id": "alarm_control_panel.home", "state": "disarmed", "attributes": {}})
+    house = household("tablet", "everyone")
+    generated = generate(house, house["surfaces"][0], classify(inv, states, {}), inv["areas"])
+    assert not any(v["title"] == "Security" for v in generated["config"]["views"])
+    alert = next(i for i in generated["admitted"] if i["id"] == "alert:alarm_control_panel.home")
+    assert alert["interaction"] == "status" and alert["visibility"] == "when_abnormal"
+    assert "alarm_control_panel.home" in str(generated["config"]["views"][0])
+    assert "alarm_control_panel.alarm_disarm" not in str(generated["config"])
+
+
 def test_missing_room_is_not_whole_house_and_has_deliberate_detail_access():
     inv, states = inventory()
     inv["unattached_entities"][0]["area_id"] = None

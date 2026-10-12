@@ -6,6 +6,8 @@
   deliberately reachable under Other controls, or can be pinned on a phone/tablet.
 - Fixed-room screens exclude controls whose local position is unknown, unless
   explicitly given whole-house scope. Safety interruptions retain precedence.
+- Shared-screen security interruptions stay informational and conditional;
+  exception-only content does not create empty main navigation tabs.
 
 ## 0.3.0
 
