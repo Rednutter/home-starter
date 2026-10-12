@@ -1,9 +1,9 @@
-"""Read-only client for the Home Assistant Core API, via the Supervisor proxy.
+"""Client for the Home Assistant Core API, via the Supervisor proxy.
 
 REST:      http://supervisor/core/api/...      (homeassistant_api: true)
 WebSocket: ws://supervisor/core/websocket      (same token as access_token)
 
-Only read commands are used. The Supervisor proxy itself rejects the
+Reads plus explicitly confirmed device area assignment are used. The proxy rejects the
 ``supervisor/`` and ``hassio/`` command families for apps.
 """
 

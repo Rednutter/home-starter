@@ -1,0 +1,198 @@
+[
+  {
+    "area_id": null,
+    "config_entries": [
+      "01M4QX1A7W93Q8YEFYE9YMRVK7"
+    ],
+    "config_entries_subentries": {
+      "01M4QX1A7W93Q8YEFYE9YMRVK7": [
+        null
+      ]
+    },
+    "config_entry_id": "01M4QX1A7W93Q8YEFYE9YMRVK7",
+    "config_subentry_id": null,
+    "configuration_url": null,
+    "connections": [],
+    "created_at": 1791803566.332948,
+    "disabled_by": null,
+    "entry_type": "service",
+    "hw_version": null,
+    "id": "a0243ea0966c61b704323f20762cedc3",
+    "identifiers": [
+      [
+        "sun",
+        "01M4QX1A7W93Q8YEFYE9YMRVK7"
+      ]
+    ],
+    "labels": [],
+    "manufacturer": null,
+    "model": null,
+    "model_id": null,
+    "modified_at": 1791803566.332984,
+    "name": "Sun",
+    "name_by_user": null,
+    "next_name_part": null,
+    "parent_device_id": null,
+    "primary_config_entry": "01M4QX1A7W93Q8YEFYE9YMRVK7",
+    "serial_number": null,
+    "sw_version": null,
+    "via_device_id": null
+  },
+  {
+    "area_id": null,
+    "config_entries": [
+      "01M4QX1AARC6F1SGYRKM2VZB4G"
+    ],
+    "config_entries_subentries": {
+      "01M4QX1AARC6F1SGYRKM2VZB4G": [
+        null
+      ]
+    },
+    "config_entry_id": "01M4QX1AARC6F1SGYRKM2VZB4G",
+    "config_subentry_id": null,
+    "configuration_url": "homeassistant://config/backup",
+    "connections": [],
+    "created_at": 1791803566.434842,
+    "disabled_by": null,
+    "entry_type": "service",
+    "hw_version": null,
+    "id": "630873492d3ca91320e98465412a8f54",
+    "identifiers": [
+      [
+        "backup",
+        "backup_manager"
+      ]
+    ],
+    "labels": [],
+    "manufacturer": "Home Assistant",
+    "model": "Home Assistant Backup",
+    "model_id": null,
+    "modified_at": 1791803566.434876,
+    "name": "Backup",
+    "name_by_user": null,
+    "next_name_part": null,
+    "parent_device_id": null,
+    "primary_config_entry": "01M4QX1AARC6F1SGYRKM2VZB4G",
+    "serial_number": null,
+    "sw_version": "2026.10.0",
+    "via_device_id": null
+  },
+  {
+    "area_id": "kitchen",
+    "config_entries": [
+      "01M4QX952ZJW479PTP4ZM6GGCH"
+    ],
+    "config_entries_subentries": {
+      "01M4QX952ZJW479PTP4ZM6GGCH": [
+        null
+      ]
+    },
+    "config_entry_id": "01M4QX952ZJW479PTP4ZM6GGCH",
+    "config_subentry_id": null,
+    "configuration_url": null,
+    "connections": [],
+    "created_at": 1791803823.19958,
+    "disabled_by": null,
+    "entry_type": null,
+    "hw_version": null,
+    "id": "ec92763ee39de0e6fd169bff074f035d",
+    "identifiers": [
+      [
+        "fixture_inventory",
+        "kitchen"
+      ]
+    ],
+    "labels": [],
+    "manufacturer": "Fixture maker",
+    "model": "Fixture device",
+    "model_id": null,
+    "modified_at": 1791803823.199752,
+    "name": "Kitchen temperature",
+    "name_by_user": null,
+    "next_name_part": "area",
+    "parent_device_id": null,
+    "primary_config_entry": "01M4QX952ZJW479PTP4ZM6GGCH",
+    "serial_number": null,
+    "sw_version": null,
+    "via_device_id": null
+  },
+  {
+    "area_id": null,
+    "config_entries": [
+      "01M4QX952ZJW479PTP4ZM6GGCH"
+    ],
+    "config_entries_subentries": {
+      "01M4QX952ZJW479PTP4ZM6GGCH": [
+        null
+      ]
+    },
+    "config_entry_id": "01M4QX952ZJW479PTP4ZM6GGCH",
+    "config_subentry_id": null,
+    "configuration_url": null,
+    "connections": [],
+    "created_at": 1791803823.199813,
+    "disabled_by": null,
+    "entry_type": null,
+    "hw_version": null,
+    "id": "10ac0cb0a99c2df76c71f5834b7aeb29",
+    "identifiers": [
+      [
+        "fixture_inventory",
+        "garage"
+      ]
+    ],
+    "labels": [],
+    "manufacturer": "Fixture maker",
+    "model": "Fixture device",
+    "model_id": null,
+    "modified_at": 1791803823.199831,
+    "name": "Garage battery",
+    "name_by_user": null,
+    "next_name_part": null,
+    "parent_device_id": null,
+    "primary_config_entry": "01M4QX952ZJW479PTP4ZM6GGCH",
+    "serial_number": null,
+    "sw_version": null,
+    "via_device_id": null
+  },
+  {
+    "area_id": null,
+    "config_entry_id": "01M4QX952ZJW479PTP4ZM6GGCH",
+    "config_subentry_id": null,
+    "created_at": 1791804034.131086,
+    "disabled_by": null,
+    "id": "783cf1fee9028c4302caa7af32dac302",
+    "identifiers": [
+      [
+        "fixture_inventory",
+        "zone_one"
+      ]
+    ],
+    "labels": [],
+    "modified_at": 1791804034.13111,
+    "name": "Fixture zone one",
+    "name_by_user": null,
+    "next_name_part": "parent_device",
+    "parent_device_id": "ec92763ee39de0e6fd169bff074f035d"
+  },
+  {
+    "area_id": null,
+    "config_entry_id": "01M4QX952ZJW479PTP4ZM6GGCH",
+    "config_subentry_id": null,
+    "created_at": 1791804034.131173,
+    "disabled_by": null,
+    "id": "f57ef0a4369e2120a6ae3b5bd51cbd36",
+    "identifiers": [
+      [
+        "fixture_inventory",
+        "zone_two"
+      ]
+    ],
+    "labels": [],
+    "modified_at": 1791804034.131183,
+    "name": "Fixture zone two",
+    "name_by_user": null,
+    "next_name_part": "parent_device",
+    "parent_device_id": "ec92763ee39de0e6fd169bff074f035d"
+  }
+]

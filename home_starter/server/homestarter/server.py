@@ -23,6 +23,7 @@ from aiohttp import web
 
 from . import __version__
 from .core import CoreClient, CoreError
+from .inventory import assign_area, collect_inventory
 from .music import MusicSetup, evaluate, gather_facts
 from .scan import ha_version_from_scan, run_scan
 from .settings import Settings
@@ -34,6 +35,7 @@ INGRESS_PATH_RE = re.compile(r"^/api/hassio_ingress/[A-Za-z0-9_\-]{1,128}$")
 STATIC_FILES = {
     "app.js": "text/javascript",
     "routes.js": "text/javascript",
+    "house.js": "text/javascript",
     "styles.css": "text/css",
     "icon.svg": "image/svg+xml",
 }
@@ -59,6 +61,7 @@ class State:
         self.scan: dict[str, Any] | None = None
         self.scan_at = 0.0
         self.scan_lock = asyncio.Lock()
+        self.inventory_write_lock = asyncio.Lock()
 
     async def get_scan(self, refresh: bool = False) -> dict[str, Any]:
         async with self.scan_lock:
@@ -175,6 +178,49 @@ async def api_music(request: web.Request) -> web.Response:
     return _json(await request.app[K_STATE].music())
 
 
+async def api_inventory(request: web.Request) -> web.Response:
+    try:
+        return _json(await collect_inventory(request.app[K_STATE].core))
+    except (KeyError, TypeError, ValueError, AttributeError):
+        return _json({"error": "Couldn't read the house inventory. Check again."}, status=503)
+
+
+async def api_assign_area(request: web.Request) -> web.Response:
+    if request.content_type != "application/json":
+        raise web.HTTPUnsupportedMediaType(text="JSON required")
+    user_id = _user(request)
+    if not user_id:
+        raise web.HTTPForbidden(text="Room changes must be made from Home Assistant.")
+    try:
+        body = await request.json()
+    except ValueError:
+        body = None
+    required = {"device_id", "area_id", "expected_area_id", "confirm"}
+    if (
+        not isinstance(body, dict)
+        or set(body) != required
+        or body.get("confirm") is not True
+        or not isinstance(body.get("device_id"), str)
+        or not body["device_id"]
+        or any(body[k] is not None and (not isinstance(body[k], str) or not body[k]) for k in ("area_id", "expected_area_id"))
+    ):
+        raise web.HTTPBadRequest(text="Review and confirm one device room change.")
+    state = request.app[K_STATE]
+    try:
+        admin = await state.core.is_admin(user_id)
+    except CoreError:
+        raise web.HTTPServiceUnavailable(text="Couldn't verify administrator access. Check again.") from None
+    if not admin:
+        raise web.HTTPForbidden(text="A Home Assistant administrator must assign rooms.")
+    try:
+        async with state.inventory_write_lock:
+            result = await assign_area(state.core, body["device_id"], body["area_id"], body["expected_area_id"])
+    except CoreError:
+        result = {"verified": False, "error": "Couldn't confirm the room change. Check again in Home Assistant before retrying."}
+    state.scan = None
+    return _json(result, status=200 if result["verified"] else 409)
+
+
 async def api_music_setup(request: web.Request) -> web.Response:
     # Only an explicit button press in the ingress UI gets here: the request
     # must be a JSON POST (not a simple cross-site form) from an ingress
@@ -227,6 +273,8 @@ def create_app(settings: Settings, session: aiohttp.ClientSession | None = None)
     app.router.add_get("/static/{name}", static)
     app.router.add_get("/api/health", health)
     app.router.add_get("/api/scan", api_scan)
+    app.router.add_get("/api/inventory", api_inventory)
+    app.router.add_post("/api/inventory/area", api_assign_area)
     app.router.add_get("/api/music", api_music)
     app.router.add_post("/api/music/setup", api_music_setup)
     app.router.add_get("/api/music/operation", api_music_operation)

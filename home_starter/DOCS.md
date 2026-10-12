@@ -4,10 +4,12 @@
 
 1. Start the app and open it from the sidebar (**Home Starter**) or with
    **Open web UI**.
-2. The top of the page is a read-only scan of your system: versions, machine,
-   storage, apps, integrations (and any that failed to set up), areas,
-   unavailable entities and waiting repairs. Nothing is changed by scanning.
-3. Under **What do you want to do?** choose **Music around the house**.
+2. **Fresh Batteries** is an optional checklist to wake and power things worth
+   keeping. Press **Scan now** whenever you are ready; no boxes are required.
+3. **Your home** groups rooms, devices and entities. Expand a finding for its
+   confidence and reasons. Room changes require review/confirmation and are
+   verified against HA. **Home Assistant health and technical details** retains
+   the read-only system scan. Under **Useful things**, choose **Music around the house**.
 4. Home Starter shows what it found and the next step:
    * **Install Music Assistant**: after you confirm, Home Starter adds the
      official Music Assistant repository if it's missing, installs the app,
@@ -50,10 +52,13 @@ repository and install and start an app. It only does that when you press the
 button and confirm, and Core confirms that the ingress user is an active
 administrator. If that lookup fails, use Home Assistant's App Store. It never
 uninstalls apps, changes other apps' settings, edits your configuration, or
-touches integrations, devices or automations.
+removes integrations, devices or entities, or changes automations. The only
+inventory write is a reviewed device room assignment. Read [inventory rules and
+limits](INVENTORY.md) for details.
 
 ## Limitations
 
 * Needs Home Assistant OS or a Supervised installation.
 * The first install builds the app on your machine (a few minutes).
-* Only the music outcome exists in this version.
+* Music Assistant remains the only installation outcome. Inventory has room
+  assignment only; no destructive cleanup or network discovery is implemented.

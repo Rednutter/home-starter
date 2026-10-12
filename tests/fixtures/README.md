@@ -29,3 +29,17 @@ The mock's `config/auth/list` users mirror Core's
 (`id`, `is_active`, `is_owner`, `system_generated`, `group_ids`). Users are
 never returned by Home Starter's browser API. Tests explicitly reject unknown,
 inactive, ordinary and system users, and fail closed when lookup is unavailable.
+# Inventory fixture provenance
+
+`core/captured_device_registry_list.json` and `captured_floor_registry_list.json`
+are raw responses from official HA Core **2026.10.0**, running in a disposable
+localhost container. A fixture-only integration created two main devices and two
+child devices; default Sun and Backup service devices are also present. No live
+household data or credentials are included. Child `parent_device_id` and current
+`config_entry_id` fields are actual responses, not assumed API fields.
+
+`device_registry_list.json`, `inventory_entity_registry_list.json` and
+`floor_registry_list.json` are explicitly **adapted mock scenarios**: deterministic
+test IDs plus the existing captured entity payloads, to exercise unavailable state
+and reversible writes. MAC collisions, conflicting room evidence, disabled state
+and old-HA failures are synthetic adversarial variations in `test_inventory.py`.

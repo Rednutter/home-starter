@@ -32,8 +32,33 @@
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--text); }
+[hidden] { display: none !important; }
 body { line-height: 1.45; }
 .wrap { max-width: 920px; margin: 0 auto; padding: 20px 16px 48px; }
+.house-nav { display: flex; flex-wrap: wrap; gap: 12px 24px; margin: 12px 0 24px; }
+.house-nav a { color: var(--accent); text-underline-offset: 4px; }
+.section-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.checklist-row { display: flex; align-items: baseline; gap: 10px; padding: 7px 0; cursor: pointer; }
+.checklist-row input { accent-color: var(--accent); flex: none; }
+.extra-row p { margin-left: 24px; }
+.house-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+.house-filters [aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.search-label { display: block; margin: 12px 0 6px; }
+#device-search, .room-controls select { color: var(--text); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 10px; font: inherit; max-width: 100%; }
+#device-search { width: 100%; margin-bottom: 16px; }
+.room, .finding, .device { border-top: 1px solid var(--line); padding: 14px 0; }
+.room > summary { font-size: 1rem; font-weight: 600; }
+.device { margin-left: 12px; }
+.device summary span { display: block; margin-top: 4px; }
+.device > p { margin-top: 8px; }
+.room-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0; }
+.room-review:not(:empty) { padding: 12px; margin: 12px 0; border: 1px solid var(--accent); border-radius: 10px; }
+.technical { margin-top: 12px; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .85rem; }
+.notice { padding: 12px 0; font-weight: 600; }
+input:focus-visible, select:focus-visible, summary:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+::selection { background: var(--accent); color: var(--accent-ink); }
+input { caret-color: var(--accent); }
 h1 { font-size: 1.45rem; margin: 0; letter-spacing: -0.01em; }
 h2 { font-size: 1.05rem; margin: 0 0 12px; }
 h3 { font-size: 1.15rem; margin: 0 0 4px; }

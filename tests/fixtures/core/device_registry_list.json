@@ -1,0 +1,56 @@
+[
+  {
+    "area_id": "kitchen",
+    "config_entry_id": "fixture_entry",
+    "config_subentry_id": null,
+    "config_entries": [
+      "fixture_entry"
+    ],
+    "connections": [],
+    "created_at": 1791752347.0,
+    "disabled_by": null,
+    "entry_type": null,
+    "id": "fixture_kitchen",
+    "identifiers": [
+      [
+        "template",
+        "fixture_kitchen"
+      ]
+    ],
+    "labels": [],
+    "manufacturer": "Fixture maker",
+    "model": "Fixture device",
+    "name": "Kitchen temperature",
+    "name_by_user": null,
+    "parent_device_id": null,
+    "primary_config_entry": "fixture_entry",
+    "via_device_id": null
+  },
+  {
+    "area_id": null,
+    "config_entry_id": "fixture_entry",
+    "config_subentry_id": null,
+    "config_entries": [
+      "fixture_entry"
+    ],
+    "connections": [],
+    "created_at": 1791752347.0,
+    "disabled_by": null,
+    "entry_type": null,
+    "id": "fixture_garage",
+    "identifiers": [
+      [
+        "template",
+        "fixture_garage"
+      ]
+    ],
+    "labels": [],
+    "manufacturer": "Fixture maker",
+    "model": "Fixture device",
+    "name": "Garage battery",
+    "name_by_user": null,
+    "parent_device_id": null,
+    "primary_config_entry": "fixture_entry",
+    "via_device_id": null
+  }
+]

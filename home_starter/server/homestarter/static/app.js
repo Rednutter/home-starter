@@ -1,12 +1,8 @@
 import { apiUrl, navigateHA } from "./routes.js";
+import { initHouse } from "./house.js";
 
 const OUTCOMES = [
   { id: "music", title: "Music around the house", text: "Whole-home music, radio and podcasts with Music Assistant.", available: true },
-  { id: "tidy", title: "Fix / tidy my Home Assistant", text: "Clean up problems the scan finds.", available: false },
-  { id: "audiobooks", title: "Audiobooks & podcasts", text: "A family audiobook library.", available: false },
-  { id: "display", title: "Wall tablet / display", text: "A dashboard on the wall.", available: false },
-  { id: "intercom", title: "Calling / intercom", text: "Talk between rooms.", available: false },
-  { id: "remote", title: "Remote access", text: "Reach Home Assistant away from home.", available: false },
 ];
 const STORE_KEY = "homeStarter.outcome";
 const POLL_OPERATION_MS = 2000;
@@ -340,9 +336,11 @@ async function scan(refresh = false) {
 }
 
 function init() {
+  const refreshHouse = initHouse({ h, api, navigateHA, scan });
   renderOutcomes();
   document.getElementById("rescan").addEventListener("click", async () => {
     await scan(true);
+    await refreshHouse();
     refreshMusic(true);
   });
   // When the user comes back (e.g. from a Home Assistant setup screen opened

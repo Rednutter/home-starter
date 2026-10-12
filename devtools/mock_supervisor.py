@@ -108,6 +108,9 @@ class MockSupervisor:
         self.ma_port = 8195
         self.users = [{"id": "a1b2c3d4e5f6", "is_active": True, "is_owner": True, "group_ids": ["system-admin"], "system_generated": False}]
         self.calls: list[tuple[str, str]] = []
+        self.ws_calls: list[dict[str, Any]] = []
+        self.devices = core_fix("device_registry_list.json")
+        self.entity_registry = core_fix("inventory_entity_registry_list.json")
         self.role = "default" if scenario == "default_role" else "manager"
         self.repos = sup("store_repositories.json" if scenario != "no_repo" else "store_repositories_without_ma.json")
         self.store = sup("store_addons.json" if scenario != "no_repo" else "store_addons_without_ma_repo.json")["addons"]
@@ -327,6 +330,15 @@ class MockSupervisor:
 
     def _fake_ws_result(self, msg: dict[str, Any]) -> Any:
         t = msg.get("type")
+        self.ws_calls.append(copy.deepcopy(msg))
+        if t == "config/device_registry/list":
+            return self.devices
+        if t == "config/device_registry/update":
+            device = next(d for d in self.devices if d["id"] == msg["device_id"])
+            device["area_id"] = msg["area_id"]
+            return device
+        if t == "config/floor_registry/list":
+            return core_fix("floor_registry_list.json")
         if t == "config/auth/list":
             return self.users
         if t == "config_entries/get":
@@ -339,7 +351,7 @@ class MockSupervisor:
         if t == "config/area_registry/list":
             return core_fix("area_registry_list.json")
         if t == "config/entity_registry/list":
-            return core_fix("entity_registry_list.json")
+            return self.entity_registry
         if t == "repairs/list_issues":
             return core_fix("repairs_list_issues.json")
         raise KeyError(t)

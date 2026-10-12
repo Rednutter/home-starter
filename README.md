@@ -1,11 +1,11 @@
 # Home Starter
 
-A Home Assistant App with a simple wizard: it scans your Home Assistant,
-asks what you want to do, detects what's already there, installs the sensible
-existing component (or hands you to Home Assistant's own setup screen) and then
-verifies that it worked. Think "Ninite for useful Home Assistant outcomes".
+An open-source Home Assistant helper for a house that grew piecemeal. Get things
+awake, see what HA knows about your rooms and devices, review explainable findings,
+then take a small explicit action and check whether it worked.
 
-V0.1 does one outcome end to end: **Music around the house → Music Assistant**.
+V0.2 adds **Fresh Batteries + House Inventory** and preserves the V0.1.1
+**Music around the house → Music Assistant** flow.
 
 ## Install
 
@@ -17,14 +17,30 @@ Requires Home Assistant OS or a Supervised installation (the App Store).
    Or use this link:
    [Add repository to my Home Assistant](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FRednutter%2Fhome-starter)
 2. **Install.** Find **Home Starter** in the App Store (refresh the store if it
-   doesn't show), open it and press **Install**. V0.1 has no prebuilt image,
+   doesn't show), open it and press **Install**. Home Starter has no prebuilt image,
    so Home Assistant builds it on your machine; this takes a few minutes.
 3. **Start** it, then press **Open web UI** (or use **Home Starter** in the
    sidebar). It opens inside Home Assistant through ingress; there are no ports
    to configure. Its sidebar panel is admin-only; installation also verifies
    administrator access on the server.
 
-## What V0.1 does
+## Fresh Batteries and Your home
+
+- Prepare the physical house with an optional checklist. **Scan now** works at any point.
+- Browse rooms → devices → entities, with floors when available, disabled state,
+  owning integrations, parent/child/sibling relationships and technical identity.
+- Review **Needs a room**, **Needs attention**, **Possible duplicates**, **Possibly
+  offline**, and **Already fine**. Each finding explains its evidence/confidence;
+  a single snapshot never establishes retired hardware.
+- Assign one device to a room after reviewing the exact old/new values. Only
+  administrators can confirm; the result is verified with a fresh registry read.
+  No rename, deletion, merging, bulk disabling or configuration changes.
+- Remind yourself about hardware HA doesn't know about. Choices and future-use
+  possibilities are page-local, not a persistent external inventory.
+
+See [inventory rules, API adjustments and limits](home_starter/INVENTORY.md).
+
+## Existing scan and Music Assistant
 
 * **Scan (read-only).** Home Assistant and Supervisor versions, OS, machine and
   architecture, storage, installed apps, integrations and any that failed to set
@@ -63,7 +79,7 @@ Requires Home Assistant OS or a Supervised installation (the App Store).
 
 ## Permissions
 
-`homeassistant_api` (read-only scan through the Core API proxy) and
+`homeassistant_api` (registry reads and confirmed device room writes through Core) and
 `hassio_api` with `hassio_role: manager`. `manager` is the lowest Supervisor role
 that can list installed apps, read store metadata, add a repository, install
 and start an app; the `default` role can only read `/…/info` endpoints. No
@@ -72,7 +88,9 @@ capabilities. The token stays in the server process: it's never sent to the
 browser or logged, and responses are checked for it before they leave. Only
 requests arriving through ingress (172.30.32.2) are accepted, and installing
 needs a JSON POST from an authenticated ingress session, explicit confirmation
-and a server-side check that the ingress user is an active administrator.
+and a server-side check that the ingress user is an active administrator. Room
+assignment uses the same user check and only writes `area_id`, with preconditions
+and verification. Permissions are unchanged from V0.1.1.
 
 ## Current limitations
 

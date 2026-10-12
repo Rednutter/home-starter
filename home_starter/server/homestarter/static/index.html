@@ -23,15 +23,42 @@
       <button id="rescan" class="btn ghost" type="button" disabled>Rescan</button>
     </header>
 
-    <section id="system" class="card" aria-labelledby="system-h">
+    <nav class="house-nav" aria-label="Home Starter sections">
+      <a href="#fresh-batteries">Get the house ready</a>
+      <a href="#your-home">Your home</a>
+      <a href="#useful-things">Useful things</a>
+    </nav>
+    <section id="fresh-batteries" class="card" aria-labelledby="fresh-h">
+      <h2 id="fresh-h">Fresh Batteries</h2>
+      <p>Before we look for problems, give Home Assistant a fair chance to see the things you want to keep.</p>
+      <p class="muted">Turn on, wake or charge the smart things around the house, then we'll scan again. Anything powered off may otherwise look missing, stale or broken.</p>
+      <details open><summary>Get the house ready — do what makes sense for you</summary><div id="fresh-checklist"></div></details>
+      <div class="actions"><button id="scan-now" class="btn primary" type="button">Scan now</button></div>
+      <p class="small muted">No need to tick every box. You can return here before any major rescan.</p>
+    </section>
+    <section id="your-home" class="card" aria-labelledby="home-h">
+      <div class="section-top"><h2 id="home-h">Your home</h2><button id="inventory-check" class="btn ghost" type="button">Check again</button></div>
+      <p id="inventory-status" class="muted" role="status" tabindex="-1">Reading your house inventory…</p>
+      <div id="inventory-body"></div>
+    </section>
+
+    <details id="system" class="card" aria-labelledby="system-h">
+      <summary>Home Assistant health and technical details</summary>
       <h2 id="system-h">Your Home Assistant</h2>
       <p class="muted" id="scan-status">Scanning…</p>
       <div id="system-body"></div>
+    </details>
+
+    <section id="useful-things" class="card" aria-labelledby="outcomes-h">
+      <h2 id="outcomes-h">Useful things</h2>
+      <div id="outcomes" class="outcomes"></div>
     </section>
 
-    <section class="card" aria-labelledby="outcomes-h">
-      <h2 id="outcomes-h">What do you want to do?</h2>
-      <div id="outcomes" class="outcomes"></div>
+    <section id="forgotten" class="card" aria-labelledby="forgotten-h">
+      <h2 id="forgotten-h">Anything else around the house?</h2>
+      <p class="muted">HA may not know about these yet. Pick things you want to revisit or reuse. These are possibilities, not setups Home Starter can perform today.</p>
+      <div id="forgotten-body"></div>
+      <p class="small muted">Your choices stay on this page only; they aren't a saved asset inventory.</p>
     </section>
 
     <section id="music" class="card outcome-panel" hidden aria-labelledby="music-h">

@@ -66,6 +66,7 @@ def main() -> int:
 
         # 1. Scan renders inside the ingress iframe.
         expect(frame.locator("#scan-status")).to_contain_text("Read-only scan", timeout=20000)
+        frame.locator("#system > summary").click()
         expect(frame.locator(".tile").first).to_be_visible()
         print("scan tiles:", frame.locator(".tile-label").all_inner_texts())
         snap(page, "01-scan")
@@ -122,7 +123,7 @@ def main() -> int:
 
         # 5. User confirms the integration in HA (simulated), comes back, rechecks.
         post(f"{MOCK}/_mock/confirm_integration")
-        frame.get_by_role("button", name="Check again").click()
+        frame.locator("#music-body").get_by_role("button", name="Check again").click()
         expect(status).to_have_text("Music Assistant is ready", timeout=15000)
         checks = frame.locator(".check").all_inner_texts()
         print("verified checks:", checks)
@@ -132,13 +133,13 @@ def main() -> int:
         # Failure after a successful check must not retain a green ready claim.
         error_start = len(console)
         page.route("**/api/music", lambda route: route.fulfill(status=503, body="Temporary failure"))
-        frame.get_by_role("button", name="Check again").click()
+        frame.locator("#music-body").get_by_role("button", name="Check again").click()
         expect(status).to_have_text("Couldn't verify Music Assistant")
         # Chromium reports the deliberately injected HTTP failure to its console.
         expected_error = "error: Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
         console[error_start:] = [c for c in console[error_start:] if c != expected_error]
         page.unroute("**/api/music")
-        frame.get_by_role("button", name="Check again").click()
+        frame.locator("#music-body").get_by_role("button", name="Check again").click()
         expect(status).to_have_text("Music Assistant is ready")
 
         # 6. Open Music Assistant.

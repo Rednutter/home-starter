@@ -93,6 +93,8 @@ async def main(base: str) -> None:
             captures = {
                 "config_entries_get.json": await ws.cmd("config_entries/get"),
                 "area_registry_list.json": await ws.cmd("config/area_registry/list"),
+                "device_registry_list.json": await ws.cmd("config/device_registry/list"),
+                "floor_registry_list.json": await ws.cmd("config/floor_registry/list"),
                 "entity_registry_list.json": await ws.cmd("config/entity_registry/list"),
                 "flow_progress.json": await ws.cmd("config_entries/flow/progress"),
                 "repairs_list_issues.json": await ws.cmd("repairs/list_issues"),
