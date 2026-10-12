@@ -7,10 +7,11 @@ import json
 from typing import Any
 
 from .core import CoreClient, CoreError
+from .household import PROFILES
 
 # The catalogue is a capability contract, not a promise to invent absent sources.
 CATALOGUE = {
-    "room_summary": ("area", "ready"),
+    "room_summary": ("vertical-stack", "ready"),
     "quick_action": ("tile", "ready"),
     "alert": ("tile", "ready"),
     "climate_control": ("thermostat", "ready"),
@@ -22,7 +23,7 @@ CATALOGUE = {
     "clock_weather": ("clock", "ready"),
     "weather_summary": ("weather-forecast", "ready"),
     "access": ("tile", "ready"),
-    "camera": ("picture-entity", "ready"),
+    "camera": ("picture-entity", "source_required"),
     "doorbell_event": ("tile", "ready"),
     "appliance_status": ("tile", "ready"),
     "activity_today": ("markdown", "ready"),
@@ -49,6 +50,14 @@ PROFILE_FUNCTIONS = {
 
 def fingerprint(config: Any) -> str:
     return hashlib.sha256(json.dumps(config, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def suitable(item: dict, profile: str) -> bool:
+    if profile == "wall" and item["interaction"] == "control":
+        return False
+    return item["function"] in PROFILE_FUNCTIONS[profile] or (
+        item["level"] == 2 and item["interaction"] in ("control", "both") and item["scope"] == "whole_house"
+    )
 
 
 def classify(inventory: dict, states: list[dict], overrides: dict) -> list[dict]:
@@ -105,29 +114,28 @@ def classify(inventory: dict, states: list[dict], overrides: dict) -> list[dict]
             function, level, interaction, visibility, audience, component = "maintenance", 5, "status", "drill_down", "admin", "status_chip"
             reason = "Home Assistant marks this as maintenance or configuration."
         usable = e.get("observed") and not e.get("disabled_by") and not e.get("hidden_by") and e.get("state") not in (None, "unknown", "unavailable")
-        result.append(
-            {
-                "id": entity_id,
-                "entity_id": entity_id,
-                "name": override.get("name", e["name"]),
-                "area_id": area,
-                "function": function,
-                "scope": override.get("scope", "whole_house" if domain in ("weather", "calendar", "person", "scene", "script") and not area else "local"),
-                "interaction": interaction,
-                "importance": "safety" if level == 0 else "technical" if level == 5 else "important" if level == 1 else "routine",
-                "frequency": "frequent" if level == 2 else "occasional",
-                "visibility": visibility,
-                "audience": "admin" if level == 5 else override.get("audience", audience),
-                "level": level,
-                "component": component,
-                "state": e.get("state"),
-                "domain": domain,
-                "device_class": dc,
-                "usable": bool(usable) and override.get("include") is not False,
-                "surfaces": [p for p, functions in PROFILE_FUNCTIONS.items() if function in functions],
-                "reason": reason,
-            }
-        )
+        item = {
+            "id": entity_id,
+            "entity_id": entity_id,
+            "name": override.get("name", e["name"]),
+            "area_id": area,
+            "function": function,
+            "scope": override.get("scope", "whole_house" if domain in ("weather", "calendar", "person", "scene", "script") and not area else "local"),
+            "interaction": interaction,
+            "importance": "safety" if level == 0 else "technical" if level == 5 else "important" if level == 1 else "routine",
+            "frequency": "frequent" if level == 2 else "occasional",
+            "visibility": visibility,
+            "audience": "admin" if level == 5 else override.get("audience", audience),
+            "level": level,
+            "component": component,
+            "state": e.get("state"),
+            "domain": domain,
+            "device_class": dc,
+            "usable": bool(usable) and override.get("include") is not False,
+            "reason": reason,
+        }
+        item["surfaces"] = [profile for profile in PROFILES if suitable(item, profile)]
+        result.append(item)
     return result
 
 
@@ -144,7 +152,7 @@ def admitted(item: dict, surface: dict, house: dict, pref: dict) -> bool:
         return False
     if item["audience"] == "adult" and audience != "adult":
         return False
-    if item["function"] not in PROFILE_FUNCTIONS[surface["profile"]]:
+    if not suitable(item, surface["profile"]):
         return False
     if item["level"] != 0 and item["id"] in pref["hide"]:
         return False
@@ -305,6 +313,9 @@ def generate(house: dict, surface: dict, items: list[dict], areas: list[dict], a
                 "name": "Security alarm",
                 "visibility": "when_abnormal",
                 "component": "alert",
+                "function": "safety",
+                "surfaces": list(PROFILES),
+                "reason": "An informational security interruption, shown only while triggered.",
             }
             if admitted(alert, surface, house, pref):
                 eligible.append(alert)

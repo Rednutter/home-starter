@@ -79,7 +79,7 @@ Calendar, Clock and Weather cards. Compact/normal/large are catalogue vocabulary
 native sizing/widget differences are used where meaningful. Camera selection,
 favourites, calling/contact, event takeover and recipes/shopping/sport notices need
 supported, reviewed sources and are not populated automatically. Calling and media
-favourites are explicitly `source_required`; no calling platform is installed.
+favourites and camera selection are explicitly `source_required`; no calling platform is installed.
 
 State/template conditions are verified with official Core 2026.10.0. Climate tests
 `hvac_action`, not just selected HVAC mode. Doorbell events show for two minutes.
@@ -87,6 +87,10 @@ Unavailable states do not become false hazard alarms. Lights/switches use native
 toggle; selected actions require native confirmation. Doors/locks/security open native
 detail, with no generated one-tap opening, unlocking or disarming. Wall templates
 have no service actions.
+Critical security interruptions are safety signals on every profile, including
+kitchen and bedside screens. Explicit whole-house controls remain suitable on touch
+surfaces without admitting ordinary unrelated context; pure action items are not
+suitable for a non-touch wall.
 
 ## Publication and verification
 

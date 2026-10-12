@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.3
+
+- Critical security interruptions are informational safety alerts on every profile,
+  including kitchen and bedside screens, without exposing normal alarm controls.
+- Explicitly reviewed whole-house actions remain suitable for specialist panels;
+  pure action items stay out of wall displays. Catalogue descriptors now match
+  the implemented room summary and deferred camera support.
+
 ## 0.3.2
 
 - Fix first-use person/screen/activity creation on HTTP Home Assistant ingress.

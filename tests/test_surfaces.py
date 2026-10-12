@@ -166,17 +166,44 @@ def test_catalogue_is_honest_about_absent_sources():
     assert CATALOGUE["media_favourites"][1] == "source_required"
 
 
-def test_shared_security_alarm_is_only_an_informational_interruption():
+@pytest.mark.parametrize("profile", ["phone", "tablet", "specialist", "kitchen", "entry", "bedside", "wall"])
+def test_shared_security_alarm_is_only_an_informational_interruption(profile):
     inv, states = inventory()
     inv["unattached_entities"].append({"entity_id": "alarm_control_panel.home", "name": "Alarm", "state": "disarmed", "observed": True})
     states.append({"entity_id": "alarm_control_panel.home", "state": "disarmed", "attributes": {}})
-    house = household("tablet", "everyone")
+    house = household(profile, "everyone")
     generated = generate(house, house["surfaces"][0], classify(inv, states, {}), inv["areas"])
     assert not any(v["title"] == "Security" for v in generated["config"]["views"])
     alert = next(i for i in generated["admitted"] if i["id"] == "alert:alarm_control_panel.home")
     assert alert["interaction"] == "status" and alert["visibility"] == "when_abnormal"
+    assert alert["function"] == "safety" and profile in alert["surfaces"]
     assert "alarm_control_panel.home" in str(generated["config"]["views"][0])
     assert "alarm_control_panel.alarm_disarm" not in str(generated["config"])
+
+
+def test_reviewed_whole_house_action_is_suitable_for_specialist_but_not_wall():
+    house = household("specialist")
+    house["surfaces"][0]["audience"] = "adult"
+    house["overrides"] = {"script.goodnight": {"include": True}}
+    classified = items(house)
+    action = next(i for i in classified if i["id"] == "script.goodnight")
+    assert "specialist" in action["surfaces"] and "wall" not in action["surfaces"]
+    generated = generate(house, house["surfaces"][0], classified, inventory()[0]["areas"])
+    assert "script.goodnight" in str(generated["config"]["views"][0])
+    house["surfaces"][0]["profile"] = "wall"
+    wall = generate(house, house["surfaces"][0], classified, inventory()[0]["areas"])
+    assert "script.goodnight" not in str(wall["config"])
+
+
+def test_explicit_whole_house_light_control_is_available_at_entry():
+    house = household("entry")
+    house["overrides"] = {"light.kitchen": {"scope": "whole_house"}}
+    classified = items(house)
+    light = next(i for i in classified if i["id"] == "light.kitchen")
+    assert "entry" in light["surfaces"]
+    generated = generate(house, house["surfaces"][0], classified, inventory()[0]["areas"])
+    quick = next(s for s in generated["config"]["views"][0]["sections"] if s["cards"][0]["heading"] == "Quick actions")
+    assert any(c.get("entity") == "light.kitchen" for c in quick["cards"])
 
 
 def test_missing_room_is_not_whole_house_and_has_deliberate_detail_access():
