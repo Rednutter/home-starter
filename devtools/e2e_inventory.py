@@ -16,6 +16,7 @@ def main():
             page.on("pageerror", lambda error, errors=errors: errors.append(str(error)))
             page.goto("http://127.0.0.1:8124/home_starter")
             frame = page.frame_locator("#panel")
+            frame.get_by_role("link", name="Review setup", exact=True).click()
             expect(frame.get_by_role("button", name="Scan now", exact=True)).to_be_enabled()
             expect(frame.locator("#inventory-status")).to_contain_text("Read-only inventory")
             frame.locator("#filter-needs_room").click()

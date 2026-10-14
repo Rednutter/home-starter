@@ -675,6 +675,8 @@ async def publish(core: CoreClient, generated: dict, expected: str | None, recor
             current = await ws.command("lovelace/config", url_path=path, force=True)
             if fingerprint(current) != expected or expected != records[path].get("fingerprint"):
                 raise ValueError("This dashboard changed in Home Assistant. Preserve those edits; create a new screen instead.")
+            if fingerprint(current) == generated["fingerprint"]:
+                return {"url_path": path, "fingerprint": expected, "verified": True}
         elif expected is not None:
             raise ValueError("The published dashboard is missing. Refresh before publishing.")
         else:

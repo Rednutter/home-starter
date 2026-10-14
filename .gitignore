@@ -9,3 +9,26 @@ node_modules/
 # local dev artefacts
 token.txt
 screens/
+# Private runtime state and local exports; source and synthetic fixtures stay visible.
+/data/
+/.runtime/
+.env
+.env.*
+!.env.example
+household.json
+activity.json
+publications.json
+installation.json
+inventory-history.json
+reset-history.json
+*-token.txt
+*-credentials.json
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.log
+*.har
+/credentials.json
+/cookies.json

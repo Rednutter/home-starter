@@ -41,7 +41,7 @@ class Env:
 
 
 @pytest.fixture
-async def make_env() -> AsyncIterator:
+async def make_env(tmp_path) -> AsyncIterator:
     servers: list[TestServer] = []
     sessions: list[aiohttp.ClientSession] = []
 
@@ -62,6 +62,7 @@ async def make_env() -> AsyncIterator:
                 "HOME_STARTER_SUPERVISOR_URL": base,
                 "HOME_STARTER_ALLOWED_PEERS": "127.0.0.1",
                 "HOME_STARTER_MA_PORT": str(ma_server.port),
+                "HOME_STARTER_DATA_DIR": str(tmp_path / f"runtime-{len(servers)}"),
             }
         )
         session = aiohttp.ClientSession()

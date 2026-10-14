@@ -5,6 +5,7 @@ import logging
 from aiohttp import web
 
 from . import __version__
+from .privacy import PrivacyFilter
 from .server import create_app
 from .settings import Settings
 
@@ -14,6 +15,8 @@ def main() -> None:
     # aiohttp's access log would record full request lines; keep it quiet.
     logging.getLogger("aiohttp.access").setLevel(logging.WARNING)
     settings = Settings.from_env()
+    for handler in logging.getLogger().handlers:
+        handler.addFilter(PrivacyFilter((settings.token.reveal(),)))
     logging.getLogger("homestarter").info(
         "Home Starter %s listening on %s:%s (Supervisor token %s)",
         __version__,

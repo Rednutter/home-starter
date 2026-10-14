@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.2
+
+- Resume explicit versioned setup on subsequent visits. Preserve people, screens,
+  preferences and activity rules; migrate existing settings once without resetting.
+- Show House status and inventory differences without rebuilding HA resources.
+  Recognise registry renames and connection/capability changes for explicit review.
+- Skip dashboard writes when the published configuration already matches. Preserve
+  external-edit protection and require typed confirmation to reset local setup.
+- Keep runtime state outside source/package files, redact secrets in logs, and gate
+  Git content with reviewed synthetic secret fixtures plus manual privacy inspection.
+- Replace private acceptance notes and identifying metadata with public examples;
+  sanitise affected Git history. No live credential was identified in the audit.
+
 ## 0.4.1
 
 - Put the main system thermostat before zone/damper controls in expanded Climate.

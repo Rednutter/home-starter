@@ -29,7 +29,16 @@
       <a href="#useful-things">Useful things</a>
       <a href="#surfaces">Make the house usable</a>
     </nav>
-    <section id="fresh-batteries" class="card" aria-labelledby="fresh-h">
+    <section id="house-status" class="card" aria-labelledby="installation-h">
+      <div class="section-top"><h2 id="installation-h">House status</h2><button id="installation-check" class="btn ghost" type="button">Check house status</button></div>
+      <p id="installation-status" class="muted" role="status">Checking existing Home Starter state…</p>
+      <div id="installation-body"></div>
+    </section>
+    <section id="house-changes" class="card" aria-labelledby="changes-h">
+      <h2 id="changes-h">New / changed things</h2><div id="changes-body"></div>
+    </section>
+    <details id="review-setup" class="card" hidden><summary>Review setup</summary></details>
+    <section id="fresh-batteries" class="card" aria-labelledby="fresh-h" hidden>
       <h2 id="fresh-h">Fresh Batteries</h2>
       <p>Before we look for problems, give Home Assistant a fair chance to see the things you want to keep.</p>
       <p class="muted">Turn on, wake or charge the smart things around the house, then we'll scan again. Anything powered off may otherwise look missing, stale or broken.</p>
@@ -50,12 +59,12 @@
       <div id="system-body"></div>
     </details>
 
-    <section id="useful-things" class="card" aria-labelledby="outcomes-h">
+    <section id="useful-things" class="card" aria-labelledby="outcomes-h" hidden>
       <h2 id="outcomes-h">Useful things</h2>
       <div id="outcomes" class="outcomes"></div>
     </section>
 
-    <section id="forgotten" class="card" aria-labelledby="forgotten-h">
+    <section id="forgotten" class="card" aria-labelledby="forgotten-h" hidden>
       <h2 id="forgotten-h">Anything else around the house?</h2>
       <p class="muted">HA may not know about these yet. Pick things you want to revisit or reuse. These are possibilities, not setups Home Starter can perform today.</p>
       <div id="forgotten-body"></div>

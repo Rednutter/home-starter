@@ -141,6 +141,10 @@ Use the existing gently rounded cards, smaller rounded inputs and buttons, and p
 
 Admin buttons have primary, default and transparent ghost variants. Hover changes the border; disabled controls use (0.55) opacity. Fields retain visible labels, native select behavior and full-width screen inputs. Navigation uses wrapping underlined links; collapsible details keep advanced settings discoverable without crowding the main flow.
 
+Returning visits lead with House status and New / changed things in the existing bordered cards. Keep all eight navigation links available: House status, New / changed things, Screens, People, Music, Climate, Activities and Review setup. Links wrap on narrow screens and open any containing disclosure before reaching their destination. Review setup starts collapsed for saved installations; only the explicit persisted first-run flag opens initial review. An unreadable state presents a recovery message rather than restarting onboarding.
+
+Reset Home Starter setup is a nested disclosure inside Review setup. Explain its local scope and retained recovery/protection data before the confirmation field; enable reset only after the exact text `RESET HOME STARTER`. Keep the destructive action visually subordinate to routine checks and screen access.
+
 Household setup identifies screen type, room and person before generation. Preferences explicitly distinguish person choices that follow a person from physical-screen choices that stay with a display. Pin, Hide and move controls never bypass suitability or account permissions; safety Hide is disabled.
 
 Save settings precedes Generate screen; unsaved changes invalidate the preview. The preview explains that controls become live in Home Assistant and that templates/calendar contents must be checked there. Review publication requires an explicit add/update action. Successful save/readback exposes Open dashboard and asks for control verification on the intended screen. Do not present preview readiness as verified publication.
@@ -159,3 +163,5 @@ Native Sections, Tile, Markdown, Clock, Thermostat and Calendar form the househo
 - Don't treat duplicate test sidebar links or simulated host chrome as Home Starter design patterns.
 
 Evidence: `home_starter/server/homestarter/static/{styles.css,index.html,surfaces.js}`, `home_starter/server/homestarter/surfaces.py`, and final captures in `screens/v3-ui/`: `setup-desktop.png`, `setup-mobile.png`, `setup-phone-mobile.png`, `native-phone-mobile.png`, `native-specialist-desktop.png`, `native-wall-desktop.png`. Captures are local, ignored test artifacts; code remains the reproducible source of truth.
+
+Returning-installation evidence: `home_starter/server/homestarter/static/installation.js` and synthetic captures `screens/rerun-ui/existing-desktop.png` and `screens/rerun-ui/existing-mobile.png`. Simulated host chrome is not part of the admin design system.

@@ -27,7 +27,7 @@ def main():
         page.goto("http://127.0.0.1:8124/home_starter")
         frame = page.frame_locator("#panel")
         expect(frame.locator("#surfaces-status")).to_contain_text("Choose who uses")
-        frame.get_by_role("link", name="Make the house usable", exact=True).click()
+        frame.get_by_role("link", name="Screens", exact=True).click()
         frame.get_by_label("Person name", exact=True).fill("Alex")
         frame.get_by_label("Person audience", exact=True).select_option("adult")
         frame.get_by_role("button", name="Add person", exact=True).click()

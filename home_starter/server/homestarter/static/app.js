@@ -1,6 +1,7 @@
 import { apiUrl, navigateHA } from "./routes.js";
 import { initHouse } from "./house.js";
 import { initSurfaces } from "./surfaces.js";
+import { initInstallation } from "./installation.js";
 
 const OUTCOMES = [
   { id: "music", title: "Music around the house", text: "Whole-home music, radio and podcasts with Music Assistant.", available: true },
@@ -253,6 +254,8 @@ async function startSetup() {
   state.busy = true;
   try {
     const res = await api("api/music/setup", { method: "POST", body: JSON.stringify({ confirm: true }) });
+    document.dispatchEvent(new CustomEvent("home-starter-saved"));
+    document.dispatchEvent(new CustomEvent("home-starter-refresh-screens"));
     state.music = {
       ...(state.music || {}),
       state: "installing",
@@ -336,19 +339,22 @@ async function scan(refresh = false) {
   }
 }
 
-function init() {
+async function init() {
+  const refreshInstallation = await initInstallation({ h, api, navigateHA });
   const refreshHouse = initHouse({ h, api, navigateHA, scan });
   initSurfaces({ h, api, navigateHA });
   renderOutcomes();
   document.getElementById("rescan").addEventListener("click", async () => {
     await scan(true);
     await refreshHouse();
+    await refreshInstallation();
     refreshMusic(true);
   });
   // When the user comes back (e.g. from a Home Assistant setup screen opened
   // in another tab), re-check quietly; throttled, no background polling.
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") refreshMusic(); });
   window.addEventListener("focus", () => refreshMusic());
+  document.addEventListener("home-starter-music", () => select("music"));
   scan();
   const remembered = recall();
   if (remembered && OUTCOMES.some((o) => o.id === remembered && o.available)) select(remembered);

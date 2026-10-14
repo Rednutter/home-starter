@@ -72,7 +72,7 @@ def main() -> int:
         snap(page, "01-scan")
 
         # 2. Choose the outcome.
-        frame.get_by_role("button", name="Music around the house").click()
+        frame.get_by_role("link", name="Music", exact=True).click()
         status = frame.locator("#music-body .status h3")
         expect(status).to_have_text("Couldn't check Music Assistant compatibility" if args.handoff else "Music Assistant is ready to install", timeout=15000)
         snap(page, "02-music-available")

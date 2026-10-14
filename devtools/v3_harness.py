@@ -16,6 +16,7 @@ from mock_supervisor import TOKEN, MockSupervisor
 async def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--fixtures", action="store_true", help="Use contract fixtures instead of disposable Core; never claims native rendering.")
+    parser.add_argument("--data-dir", type=Path, help="Ignored runtime directory for isolated repeat-launch acceptance.")
     args = parser.parse_args()
     credentials = {"user_id": "a1b2c3d4e5f6"} if args.fixtures else json.loads(Path("screens/v3-core-credentials.json").read_text())
     mock = MockSupervisor(
@@ -42,6 +43,7 @@ async def main():
             ),
             "light.fixture_room": ("off", {"friendly_name": "Fixture room light", "supported_features": 0}),
             "calendar.fixture_family": ("off", {"friendly_name": "Fixture family", "message": "Fixture event"}),
+            "sensor.fixture_appliance": ("idle", {"friendly_name": "Fixture appliance"}),
         }
         for entity, (state, attributes) in sources.items():
             mock.activity_states[entity] = {"entity_id": entity, "state": state, "attributes": attributes}
@@ -57,7 +59,7 @@ async def main():
             "SUPERVISOR_TOKEN": TOKEN,
             "HOME_STARTER_SUPERVISOR_URL": "http://127.0.0.1:8181",
             "HOME_STARTER_ALLOWED_PEERS": "127.0.0.1",
-            "HOME_STARTER_DATA_DIR": str(Path("screens/v4-fixture-data" if args.fixtures else "screens/v3-data").resolve()),
+            "HOME_STARTER_DATA_DIR": str((args.data_dir or Path("screens/v4-fixture-data" if args.fixtures else "screens/v3-data")).resolve()),
             "HOME_STARTER_MA_PORT": "8195",
         }
     )

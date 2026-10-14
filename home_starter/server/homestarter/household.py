@@ -23,7 +23,7 @@ ENTITY = re.compile(r"^[a-z_]+\.[a-z0-9_]+$")
 
 
 def empty_household() -> dict[str, Any]:
-    return {"version": 1, "revision": 0, "people": [], "surfaces": [], "preferences": {}, "overrides": {}, "activities": []}
+    return {"version": 2, "revision": 0, "configured": False, "epoch": 0, "people": [], "surfaces": [], "preferences": {}, "overrides": {}, "activities": []}
 
 
 def text(value: Any, maximum: int = 80) -> bool:
@@ -33,8 +33,10 @@ def text(value: Any, maximum: int = 80) -> bool:
 def validate_household(value: Any) -> dict[str, Any]:
     """Validate a complete replacement; unknown keys and unsafe overrides fail closed."""
     base = empty_household()
-    if not isinstance(value, dict) or set(value) != set(base) or type(value["version"]) is not int or value["version"] != 1:
+    if not isinstance(value, dict) or set(value) != set(base) or type(value["version"]) is not int or value["version"] != 2:
         raise ValueError("Unsupported household settings.")
+    if type(value["configured"]) is not bool or type(value["epoch"]) is not int or value["epoch"] < 0:
+        raise ValueError("Invalid installation state.")
     if type(value["revision"]) is not int or value["revision"] < 0:
         raise ValueError("Invalid household revision.")
     for kind in ("people", "surfaces", "activities"):
@@ -100,9 +102,22 @@ class HouseholdStore:
     """Atomic file replacement. Failed/corrupt reads never silently reset user data."""
 
     def __init__(self, directory: str) -> None:
-        self.path = Path(directory) / "household.json"
+        root = Path(directory).resolve()
+        package = Path(__file__).resolve().parent
+        if root == package or package in root.parents:
+            raise ValueError("Runtime data must stay outside product source.")
+        for parent in (root, *root.parents):
+            if (parent / ".git").exists():
+                relative = root.relative_to(parent)
+                if not relative.parts or relative.parts[0] not in ("screens", "data", ".runtime", ".venv"):
+                    raise ValueError("Use an ignored runtime directory outside tracked source.")
+                break
+        self.path = root / "household.json"
         self.activity_path = Path(directory) / "activity.json"
         self.publication_path = Path(directory) / "publications.json"
+        self.installation_path = root / "installation.json"
+        self.observation_path = root / "inventory-history.json"
+        self.reset_path = root / "reset-history.json"
 
     @staticmethod
     def read(path: Path, default: Any) -> Any:
@@ -122,12 +137,47 @@ class HouseholdStore:
         os.replace(temporary, path)
 
     def load(self) -> dict[str, Any]:
-        return validate_household(self.read(self.path, empty_household()))
+        marker = self.read(self.installation_path, None)
+        if marker is not None and marker != {"version": 1, "initialised": True}:
+            raise ValueError("Unsupported installation state. Existing data is preserved.")
+        value = self.read(self.path, None)
+        if value is None:
+            if marker or self.read(self.publication_path, {}) or self.read(self.activity_path, {}):
+                raise ValueError("Saved household settings are missing. Restore runtime data; setup was not reset.")
+            return empty_household()
+        legacy = isinstance(value, dict) and value.get("version") == 1
+        if legacy:
+            # Version 1 only wrote household.json after an explicit save.
+            value = {**value, "version": 2, "configured": True, "epoch": 0}
+        value = validate_household(value)
+        if legacy:
+            self.write(self.path, value)
+        if not self.installation_path.exists():
+            self.write(self.installation_path, {"version": 1, "initialised": True})
+        return value
 
     def save(self, value: Any) -> dict[str, Any]:
         value = validate_household(value)
-        if self.load()["revision"] != value["revision"]:
+        current = self.load()
+        if current["revision"] != value["revision"] or current["epoch"] != value["epoch"]:
             raise ValueError("Settings changed elsewhere. Refresh before saving.")
+        value["configured"] = True
+        if value == current:
+            return value
         value["revision"] += 1
+        self.write(self.path, value)
+        if not self.installation_path.exists():
+            self.write(self.installation_path, {"version": 1, "initialised": True})
+        return value
+
+    def reset(self, revision: int) -> dict:
+        current = self.load()
+        if current["revision"] != revision:
+            raise ValueError("Settings changed elsewhere. Review reset again.")
+        self.write(self.reset_path, {"version": 1, "household": current, "observation": self.read(self.observation_path, None)})
+        value = empty_household()
+        value.update(revision=revision + 1, epoch=current["epoch"] + 1)
+        # Keep publication ownership and activity history: resetting setup must not
+        # grant authority to overwrite untracked dashboards or double-count activity.
         self.write(self.path, value)
         return value

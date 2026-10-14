@@ -12,6 +12,26 @@ verified device-management integration; Dark retains HA chrome and a Wake target
 It preserves **Fresh Batteries + House Inventory** and **Music around the house**.
 Read [surface rules and limits](home_starter/SURFACES.md).
 
+Subsequent visits resume saved setup and show **House status** and **New / changed
+things**. First-run detection uses persisted schema/version state. Upgrades migrate
+existing choices; complete inventory scans record differences without rebuilding
+dashboards or installing Music Assistant again. Registry renames are flagged for
+explicit review, preserving old preferences and rules until you change them.
+Matching published dashboards require no write; external edits stay protected.
+
+**Review setup → Reset Home Starter setup** requires typed confirmation. It clears
+local people, screens, preferences, activity rules and inventory baseline. It keeps
+HA resources, publication ownership, activity history and a local recovery copy.
+Missing or unsupported saved state reports an error instead of restarting onboarding.
+
+Household state belongs in App `/data` storage, outside the source and image.
+Local captures belong in ignored `screens/` or `.runtime/`; never commit real HA
+responses, names, contacts, calendars, identifiers, credentials or screenshots.
+Before every push, inspect status, the complete staged diff and new files, then run
+`python devtools/privacy_check.py --staged` after installing `requirements-dev.txt`.
+The reviewed secret baseline contains hashes of synthetic test values only; a
+scanner cannot replace manual privacy review. See [acceptance](home_starter/ACCEPTANCE.md).
+
 ## Install
 
 Requires Home Assistant OS or a Supervised installation (the App Store).

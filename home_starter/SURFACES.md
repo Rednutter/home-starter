@@ -69,7 +69,9 @@ Automatic inactivity transitions, household time defaults, brightness/full black
 touch-to-wake while the panel is physically asleep, and future event takeover need
 a verified device control path. One concrete option is **Fully Kiosk Browser on the
 AirTouch, Remote Administration enabled and its official HA integration**, with
-screen control tested on that console. Console capabilities must be verified before configuring automatic inactivity or physical wake/sleep. Device management is an explicit device step.
+screen control tested on that console. Console Android/browser mode must be inspected on the actual device before enabling
+physical wake/sleep or automatic idle. No physical control claim is
+made. Installing/configuring device management is a separate explicit device step.
 
 Person preferences follow that person; `surface:<id>` preferences stay with a screen.
 Each supports `pin`, `hide` and `order`. Hide wins over pin except for safety signals.
@@ -216,7 +218,6 @@ route IDs, child room context, physical audience ceilings, capability gating and
 manual lifecycle navigation/safety. `devtools/v3_harness.py --fixtures` with
 `devtools/e2e_touch.py` checks populated administration and publication/readback
 against contract fixtures; it does **not** verify native HA rendering or hardware.
-The disposable-Core/native harness remains available when a Linux Docker engine is
-running. Current local Docker startup is blocked by an inaccessible
-`sailor-ingest.sock` stale socket. Official Supervisor schemas require Linux
-(`fcntl`); the App linter runs on Windows. Record real Green acceptance separately.
+The disposable-Core/native harness requires a working Linux Docker engine.
+Official Supervisor schemas require Linux (`fcntl`); the App linter runs on Windows.
+Record real Green acceptance separately in private runtime storage.

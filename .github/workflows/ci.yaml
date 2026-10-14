@@ -23,6 +23,7 @@ jobs:
       - run: ruff check . && ruff format --check .
       - run: pytest
       - run: node --test tests/js/*.test.mjs
+      - run: python devtools/privacy_check.py
 
   lint-app:
     runs-on: ubuntu-latest

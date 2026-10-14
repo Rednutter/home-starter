@@ -4,6 +4,7 @@ Run v3_harness.py --fixtures first. This does not assert native HA rendering.
 """
 
 import json
+import re
 from pathlib import Path
 
 from playwright.sync_api import expect, sync_playwright
@@ -19,8 +20,8 @@ def main():
         page.on("pageerror", lambda err: errors.append(str(err)))
         page.goto("http://127.0.0.1:8124/home_starter")
         frame = page.frame_locator("#panel")
-        expect(frame.locator("#surfaces-status")).to_contain_text("Choose who uses")
-        frame.get_by_role("link", name="Make the house usable", exact=True).click()
+        expect(frame.locator("#surfaces-status")).to_contain_text(re.compile("Saved household loaded|Choose who uses"))
+        frame.get_by_role("link", name="Screens", exact=True).click()
         # Reuse the named fixture people on repeated runs; never touch live household data.
         existing = frame.get_by_label("Screen person", exact=True).locator("option").all_text_contents()
         if "Fixture adult" not in existing:

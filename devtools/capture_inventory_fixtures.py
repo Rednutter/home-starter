@@ -37,7 +37,9 @@ async def main():
                 payload = await ws.cmd(command)
                 text = json.dumps(payload, indent=2, sort_keys=True)
                 assert token not in text
-                (ROOT / "tests/fixtures/core" / filename).write_text(text + "\n")
+                output = ROOT / "screens/fixture-captures/core"
+                output.mkdir(parents=True, exist_ok=True)
+                (output / filename).write_text(text + "\n")
                 print(filename, len(payload))
         # Ignored private runtime file for further disposable-Core acceptance.
         (ROOT / "screens/core-test-token.txt").write_text(token)

@@ -1,0 +1,18 @@
+# Build only product source. Runtime data, captures and developer files are excluded.
+**
+!Dockerfile
+!server/
+!server/requirements.txt
+!server/homestarter/
+!server/homestarter/*.py
+!server/homestarter/static/
+!server/homestarter/static/*.js
+!server/homestarter/static/*.html
+!server/homestarter/static/*.css
+!server/homestarter/static/*.svg
+!rootfs/
+!rootfs/etc/
+!rootfs/etc/services.d/
+!rootfs/etc/services.d/home-starter/
+!rootfs/etc/services.d/home-starter/run
+!rootfs/etc/services.d/home-starter/finish

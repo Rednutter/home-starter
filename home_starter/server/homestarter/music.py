@@ -781,7 +781,7 @@ class MusicSetup:
             return self.current
         op = Operation()
         self.current = op
-        _LOGGER.info("Music Assistant setup requested by user %s (operation %s)", user or "?", op.id)
+        _LOGGER.info("Music Assistant setup requested (operation %s)", op.id)
         self._task = asyncio.get_running_loop().create_task(self._run(op))
         return op
 
@@ -808,7 +808,7 @@ class MusicSetup:
                 op.error = {"kind": kind, "message": err.message}
                 self._step(op, "failed", f"The Supervisor refused or failed the request: {err.message}")
             except Exception as err:  # noqa: BLE001 - never leave an operation hanging
-                _LOGGER.exception("Unexpected setup failure")
+                _LOGGER.error("Unexpected setup failure (%s)", type(err).__name__)
                 op.error = {"kind": "error", "message": f"Unexpected error ({type(err).__name__})."}
                 self._step(op, "failed", op.error["message"])
             finally:

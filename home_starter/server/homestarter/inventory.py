@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 from collections import Counter
 from itertools import combinations
@@ -63,6 +65,7 @@ def build_inventory(sources: dict[str, dict[str, Any]]) -> dict[str, Any]:
         entities.append(
             {
                 "entity_id": entity_id,
+                "registry_id": entry.get("id"),
                 "device_id": entry.get("device_id"),
                 "area_id": entry.get("area_id"),
                 "name": entry.get("name") or (live.get("attributes") or {}).get("friendly_name") or entry.get("original_name") or entity_id,
@@ -119,6 +122,9 @@ def build_inventory(sources: dict[str, dict[str, Any]]) -> dict[str, Any]:
             )
         }
         device.update(
+            connection_fingerprint=hashlib.sha256(
+                json.dumps([raw.get("configuration_url"), sorted(pairs(raw.get("connections")))], sort_keys=True).encode()
+            ).hexdigest(),
             name=name,
             entities=owned,
             integrations=integrations,
@@ -260,6 +266,7 @@ def build_inventory(sources: dict[str, dict[str, Any]]) -> dict[str, Any]:
         "devices": devices,
         "areas": rooms,
         "floors": data("floors", []),
+        "integrations": [{k: e.get(k) for k in ("entry_id", "domain", "title", "state", "disabled_by", "source")} for e in entries.values()],
         "unattached_entities": [e for e in entities if e["device_id"] not in by_id],
         "findings": findings,
         "sources": {n: {k: v for k, v in s.items() if k != "data"} for n, s in sources.items()},

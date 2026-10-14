@@ -14,13 +14,14 @@ export function moveItem(order, id, direction) {
 
 export function initSurfaces({ h, api, navigateHA }) {
   const root = document.getElementById("surfaces-body"), status = document.getElementById("surfaces-status");
-  let data = null, draft = null, dirty = false, busy = false, preview = null, selected = "", owner = "", search = "";
+  let data = null, draft = null, dirty = false, busy = false, preview = null, selected = "", owner = "", search = "", reloadRequested = false;
   const button = (label, action, primary = false, disabled = false) => h("button", { type: "button", class: `btn ${primary ? "primary" : "ghost"}`, disabled, onclick: action }, label);
   const field = (label, control) => h("label", { class: "screen-field" }, h("span", {}, label), control);
   const input = (label, value = "", attrs = {}) => h("input", { "aria-label": label, value, maxlength: 80, ...attrs });
   const select = (label, options, value, onchange) => h("select", { "aria-label": label, onchange }, options.map(([id, name]) => h("option", { value: id, selected: id === value }, name)));
   const id = newItemId;
   const changed = () => {
+    root.dataset.dirty = "true";
     dirty = true; preview = null; status.textContent = "Unsaved changes. Save before generating a screen.";
     root.querySelectorAll('button').forEach(el => {
       if (el.textContent === "Save household settings") el.disabled = busy || !data.inventory_complete;
@@ -35,15 +36,16 @@ export function initSurfaces({ h, api, navigateHA }) {
     busy = true;
     try {
       data = await api("api/household"); draft = structuredClone(data.household); dirty = false; preview = null;
+      root.dataset.dirty = "false";
       if (!draft.surfaces.some(s => s.id === selected)) selected = draft.surfaces[0]?.id || "";
-      setStatus(data.inventory_complete ? "Choose who uses the house and where each screen lives." : "The house scan is incomplete. Refresh before saving or publishing screens.");
+      setStatus(data.inventory_complete ? (draft.configured ? "Saved household loaded. Review or extend the existing screens." : "Choose who uses the house and where each screen lives.") : "The house scan is incomplete. Refresh before saving or publishing screens.");
       render();
-    } catch (error) { fail(error); } finally { busy = false; render(); }
+    } catch (error) { fail(error); } finally { busy = false; render(); if (reloadRequested) { reloadRequested = false; load(); } }
   }
   async function save() {
     if (busy) return;
     busy = true; render();
-    try { const saved = await api("api/household", { method: "POST", body: JSON.stringify(draft) }); draft = saved.household; dirty = false; preview = null; setStatus("Household settings saved on this Home Assistant."); }
+    try { const saved = await api("api/household", { method: "POST", body: JSON.stringify(draft) }); draft = saved.household; dirty = false; root.dataset.dirty = "false"; preview = null; setStatus("Household settings saved on this Home Assistant."); document.dispatchEvent(new CustomEvent("home-starter-saved")); }
     catch (error) { fail(error); } finally { busy = false; render(); }
   }
   async function generate() {
@@ -63,7 +65,7 @@ export function initSurfaces({ h, api, navigateHA }) {
   function renderPeople() {
     const name = input("Person name", "", { placeholder: "Name" });
     const audience = select("Person audience", [["everyone", "Everyone"], ["adult", "Adult"]], "everyone");
-    return h("details", { open: !draft.people.length }, h("summary", {}, "People"),
+    return h("details", { id: "household-people", open: !draft.people.length }, h("summary", {}, "People"),
       h("p", { class: "small muted" }, "These are screen preferences, not new Home Assistant accounts. Account access stays in Home Assistant."),
       draft.people.map(p => h("div", { class: "screen-row" }, h("strong", {}, p.name), h("span", { class: "muted" }, p.audience === "adult" ? "Adult" : "Everyone"))),
       h("div", { class: "screen-fields" }, field("Name", name), field("Audience", audience)),
@@ -154,7 +156,7 @@ export function initSurfaces({ h, api, navigateHA }) {
     const choice = select("Appliance status", candidates.map(i => [i.id, i.name]), candidates[0]?.id || "");
     const name = input("Activity name", "", { placeholder: "e.g. Dishwasher" });
     const from = input("Running state", "", { maxlength: 60 }), to = input("Completed state", "", { maxlength: 60 });
-    return h("details", {}, h("summary", {}, "Appliance activity today"),
+    return h("details", { id: "household-activities" }, h("summary", {}, "Appliance activity today"),
       h("p", { class: "small muted" }, "Only add a transition your appliance reports as a completed cycle. Tracking starts when saved; counts reflect recorded transitions, not household chores."),
       draft.activities.map(a => h("p", {}, `${a.name}: ${a.from_state} → ${a.to_state}`)),
       h("div", { class: "screen-fields" }, field("Appliance name", name), field("Appliance status", choice), field("Running state", from), field("Completed state", to)),
@@ -210,6 +212,10 @@ export function initSurfaces({ h, api, navigateHA }) {
     root.querySelectorAll('input, select, button').forEach(el => { if (busy) el.disabled = true; });
   }
   document.getElementById("surfaces-check").addEventListener("click", () => { if (dirty) { setStatus("Save your changes before refreshing.", true); return; } load(); });
+  document.addEventListener("home-starter-refresh-screens", () => {
+    if (dirty) { setStatus("Setup changed. Your unsaved choices are retained; review the save precondition before continuing.", true); return; }
+    if (busy) reloadRequested = true; else load();
+  });
   load();
   return load;
 }

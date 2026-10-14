@@ -29,10 +29,11 @@ from .core import CoreClient, CoreError
 from .household import PROFILES, HouseholdStore, validate_household
 from .inventory import assign_area, collect_inventory
 from .music import MusicSetup, evaluate, gather_facts
+from .reconcile import acknowledge, observe
 from .scan import ha_version_from_scan, run_scan
 from .settings import Settings
 from .supervisor import SupervisorClient, SupervisorError
-from .surfaces import classify, generate, publish
+from .surfaces import classify, fingerprint, generate, publish
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -42,6 +43,7 @@ STATIC_FILES = {
     "routes.js": "text/javascript",
     "house.js": "text/javascript",
     "surfaces.js": "text/javascript",
+    "installation.js": "text/javascript",
     "styles.css": "text/css",
     "icon.svg": "image/svg+xml",
 }
@@ -111,6 +113,38 @@ class State:
         )
         return evaluate(facts, operation)
 
+    async def installation(self) -> dict:
+        async with self.household_lock:
+            house = self.household.load()
+            inventory = await collect_inventory(self.core)
+            items = classify(inventory, await self.core.states(), house["overrides"]) if inventory["complete"] else []
+            observation = observe(self.household, house, inventory, items)
+            screens = await screen_status(self.core, house, self.household.read(self.household.publication_path, {}))
+        try:
+            music = await self.music()
+            music = {k: music.get(k) for k in ("state", "title", "verified")}
+        except (CoreError, SupervisorError, ValueError, KeyError, TypeError):
+            music = {"state": "unavailable", "title": "Music check unavailable", "verified": False}
+        return {
+            "first_run": not house["configured"],
+            "revision": house["revision"],
+            "epoch": house["epoch"],
+            "counts": {"people": len(house["people"]), "screens": len(house["surfaces"]), "activities": len(house["activities"])},
+            "screens": screens,
+            "music": music,
+            "inventory_complete": inventory["complete"],
+            "changes": list(observation["pending"].values()),
+            "observation_revision": observation["revision"],
+            "baseline_created": observation["baseline_created"],
+            "climate_available": any(i["usable"] and i["function"] == "climate" for i in items),
+            "unavailable": [
+                {"kind": v["kind"], "label": v["label"]}
+                for v in observation["known"].values()
+                if v.get("unavailable") or v.get("status") in ("unavailable", "offline", "setup_error", "setup_retry", "migration_error")
+            ],
+            "app_version": __version__,
+        }
+
 
 # ---- middlewares ---------------------------------------------------------
 
@@ -119,7 +153,7 @@ class State:
 async def peer_guard(request: web.Request, handler):
     settings = request.app[K_SETTINGS]
     if not settings.allow_any_peer and request.remote not in settings.allowed_peers:
-        _LOGGER.warning("Rejected request from %s (only ingress is allowed)", request.remote)
+        _LOGGER.warning("Rejected a request outside authenticated ingress.")
         raise web.HTTPForbidden(text="Home Starter is only available through Home Assistant.")
     return await handler(request)
 
@@ -263,6 +297,11 @@ async def api_music_setup(request: web.Request) -> web.Response:
         raise web.HTTPServiceUnavailable(text="Couldn't verify administrator access. Continue in the Home Assistant App Store.") from None
     if not admin:
         raise web.HTTPForbidden(text="A Home Assistant administrator must start setup.")
+    try:
+        async with state.household_lock:
+            state.household.save(state.household.load())
+    except (OSError, ValueError):
+        return _json({"error": "Could not persist existing setup. Music installation was not started."}, 503)
     op = state.setup.start(_user(request))
     return _json({"operation": op.to_dict()}, status=202)
 
@@ -295,6 +334,78 @@ async def household_body(request: web.Request) -> dict:
     return value
 
 
+async def screen_status(core: CoreClient, house: dict, records: dict) -> list[dict]:
+    result = [
+        {"id": s["id"], "name": s["name"], "profile": s["profile"], "url_path": "home-starter-" + s["id"].replace("_", "-"), "status": "unpublished"}
+        for s in house["surfaces"]
+    ]
+    if not result:
+        return result
+    try:
+        async with core.websocket() as ws:
+            dashboards = await ws.command("lovelace/dashboards/list")
+            paths = {d["url_path"] for d in dashboards}
+            for screen in result:
+                path = screen["url_path"]
+                if path not in records:
+                    screen["status"] = "untracked" if path in paths else "unpublished"
+                elif path not in paths:
+                    screen["status"] = "missing"
+                else:
+                    try:
+                        current = await ws.command("lovelace/config", url_path=path, force=True)
+                        screen["status"] = "published" if fingerprint(current) == records[path]["fingerprint"] else "external_edits"
+                    except CoreError:
+                        screen["status"] = "unavailable"
+    except CoreError:
+        for screen in result:
+            screen["status"] = "unavailable"
+    return result
+
+
+async def api_installation(request: web.Request) -> web.Response:
+    state = await household_admin(request)
+    try:
+        return _json(await state.installation())
+    except (OSError, ValueError, KeyError, TypeError, CoreError):
+        return _json({"error": "Existing setup could not be read safely. Restore or repair runtime data; onboarding was not restarted."}, 503)
+
+
+async def api_installation_action(request: web.Request) -> web.Response:
+    state = await household_admin(request)
+    body = await household_body(request)
+    action = request.match_info["action"]
+    fields = {"confirm", "revision", "acknowledgement"} if action == "reset" else {"confirm", "revision"}
+    if set(body) != fields or body.get("confirm") is not True or type(body.get("revision")) is not int:
+        raise web.HTTPBadRequest(text="Review and confirm this setup action.")
+    try:
+        async with state.household_lock:
+            house = state.household.load()
+            if action == "complete":
+                if house["revision"] != body["revision"]:
+                    raise ValueError("Settings changed. Refresh before finishing review.")
+                state.household.save(house)
+            elif action == "review":
+                inventory = await collect_inventory(state.core)
+                if not inventory["complete"]:
+                    raise ValueError("Inventory is incomplete. No differences were marked reviewed.")
+                observe(state.household, house, inventory, classify(inventory, await state.core.states(), house["overrides"]))
+                acknowledge(state.household, house, body["revision"])
+            elif action == "reset":
+                if body["acknowledgement"] != "RESET HOME STARTER":
+                    raise ValueError("Type RESET HOME STARTER to confirm the described reset.")
+                async with state.activity_lock:
+                    state.household.reset(body["revision"])
+            else:
+                raise web.HTTPNotFound()
+            state.previews.clear()
+        return _json({"saved": True})
+    except ValueError as err:
+        return _json({"error": str(err)}, 409)
+    except (OSError, CoreError):
+        return _json({"error": "The action could not be verified. Refresh before retrying; existing data is preserved."}, 503)
+
+
 async def api_household(request: web.Request) -> web.Response:
     state = await household_admin(request)
     try:
@@ -320,14 +431,19 @@ async def api_save_household(request: web.Request) -> web.Response:
     try:
         value = validate_household(value)
         async with state.household_lock:
+            current = state.household.load()
             inventory = await collect_inventory(state.core)
             if not inventory["complete"]:
                 raise ValueError("House inventory is incomplete. Refresh before changing screen settings.")
             area_ids = {a["area_id"] for a in inventory["areas"]}
             entities = {e["entity_id"] for d in inventory["devices"] for e in d["entities"]} | {e["entity_id"] for e in inventory["unattached_entities"]}
-            if any(s["area_id"] is not None and s["area_id"] not in area_ids for s in value["surfaces"]):
+            retained_rooms = {(s["id"], s["area_id"]) for s in current["surfaces"]}
+            if any(s["area_id"] is not None and s["area_id"] not in area_ids and (s["id"], s["area_id"]) not in retained_rooms for s in value["surfaces"]):
                 raise ValueError("A selected room no longer exists. Refresh first.")
-            if not set(value["overrides"]) <= entities or any(a["entity_id"] not in entities for a in value["activities"]):
+            retained_rules = {(a["id"], a["entity_id"]) for a in current["activities"]}
+            if not set(value["overrides"]) <= entities | set(current["overrides"]) or any(
+                a["entity_id"] not in entities and (a["id"], a["entity_id"]) not in retained_rules for a in value["activities"]
+            ):
                 raise ValueError("A selected household control no longer exists. Refresh first.")
             saved = state.household.save(value)
             state.previews.clear()
@@ -393,7 +509,8 @@ async def api_surface_publish(request: web.Request) -> web.Response:
             records = state.household.read(state.household.publication_path, {})
             result = await publish(state.core, preview["generated"], preview["expected"], records)
             records[result["url_path"]] = result
-            state.household.write(state.household.publication_path, records)
+            if records != state.household.read(state.household.publication_path, {}):
+                state.household.write(state.household.publication_path, records)
             state.previews.pop(request.match_info["surface"], None)
             return _json(result)
     except ValueError as err:
@@ -432,6 +549,8 @@ def create_app(settings: Settings, session: aiohttp.ClientSession | None = None)
     app.router.add_get("/api/scan", api_scan)
     app.router.add_get("/api/inventory", api_inventory)
     app.router.add_get("/api/household", api_household)
+    app.router.add_get("/api/installation", api_installation)
+    app.router.add_post("/api/installation/{action}", api_installation_action)
     app.router.add_post("/api/household", api_save_household)
     app.router.add_get("/api/surfaces/{surface}/preview", api_surface_preview)
     app.router.add_post("/api/surfaces/{surface}/publish", api_surface_publish)

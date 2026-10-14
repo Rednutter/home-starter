@@ -196,8 +196,20 @@ MA_BETA = installed(
 w("addons_with_ma_beta.json", ok({"addons": BASE_INSTALLED + [MA_BETA]}))
 
 REPOS = [
-    {"slug": "local", "name": "Local apps", "source": "local", "url": "https://home-assistant.io/hassio", "maintainer": "Example Maintainer <maintainer@example.invalid>"},
-    {"slug": "core", "name": "Official apps", "source": "core", "url": "https://home-assistant.io/addons", "maintainer": "Example Maintainer <maintainer@example.invalid>"},
+    {
+        "slug": "local",
+        "name": "Local apps",
+        "source": "local",
+        "url": "https://home-assistant.io/hassio",
+        "maintainer": "Example Maintainer <maintainer@example.invalid>",
+    },
+    {
+        "slug": "core",
+        "name": "Official apps",
+        "source": "core",
+        "url": "https://home-assistant.io/addons",
+        "maintainer": "Example Maintainer <maintainer@example.invalid>",
+    },
     {
         "slug": "a0d7b954",
         "name": "Home Assistant Community Apps",

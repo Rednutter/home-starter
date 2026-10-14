@@ -2,7 +2,9 @@
 
 Runs against a *throwaway* local Home Assistant Core (never a household
 instance): it onboards it, adds two areas and two config entries, then saves
-the exact responses Home Starter reads into tests/fixtures/core/.
+the responses Home Starter reads into ignored screens/fixture-captures/core/.
+Extract only required fields, anonymise identifiers and inspect manually before
+promoting any capture to the tracked synthetic fixtures.
 
     python devtools/capture_core_fixtures.py http://127.0.0.1:8123
 
@@ -19,7 +21,7 @@ from pathlib import Path
 
 import aiohttp
 
-OUT = Path(__file__).resolve().parent.parent / "tests" / "fixtures" / "core"
+OUT = Path(__file__).resolve().parent.parent / "screens" / "fixture-captures" / "core"
 CLIENT_ID = "http://127.0.0.1:8123/"
 
 
