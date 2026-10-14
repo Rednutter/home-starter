@@ -28,6 +28,7 @@ async def app_client(make_env):
                 "HOME_STARTER_SUPERVISOR_URL": env.settings.supervisor_url,
                 "HOME_STARTER_ALLOWED_PEERS": peers,
                 "HOME_STARTER_MA_PORT": str(env.ma_port),
+                "HOME_STARTER_DATA_DIR": env.settings.data_dir,
             }
         )
         client = TestClient(TestServer(create_app(settings)))
@@ -233,7 +234,14 @@ async def test_supervisor_token_never_reaches_the_browser(via_ingress, caplog):
 
 async def test_leaking_handler_is_blocked(make_env):
     env = await make_env()
-    settings = Settings.from_env({"SUPERVISOR_TOKEN": TOKEN, "HOME_STARTER_SUPERVISOR_URL": env.settings.supervisor_url, "HOME_STARTER_ALLOWED_PEERS": "*"})
+    settings = Settings.from_env(
+        {
+            "SUPERVISOR_TOKEN": TOKEN,
+            "HOME_STARTER_SUPERVISOR_URL": env.settings.supervisor_url,
+            "HOME_STARTER_ALLOWED_PEERS": "*",
+            "HOME_STARTER_DATA_DIR": env.settings.data_dir,
+        }
+    )
     app = create_app(settings)
 
     async def leak(request):
