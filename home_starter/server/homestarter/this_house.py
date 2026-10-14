@@ -42,6 +42,7 @@ def empty():
         "revision": 0,
         "expectation": None,
         "people": {},
+        "presence": {},
         "placements": {},
         "portable": {},
         "multiroom": {},
@@ -57,6 +58,7 @@ def load(store):
     if isinstance(value, dict):
         value.setdefault("area_intent", {})
         value.setdefault("multiroom", {})
+        value.setdefault("presence", {})
     if (
         not isinstance(value, dict)
         or set(value) != set(empty())
@@ -64,7 +66,7 @@ def load(store):
         or value["version"] != 1
         or type(value["revision"]) is not int
         or value["revision"] < 0
-        or any(not isinstance(value[k], dict) for k in ("people", "placements", "portable", "multiroom", "relationships", "area_intent"))
+        or any(not isinstance(value[k], dict) for k in ("people", "presence", "placements", "portable", "multiroom", "relationships", "area_intent"))
         or not isinstance(value["changes"], list)
         or len(value["changes"]) > 100
     ):
@@ -99,6 +101,9 @@ def load(store):
     for item in value["area_intent"].values():
         if not isinstance(item, dict) or set(item) != {"kind", "signature"} or item["kind"] not in {"room", "group"} or not signature(item["signature"]):
             raise ValueError("Invalid area confirmation. Existing data is preserved.")
+    for item in value["presence"].values():
+        if not isinstance(item, dict) or set(item) != {"plan", "signature"} or item["plan"] not in {"wanted", "untracked"} or not signature(item["signature"]):
+            raise ValueError("Invalid presence choice. Existing data is preserved.")
     return value
 
 
@@ -183,6 +188,7 @@ async def inspect(core, store):
             token = digest([person["id"], person["name"], sorted(tracker_ids)])
             decision = saved["people"].get(person["id"])
             confirmed = bool(decision and decision["signature"] == token)
+            presence = saved["presence"].get(person["id"])
             people.append(
                 {
                     "id": person["id"],
@@ -193,6 +199,7 @@ async def inspect(core, store):
                     "signature": token,
                     "confirmed": confirmed,
                     "role": decision["role"] if confirmed else None,
+                    "presence_plan": presence["plan"] if confirmed and decision["role"] != "other" and presence and presence["signature"] == token else None,
                     "changed": bool(decision and not confirmed),
                 }
             )
@@ -288,6 +295,8 @@ async def inspect(core, store):
             "needs_room": sum(d["needs_room"] for d in devices),
             "attention": sum(d["attention"] for d in devices),
             "members_without_tracker": sum(not p["usable_tracker"] for p in members),
+            "intentionally_untracked": sum(p["presence_plan"] == "untracked" for p in members),
+            "other_members_without_tracker": sum(not p["usable_tracker"] and p["presence_plan"] != "untracked" for p in members),
             "shared": sum(d["shared"] for d in devices),
             "portable": sum(d["portable"] for d in devices),
             "multiroom": sum(d["multiroom"] for d in devices),
@@ -323,6 +332,13 @@ async def act(core, store, action, body):
             raise ValueError("That person changed or the household role is invalid. Refresh first.")
         updated["people"][person["id"]] = {"role": body["role"], "signature": person["signature"]}
         change.update(id=person["id"], after=body["role"])
+    elif action == "presence":
+        fields(body, {"person_id", "plan", "expected"})
+        person = next((p for p in view["people"] if p["id"] == body["person_id"]), None)
+        if not person or person["signature"] != body["expected"] or person["role"] not in {"adult", "child"} or body["plan"] not in {"wanted", "untracked"}:
+            raise ValueError("Review the household member and choose whether presence is wanted.")
+        updated["presence"][person["id"]] = {"plan": body["plan"], "signature": person["signature"]}
+        change.update(id=person["id"], after=body["plan"])
     elif action == "area_intent":
         fields(body, {"area_id", "kind", "expected"})
         area = next((a for a in view["areas"] if a["area_id"] == body["area_id"]), None)

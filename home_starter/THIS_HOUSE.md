@@ -9,6 +9,12 @@ compare their assigned trackers. Roles affect the commissioning count only, neve
 HA login permissions. Tracker ownership and pairing use native Person settings.
 Reporting presence is not proof of ownership or reliable presence detection.
 
+Presence is optional. An existing household member can be confirmed as intentionally
+untracked; this is an accepted choice, not unfinished setup. Missing tracking never
+establishes home or away. The private choice references the HA Person and reopens
+when their name or assigned trackers change. It does not enable tracking or change
+HA's Person state, records, accounts or permissions.
+
 Review floor and area names and assignments before saving. Changes use supported
 `config/floor_registry` and `config/area_registry` create/update commands. Existing
 IDs and other metadata remain intact. Existing areas that represent several rooms

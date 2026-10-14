@@ -61,6 +61,37 @@ async def test_household_size_excludes_display_accounts_without_changing_ha_peop
     assert len(env.mock.persons["storage"]) == 3 and not writes(env)
 
 
+async def test_untracked_is_accepted_intent_without_fabricated_presence_or_ha_changes(env):
+    person = (await house.inspect(env.core, env.store))["people"][1]
+    before = copy.deepcopy(env.mock.persons)
+    await do(env, "person", person_id=person["id"], expected=person["signature"], role="child")
+    await do(env, "presence", person_id=person["id"], expected=person["signature"], plan="untracked")
+    fresh = await house.inspect(env.core, HouseholdStore(env.settings.data_dir))
+    child = next(p for p in fresh["people"] if p["id"] == person["id"])
+    assert child["presence_plan"] == "untracked" and not child["usable_tracker"]
+    assert fresh["counts"]["intentionally_untracked"] == 1
+    assert fresh["counts"]["members_without_tracker"] == 1 and fresh["counts"]["other_members_without_tracker"] == 0
+    assert "state" not in child and "home" not in child and "away" not in child
+    assert env.mock.persons == before and not writes(env)
+    env.mock.persons["storage"][1]["device_trackers"] = ["device_tracker.new_fixture_watch"]
+    changed = next(p for p in (await house.inspect(env.core, env.store))["people"] if p["id"] == person["id"])
+    assert changed["presence_plan"] is None and changed["changed"]
+    with pytest.raises(ValueError, match="Review the household member"):
+        await do(env, "presence", person_id=person["id"], expected=person["signature"], plan="untracked")
+
+
+async def test_presence_choice_requires_a_confirmed_member_and_valid_plan(env):
+    person = (await house.inspect(env.core, env.store))["people"][0]
+    for role, plan in ((None, "untracked"), ("other", "untracked"), ("adult", "invalid")):
+        if role:
+            await do(env, "person", person_id=person["id"], expected=person["signature"], role=role)
+        with pytest.raises(ValueError, match="Review the household member"):
+            await do(env, "presence", person_id=person["id"], expected=person["signature"], plan=plan)
+    await do(env, "presence", person_id=person["id"], expected=person["signature"], plan="wanted")
+    assert (await house.inspect(env.core, env.store))["people"][0]["presence_plan"] == "wanted"
+    assert not writes(env)
+
+
 async def test_placement_writes_one_field_then_verifies_preserving_ids_and_overrides(env):
     before = copy.deepcopy(env.mock.devices)
     view = await house.inspect(env.core, env.store)
@@ -135,11 +166,12 @@ async def test_coverage_requires_a_note_and_never_invents_a_physical_room(env):
 async def test_optional_intent_additions_preserve_earlier_confirmations(env):
     await do(env, "expectation", people=5, adults=2)
     before = house.load(env.store)
-    earlier = {k: v for k, v in before.items() if k not in {"multiroom", "area_intent"}}
+    earlier = {k: v for k, v in before.items() if k not in {"multiroom", "area_intent", "presence"}}
     env.store.this_house_path.write_text(json.dumps(earlier))
     loaded = house.load(env.store)
     assert loaded["expectation"] == before["expectation"] and loaded["revision"] == before["revision"]
     assert loaded["multiroom"] == {} and loaded["area_intent"] == {}
+    assert loaded["presence"] == {}
 
 
 async def test_same_named_equipment_stays_separate_with_integration_provenance(env):

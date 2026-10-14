@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.3
+
+- Record optional presence intent against an existing HA Person. Intentionally
+  untracked members are accepted separately from missing/unavailable trackers,
+  without inferring home/away or changing native Person/tracker records.
+
 ## 0.5.2
 
 - Confirm equipment that serves several rooms using a required physical coverage

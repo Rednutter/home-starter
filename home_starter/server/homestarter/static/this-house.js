@@ -46,7 +46,7 @@ export function initThisHouse({ h, api, navigateHA }) {
 
   function review(container, description, action, payload, success) {
     container.replaceChildren(h("p", {}, description), h("div", { class: "actions" },
-      button("Confirm " + (action === "placement" ? "placement" : action === "relationship" ? "physical note" : action === "person" ? "person" : action === "structure" ? "house structure" : action === "area_intent" ? "area purpose" : action === "expectation" ? "household size" : action === "multiroom" ? "coverage" : action + " change"),
+      button("Confirm " + (action === "placement" ? "placement" : action === "relationship" ? "physical note" : action === "person" ? "person" : action === "presence" ? "presence choice" : action === "structure" ? "house structure" : action === "area_intent" ? "area purpose" : action === "expectation" ? "household size" : action === "multiroom" ? "coverage" : action + " change"),
         () => save(action, payload, success), true), button("Cancel", () => { container.replaceChildren(); dirty = false; })));
   }
 
@@ -64,15 +64,26 @@ export function initThisHouse({ h, api, navigateHA }) {
     for (const person of [...data.people].sort((a, b) => Number(a.confirmed) - Number(b.confirmed) || a.name.localeCompare(b.name))) {
       const trackerNames = person.trackers.map(id => data.trackers.find(t => t.entity_id === id)?.name || id);
       const row = h("details", { class: "house-row" }, h("summary", {}, h("strong", {}, person.name), h("span", { class: "small muted" },
-      `${person.confirmed ? person.role === "other" ? "Display / other account" : `${person.role === "adult" ? "Adult" : "Child"} · confirmed` : person.changed ? "Changed since confirmation" : "Confirm household member"}${person.role === "other" ? "" : !person.trackers.length ? " · no tracker assigned" : !person.usable_tracker ? " · tracker not reporting" : " · tracker reporting"}`)));
+      `${person.confirmed ? person.role === "other" ? "Display / other account" : `${person.role === "adult" ? "Adult" : "Child"} · confirmed` : person.changed ? "Changed since confirmation" : "Confirm household member"}${person.role === "other" ? "" : person.presence_plan === "untracked" ? " · intentionally untracked" : !person.trackers.length ? " · no tracker assigned" : !person.usable_tracker ? " · tracker not reporting" : " · tracker reporting"}`)));
       row.append(h("p", {}, trackerNames.length ? `HA assigns: ${trackerNames.join(", ")}.` : "No presence tracker assigned in HA."),
-        ...(person.trackers.length && !person.usable_tracker ? [h("p", { class: "warn" }, "No assigned tracker currently reports a usable state. Presence is not verified.")] : []));
+        ...(person.presence_plan === "untracked" ? [h("p", {}, "Presence is intentionally untracked. This is an accepted choice, not unfinished setup. Home or away cannot be inferred from missing tracking.")] :
+          person.trackers.length && !person.usable_tracker ? [h("p", { class: "warn" }, "No assigned tracker currently reports a usable state. Presence is not verified.")] : []));
       const role = select([["", "Choose household role"], ["adult", "Adult"], ["child", "Child"], ["other", "Display / other account"]], person.role, "Household role for " + person.name);
       const panel = h("div", { class: "house-review" });
       row.append(field("Household role", role), button("Review person", () => review(panel,
         `Confirm ${person.name} as ${role.value === "other" ? "a display or other account, outside the household member count" : role.value || "unresolved"}? Their HA record and trackers stay as shown.`,
         "person", { person_id: person.id, role: role.value, expected: person.signature }, "Person confirmation saved.")), panel,
       nativeButton("Manage person and trackers in HA", "/config/person"));
+      if (person.confirmed && person.role !== "other") {
+        const presence = select([["", "Not decided"], ["untracked", "Intentionally untracked"], ["wanted", "Presence tracking wanted"]], person.presence_plan, "Presence for " + person.name);
+        const presenceReview = h("div", { class: "house-review" });
+        row.append(field("Presence choice (optional)", presence), button("Review presence choice", () => {
+          if (!presence.value) { status.textContent = "Choose whether presence is wanted or intentionally untracked first."; presence.focus(); return; }
+          review(presenceReview,
+          `Confirm ${person.name}: ${presence.value === "untracked" ? "intentionally untracked; missing tracking is not unfinished setup or evidence of being away" : "presence tracking wanted; a usable HA tracker still needs to be verified"}? HA Person records and trackers stay unchanged.`,
+          "presence", { person_id: person.id, plan: presence.value, expected: person.signature }, "Presence choice saved.");
+        }), presenceReview);
+      }
       section.append(row);
     }
     section.append(h("details", {}, h("summary", {}, `Available device trackers (${data.trackers.length})`),
@@ -152,7 +163,8 @@ export function initThisHouse({ h, api, navigateHA }) {
     const c = data.counts, pending = pendingHouse(data);
     root.replaceChildren(h("p", { class: "inventory-summary" }, `${c.members} confirmed household members${data.expectation ? ` / ${data.expectation.people} expected` : ""} · ${c.floors} floors · ${c.areas} rooms / areas`),
       h("p", {}, `${c.devices} equipment records · ${c.placed} already placed · ${c.needs_room} need a room · ${c.attention} need attention`),
-      h("p", { class: "small muted" }, `${c.shared} shared media groups · ${c.portable} confirmed portable records · ${c.multiroom || 0} records serving several rooms · ${c.members_without_tracker} household members without a usable tracker`),
+      h("p", { class: "small muted" }, `${c.shared} shared media groups · ${c.portable} confirmed portable records · ${c.multiroom || 0} records serving several rooms`),
+      h("p", { class: "small muted" }, `${c.intentionally_untracked || 0} household members intentionally untracked · ${c.other_members_without_tracker ?? c.members_without_tracker} other members without a usable tracker. Presence is optional.`),
       h("p", { class: "small muted" }, `HA contains ${c.people} Person records and ${c.registry_devices} device records in total. Service-only records are kept out of placement work. Attention and missing-room counts can overlap.`));
     if (notice) root.append(h("p", { class: "notice", role: "status" }, notice));
     if (!data.complete) root.append(h("p", { class: "error" }, "The house view is incomplete. Changes are disabled until its HA sources can be read."));
