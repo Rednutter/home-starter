@@ -40,7 +40,7 @@ CATALOGUE = {
 PROFILE_FUNCTIONS = {
     "phone": {"lighting", "climate", "media", "access", "security", "information", "safety", "appliance"},
     "tablet": {"lighting", "climate", "media", "access", "security", "information", "safety", "appliance"},
-    "specialist": {"climate", "lighting", "access", "safety", "security"},
+    "specialist": {"climate", "lighting", "access", "safety", "security", "media", "information", "appliance"},
     "kitchen": {"lighting", "climate", "media", "information", "safety", "appliance"},
     "entry": {"access", "security", "information", "safety"},
     "bedside": {"lighting", "climate", "media", "information", "safety"},
@@ -109,6 +109,9 @@ def classify(inventory: dict, states: list[dict], overrides: dict) -> list[dict]
         elif domain in ("scene", "script", "input_boolean", "switch") and override.get("include") is True:
             function, level, interaction, visibility, audience, component = "information", 2, "control", "always", "adult", "quick_action"
             reason = "Included explicitly by the household administrator."
+        if domain == "cover" and dc == "damper" and e.get("platform") == "airtouch5":
+            function, component, audience = "climate", "climate_summary", "everyone"
+            reason = "AirTouch exposes a zone damper; show position without overriding automatic temperature control."
         # Diagnostics never become household controls through a pin or name match.
         if dc in ("battery", "signal_strength") or category in ("diagnostic", "config"):
             function, level, interaction, visibility, audience, component = "maintenance", 5, "status", "drill_down", "admin", "status_chip"
@@ -137,6 +140,23 @@ def classify(inventory: dict, states: list[dict], overrides: dict) -> list[dict]
             "state": e.get("state"),
             "domain": domain,
             "device_class": dc,
+            "platform": e.get("platform"),
+            "attributes": {
+                k: attrs[k]
+                for k in (
+                    "supported_features",
+                    "hvac_modes",
+                    "fan_modes",
+                    "preset_modes",
+                    "temperature",
+                    "current_temperature",
+                    "min_temp",
+                    "max_temp",
+                    "target_temp_step",
+                    "current_position",
+                )
+                if k in attrs
+            },
             "available": bool(usable),
             "usable": bool(usable) and (level == 0 or override.get("include") is not False),
             "reason": reason,
@@ -164,6 +184,8 @@ def admitted(item: dict, surface: dict, house: dict, pref: dict) -> bool:
     if item["level"] != 0 and item["id"] in pref["hide"]:
         return False
     if surface["profile"] in ("specialist", "kitchen", "bedside") and item["scope"] == "local" and item["level"] != 0:
+        if surface["profile"] == "specialist" and item.get("platform") == "airtouch5" and item["function"] == "climate":
+            return True
         # Unknown location is not evidence that a control is near this fixed screen.
         if not item["area_id"] or surface["area_id"] != item["area_id"]:
             return False
@@ -202,6 +224,13 @@ def card_for(item: dict, surface: dict, variant: str = "normal") -> dict:
                 + entity
                 + "', 'temperature_unit') or '' }}"
             )
+        elif domain == "climate":
+            content = "**{{ " + safe_name + " }}**: {{ states('" + entity + "') }}"
+            for attribute, label in (("current_temperature", "Now"), ("temperature", "Target")):
+                content += "{% if state_attr('" + entity + "', '" + attribute + "') is not none %} · " + label
+                content += " {{ state_attr('" + entity + "', '" + attribute + "') }}{% endif %}"
+        elif domain == "media_player":
+            content = "{{ " + safe_name + " }}: {{ state_attr('" + entity + "', 'media_title') or states('" + entity + "') }}"
         else:
             content = "{{ " + safe_name + " }}: {{ states('" + entity + "') }}{{ state_attr('" + entity + "', 'unit_of_measurement') or '' }}"
         return {"type": "markdown", "content": content}
@@ -209,8 +238,36 @@ def card_for(item: dict, surface: dict, variant: str = "normal") -> dict:
         return {"type": "weather-forecast", "entity": entity, "name": name, "show_forecast": False, "tap_action": {"action": "more-info"}}
     if domain == "calendar":
         return {"type": "calendar", "entities": [entity], "initial_view": "listWeek", "title": name}
-    if domain == "climate" and variant == "large":
-        return {"type": "thermostat", "entity": entity, "name": name}
+    if domain == "climate":
+        attrs = item.get("attributes", {})
+        supported = attrs.get("supported_features", 0)
+        supported = supported if type(supported) is int else 0
+        features = []
+        if supported & 3:
+            features.append({"type": "target-temperature"})
+        if variant != "compact" and attrs.get("hvac_modes"):
+            features.append({"type": "climate-hvac-modes", "hvac_modes": attrs["hvac_modes"]})
+        if variant != "compact" and supported & 8 and attrs.get("fan_modes"):
+            features.append({"type": "climate-fan-modes", "style": "dropdown", "fan_modes": attrs["fan_modes"]})
+        card = {"type": "thermostat" if variant == "large" and supported & 3 else "tile", "entity": entity, "name": name}
+        if card["type"] == "thermostat":
+            features = [f for f in features if f["type"] != "target-temperature"]
+        if features:
+            card["features"] = features
+        if card["type"] == "tile":
+            card.update(
+                tap_action={"action": "more-info"}, state_content=["state"] + [a for a in ("current_temperature", "temperature") if attrs.get(a) is not None]
+            )
+        return card
+    if domain == "cover" and item.get("device_class") == "damper":
+        return {
+            "type": "tile",
+            "entity": entity,
+            "name": name,
+            "state_content": ["state", "current_position"],
+            "tap_action": {"action": "none"},
+            "icon_tap_action": {"action": "none"},
+        }
     if domain == "media_player":
         return {"type": "media-control", "entity": entity, "name": name}
     card = {"type": "tile", "entity": entity, "name": name, "tap_action": {"action": "more-info"}, "icon_tap_action": {"action": "more-info"}}
@@ -330,6 +387,8 @@ def generate(house: dict, surface: dict, items: list[dict], areas: list[dict], a
     rank = {item: pos for pos, item in enumerate(pref["order"])}
     eligible.sort(key=lambda i: (i["level"], i["id"] not in pref["pin"], rank.get(i["id"], 9999), i["name"].casefold(), i["id"]))
     profile = surface["profile"]
+    if profile in ("phone", "tablet", "specialist"):
+        return touch_dashboard(house, surface, items, eligible, areas, activity or [])
     path = "home-starter-" + surface["id"].replace("_", "-")
     base = "/" + path
     sections, details, other_access = [], [], []
@@ -434,6 +493,172 @@ def generate(house: dict, surface: dict, items: list[dict], areas: list[dict], a
             "Names and audience choices arrange screens; they do not change Home Assistant account permissions.",
             "Activity today is a snapshot. Regenerate to refresh it; live appliance state still updates in Home Assistant.",
             "Calling, event takeover and music favourites need a supported source and are not installed by this version.",
+        ],
+    }
+
+
+def navigation(name: str, target: str, icon: str = "mdi:arrow-expand") -> dict:
+    return {"type": "button", "name": name, "icon": icon, "tap_action": {"action": "navigate", "navigation_path": target}, "hold_action": {"action": "none"}}
+
+
+def touch_dashboard(house: dict, surface: dict, items: list[dict], eligible: list[dict], areas: list[dict], activity: list[dict]) -> dict:
+    """Native people + House shell. All expansion paths stay inside the owned dashboard."""
+    path = "home-starter-" + surface["id"].replace("_", "-")
+    base = "/" + path
+    views, details = [], []
+    columns = 1 if surface["profile"] in ("phone", "specialist") else 3
+
+    def view(title, view_path, sections, parent=None):
+        result = {"type": "sections", "title": title, "path": view_path, "max_columns": columns, "sections": sections}
+        if parent:
+            result.update(subview=True, back_path=base + "/" + parent)
+        return result
+
+    def page(title, page_path, selected, person_surface):
+        pref = preferences(house, person_surface)
+        rank = {key: n for n, key in enumerate(pref["order"])}
+        selected = sorted(selected, key=lambda i: (i["level"], i["id"] not in pref["pin"], rank.get(i["id"], 9999), i["name"].casefold(), i["id"]))
+        alerts = [c for i in selected if i["level"] == 0 if (c := exception_card(i, person_surface))]
+        sections = [section("Needs attention", alerts)] if alerts else []
+
+        def expand(label, suffix, cards, icon="mdi:arrow-expand"):
+            target = suffix if page_path == "home" else page_path + "-" + suffix
+            details.append(view(label, target, ([section("Needs attention", alerts)] if alerts else []) + [section(label, cards)], page_path))
+            return navigation(label, base + "/" + target, icon)
+
+        climate = [i for i in selected if i["function"] == "climate" and i["level"] == 2]
+        if climate:
+            # Main units advertise fan modes; this orders the glance without guessing identities.
+            main = next((i for i in climate if i.get("attributes", {}).get("fan_modes")), climate[0])
+            controls = [card_for(i, person_surface, "large" if i is main else "normal") for i in climate]
+            glance = card_for(main, person_surface, "large" if surface["profile"] == "specialist" else "compact")
+            if glance["type"] == "tile":
+                glance["tap_action"] = {"action": "navigate", "navigation_path": base + "/" + ("climate" if page_path == "home" else page_path + "-climate")}
+            sections.append(
+                section(
+                    "Air conditioning" if surface["profile"] == "specialist" else "Climate", [glance, expand("Climate", "climate", controls, "mdi:thermostat")]
+                )
+            )
+        active = [
+            c
+            for i in selected
+            if i["level"] != 0 and i["domain"] not in ("climate", "media_player", "alarm_control_panel")
+            if (c := exception_card(i, person_surface))
+        ]
+        if active:
+            sections.append(section("Happening now", active))
+        calendars = [i for i in selected if i["domain"] == "calendar"]
+        if calendars:
+            # Consume HA calendars; never fetch or aggregate external ICS feeds.
+            summary = card_for(calendars[0], {**person_surface, "profile": "phone"})
+            sections.append(
+                section("Today", [summary, expand("Today", "today", [card_for(i, {**person_surface, "profile": "tablet"}) for i in calendars], "mdi:calendar")])
+            )
+        quick = [i for i in selected if i["level"] == 2 and i not in climate and (i["id"] in pref["pin"] or i["scope"] == "whole_house")]
+        if quick:
+            sections.append(section("Quick actions", [card_for(i, person_surface) for i in quick]))
+        room_cards = []
+        for area in areas:
+            area_items = [i for i in selected if i["area_id"] == area["area_id"] and i["level"] != 0]
+            if not area_items or "room:" + area["area_id"] in pref["hide"]:
+                continue
+            room_path = "room-" + hashlib.sha256(area["area_id"].encode()).hexdigest()[:10]
+            if page_path != "home":
+                room_path = page_path + "-" + room_path
+            room_cards.append((area["area_id"], room_summary(area, area_items, base + "/" + room_path)))
+            details.append(
+                view(
+                    area["name"],
+                    room_path,
+                    ([section("Needs attention", alerts)] if alerts else []) + [section(area["name"], [card_for(i, person_surface) for i in area_items])],
+                    page_path,
+                )
+            )
+        room_cards.sort(key=lambda c: ("room:" + c[0] not in pref["pin"], rank.get("room:" + c[0], 9999)))
+        unplaced = [i for i in selected if i["level"] == 2 and not i["area_id"] and i not in climate and i not in quick]
+        home_cards = [c[1] for c in room_cards]
+        if unplaced:
+            sections.append(section("More controls", [expand("Other controls", "other-controls", [card_for(i, person_surface) for i in unplaced])]))
+        if home_cards:
+            sections.append(section("Home / Rooms", [expand("Home / Rooms", "rooms", home_cards, "mdi:home-outline")]))
+        media = [i for i in selected if i["domain"] == "media_player"]
+        if media:
+            glance = {
+                "type": "tile",
+                "entity": media[0]["entity_id"],
+                "name": media[0]["name"],
+                "tap_action": {"action": "navigate", "navigation_path": base + "/" + ("music" if page_path == "home" else page_path + "-music")},
+            }
+            supported = media[0].get("attributes", {}).get("supported_features", 0)
+            if type(supported) is int and supported & 513 == 513:
+                glance["features"] = [{"type": "media-player-playback"}]
+            sections.append(section("Music", [glance, expand("Music", "music", [card_for(i, person_surface) for i in media], "mdi:music")]))
+        context = [i for i in selected if i["level"] == 3 and i["domain"] != "calendar"]
+        if context:
+            sections.append(section("Around the house", [expand("Around the house", "context", [card_for(i, person_surface) for i in context])]))
+        if activity:
+            sections.append(
+                section(
+                    "Activity today",
+                    [
+                        card_for(
+                            {"entity_id": a["entity_id"], "name": a["name"] + " cycles today", "domain": "sensor", "interaction": "status"}, person_surface
+                        )
+                        for a in activity
+                    ],
+                )
+            )
+        if not sections:
+            sections.append(section(title, [{"type": "markdown", "content": "No available household sources yet."}]))
+        if page_path == "home":
+            sections.append(
+                section("Display", [navigation("Ambient", base + "/ambient", "mdi:weather-night"), navigation("Dark", base + "/dark", "mdi:monitor-off")])
+            )
+        return view(title, page_path, sections)
+
+    views.append(page("House", "home", eligible, surface))
+    # Saved list order is intentional and stable; names are display text, IDs form routes.
+    for person in house["people"]:
+        personal = {**surface, "person_id": person["id"]}
+        personal_pref = preferences(house, personal)
+        own_rooms = {s["area_id"] for s in house["surfaces"] if s["person_id"] == person["id"] and s["area_id"]}
+        selected = [
+            i
+            for i in items
+            if admitted(i, surface, house, preferences(house, {**surface, "person_id": None}))
+            and admitted(i, personal, house, personal_pref)
+            and (person["audience"] == "adult" or i["level"] == 0 or i["scope"] == "whole_house" or i["area_id"] in own_rooms)
+        ]
+        selected += [i for i in eligible if i["id"].startswith("alert:")]
+        # Hex has no hyphens: a valid ID like alex-climate cannot collide with
+        # Alex's contextual -climate route. Encoding is reversible and collision-free.
+        views.append(page(person["name"], "person-" + person["id"].encode().hex(), selected, personal))
+    # Lifecycle is per browser navigation, never a household-global helper.
+    alerts = [c for i in eligible if i["level"] == 0 if (c := exception_card(i, surface))]
+    quiet = {**surface, "profile": "wall"}
+    glance = [card_for(i, quiet) for i in eligible if i["domain"] in ("climate", "calendar")]
+    playing = [c for i in eligible if i["domain"] == "media_player" if (c := exception_card(i, quiet))]
+    ambient = ([section("Needs attention", alerts)] if alerts else []) + [
+        section("Today", [{"type": "clock", "clock_size": "large"}] + glance + playing),
+        section("Display", [navigation("Active", base + "/home", "mdi:home"), navigation("Dark", base + "/dark", "mdi:monitor-off")]),
+    ]
+    dark = ([section("Needs attention", alerts)] if alerts else []) + [section("", [navigation("Wake", base + "/home", "mdi:gesture-tap")])]
+    dark_view = view("Dark", "dark", dark, "home")
+    dark_view["background"] = {"color": "#000000"}
+    config = {"title": surface["name"], "views": views + details + [view("Ambient", "ambient", ambient, "home"), dark_view]}
+    return {
+        "surface": surface,
+        "url_path": path,
+        "config": config,
+        "fingerprint": fingerprint(config),
+        "admitted": eligible,
+        "catalogue": [{"id": k, "native": v[0], "status": v[1], "variants": ["compact", "normal", "large"]} for k, v in CATALOGUE.items()],
+        "warnings": [
+            "People tabs arrange content, not Home Assistant permissions. Shared screen audience caps every page.",
+            "Ambient and Dark are manual native views. Dark keeps a Wake target, HA chrome and safety alerts; it does not turn off the panel.",
+            "Automatic inactivity, brightness, full black and physical wake/sleep require verified device management, "
+            "such as Fully Kiosk with Remote Administration and its HA integration.",
+            "AirTouch damper positions are informational; automatic zone temperature control remains authoritative.",
         ],
     }
 

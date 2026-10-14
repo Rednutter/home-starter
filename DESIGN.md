@@ -125,7 +125,7 @@ Admin content is centered in a (920px) maximum-width wrapper with (20px 16px 48p
 
 At (560px) and below, cards use (14px) padding, screen fields and preview sections become one column, and action buttons flex to the available width. Existing overview tiles become two columns, then one at (340px). Phone, specialist and bedside layout previews cap at (440px) and use one column.
 
-Generated native dashboards use Sections. Phone, bedside and specialist Home views allow one column; other profiles allow up to three. Rooms group only admitted entities into a native navigation Button plus templated Markdown summary, then open a room subview. They do not rely on automatic Area-card summaries. Tablet navigation adds only supported Climate, Media, Security and Household groups to Home. Conditional exception content and its section headings disappear in normal states.
+Generated native dashboards use Sections. Phone, bedside and specialist Home views allow one column; other profiles allow up to three. Touch primary navigation is House plus saved people in configured order. Climate, Today, Home / Rooms and Music expand into contextual subviews with explicit back paths; missing sources are omitted. Specialist gives climate a dominant thermostat, while tablet and phone use compact glances. Rooms group only admitted entities into a native navigation Button plus templated Markdown summary, then open a room subview. They do not rely on automatic Area-card summaries. Conditional exception content and its section headings disappear in normal states. Manual Ambient and Dark are contextual display states; Dark preserves a visible Wake target and HA chrome. Both retain safety interruptions.
 
 ## Elevation & Depth
 

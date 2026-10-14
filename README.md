@@ -4,8 +4,11 @@ An open-source Home Assistant helper for a house that grew piecemeal. Get things
 awake, see what HA knows about your rooms and devices, review explainable findings,
 then take a small explicit action and check whether it worked.
 
-V0.3 adds **Make the house usable**: generated native household screens for people
-and places, saved Pin / Hide / Reorder, and explicit appliance activity today.
+V0.4 adds a shared **House + configured people** touch shell for phone, tablet and
+AirTouch, capability-gated climate controls, contextual room views and manual
+Active/Ambient/Dark presentation. It retains saved Pin / Hide / Reorder and explicit
+appliance activity today. Physical wake/sleep and automatic idle behaviour need a
+verified device-management integration; Dark retains HA chrome and a Wake target.
 It preserves **Fresh Batteries + House Inventory** and **Music around the house**.
 Read [surface rules and limits](home_starter/SURFACES.md).
 
@@ -113,7 +116,7 @@ and verification. Permissions are unchanged from V0.1.1.
 ```sh
 python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
 .venv/bin/pytest                        # backend, contract fixtures, ingress, token tests
-node --test tests/js/routes.test.mjs    # frontend routing / navigation
+node --test tests/js/*.test.mjs         # all frontend regressions
 .venv/bin/ruff check . && .venv/bin/ruff format --check .
 ```
 

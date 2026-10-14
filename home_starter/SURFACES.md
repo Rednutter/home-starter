@@ -1,4 +1,4 @@
-# Household screens — V0.3
+# Household screens — V0.4
 
 Home Starter translates the existing house into native Home Assistant dashboards.
 Setup stays in the administrator-only App; household screens use the viewer's HA
@@ -11,6 +11,65 @@ screens, preferences, household names/inclusions and explicit activity rules.
 Profiles: personal phone, shared tablet, specialist, kitchen, entry, bedside and
 non-touch wall. A screen combines a person with a room and physical purpose. These
 records do not create users or devices.
+
+## Shared touch shell
+
+Phone, shared tablet and specialist/AirTouch profiles share **House + configured
+people** primary tabs. People retain saved list order; stable IDs, not names, own
+routes. Encoded person routes cannot collide with contextual routes. There is no
+assumed household size and no automatic import or creation of people.
+
+House shows admitted Climate, Today, Home / Rooms and Music sources. Missing
+capabilities are omitted. Native buttons expand purpose-specific subviews with a
+back path; room views stay contextual. Available quick temperature and playback
+controls remain obvious. Safety interruptions appear on every view; opening and
+other active-state exceptions retain conditional summaries. The phone dashboard
+address and `/home` route remain stable; publication still requires a fresh preview.
+
+Each configured person receives a page with their own Pin/Hide/Reorder preferences.
+The physical screen audience is a ceiling, including when viewing an adult's tab.
+Children's pages favour rooms explicitly linked through that person's saved screen
+records, plus admitted whole-house context. Configure a personal screen's person
+and room to establish that link; names are never used to guess bedrooms. Adult
+pages may include broader admitted controls. Tabs do not authenticate people or
+replace HA account permissions. Household settings are not migrated or rewritten.
+
+The specialist profile prominently shows the main climate control, and admits all
+available AirTouch climate/zone/damper entities by registry `platform=airtouch5`,
+including unassigned zones. Other local controls still require its configured room.
+Tablet and phone use compact climate glances and the same expanded controls.
+HVAC modes use advertised `hvac_modes`; temperature uses feature bits 1/2; fan modes
+require bit 8 and an advertised list. Native cards own service dispatch and enforce
+current capabilities. Missing zone temperature is omitted rather than invented.
+Damper positions are informational: an open damper does not establish zone enablement.
+Use the zone climate mode for enabled/off status. Automatic temperature control and
+the native AirTouch app remain available; no damper service calls are generated.
+
+Today consumes admitted HA calendar entities and their native agenda. Consolidate
+external calendars in the chosen provider first; there is no ICS ingestion or
+personal event inference. Personal pages use explicitly admitted household context.
+
+## Display lifecycle and device dependency
+
+The supported baseline is **manual native presentation per browser**:
+
+- **Active:** House and personal pages; normal controls and contextual expansion.
+- **Ambient:** clock, climate status/current/target, HA next-calendar context and
+  playing-media information. No climate or media control widgets.
+- **Dark:** black view background with an explicit Wake target. HA chrome and the
+  Wake card remain visible; it is not a full black kiosk or physical panel-off mode.
+
+House exposes Ambient and Dark. Ambient exposes Active and Dark; Dark exposes Wake
+to House. Native back navigation also returns to House. Safety alerts remain live
+and visible in both reduced states. Each browser's route is independent; switching
+one screen never changes another. No helpers, global lifecycle automations, guessed
+wake commands, idle timers or physical power calls are installed.
+
+Automatic inactivity transitions, household time defaults, brightness/full black,
+touch-to-wake while the panel is physically asleep, and future event takeover need
+a verified device control path. One concrete option is **Fully Kiosk Browser on the
+AirTouch, Remote Administration enabled and its official HA integration**, with
+screen control tested on that console. Console capabilities must be verified before configuring automatic inactivity or physical wake/sleep. Device management is an explicit device step.
 
 Person preferences follow that person; `surface:<id>` preferences stay with a screen.
 Each supports `pin`, `hide` and `order`. Hide wins over pin except for safety signals.
@@ -55,9 +114,8 @@ administrator must include ambiguous actions and review their effect first. Pinn
 or renaming never upgrades battery/config diagnostics. Safety screens do not replace
 working certified alarms. Native more-info may show technical detail when opened.
 
-Phone: alerts, quick actions, rooms, activity and context. Tablet adds at most Home /
-Climate / Media / Security / Household. Specialist: alerts, then large thermostats,
-nearby and whole-house controls. Kitchen/bedside: clock, local controls and context.
+Phone/tablet/specialist use the shared touch hierarchy described above.
+Kitchen/bedside: clock, local controls and context.
 Entry: access/security, presence and context. Wall: clock, context, exceptions and
 activity with no control widgets, actionable taps or room navigation.
 
@@ -152,3 +210,13 @@ official Core only: simulated lamp, thermostat and washer. `e2e_surfaces.py` exe
 setup/publication; `e2e_native_surfaces.py` checks loaded cards and climate control;
 `verify_v3_activity.py` checks two real recorder completion transitions. Private test
 credentials, runtime records and screenshots remain ignored under `screens/`.
+
+`tests/test_touch.py` additionally covers 0–50 people, stable ordering, adversarial
+route IDs, child room context, physical audience ceilings, capability gating and
+manual lifecycle navigation/safety. `devtools/v3_harness.py --fixtures` with
+`devtools/e2e_touch.py` checks populated administration and publication/readback
+against contract fixtures; it does **not** verify native HA rendering or hardware.
+The disposable-Core/native harness remains available when a Linux Docker engine is
+running. Current local Docker startup is blocked by an inaccessible
+`sailor-ingest.sock` stale socket. Official Supervisor schemas require Linux
+(`fcntl`); the App linter runs on Windows. Record real Green acceptance separately.

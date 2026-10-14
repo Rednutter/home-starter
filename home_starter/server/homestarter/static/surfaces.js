@@ -167,6 +167,7 @@ export function initSurfaces({ h, api, navigateHA }) {
       return active ? previewCard(card.card) : null;
     }
     if (card.type === "clock") return h("p", { class: "preview-clock" }, new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date()));
+    if (card.type === "button" && card.tap_action?.action === "navigate") return h("div", { class: "preview-room" }, h("strong", {}, card.name), h("span", { class: "small muted" }, "Opens a contextual view in Home Assistant"));
     if (card.type === "area") return h("div", { class: "preview-room" }, h("strong", {}, data.areas.find(a => a.area_id === card.area)?.name || "Room"), h("span", { class: "small muted" }, "Room controls open in Home Assistant"));
     if (card.type === "vertical-stack") return h("div", { class: "preview-room" }, h("strong", {}, card.cards[0].name), h("span", { class: "small muted" }, "Room summary and controls in Home Assistant"));
     const item = preview.admitted.find(i => i.id === card.entity || card.entities?.includes(i.id));
@@ -186,6 +187,7 @@ export function initSurfaces({ h, api, navigateHA }) {
       h("div", { class: "preview-nav" }, preview.config.views.filter(v => !v.subview).map(v => h("span", {}, v.title))),
       h("div", { class: `preview-sections preview-${preview.surface.profile}` }, home.sections.map(s => { const cards = s.cards.map(previewCard).filter(Boolean); return cards.length > 1 ? h("div", { class: "preview-section" }, cards) : null; })),
       h("p", { class: "small muted" }, "Names and audience choices arrange screens; Home Assistant account permissions still govern access."),
+      preview.warnings && h("p", { class: "small muted" }, preview.warnings.filter(w => w.includes("Ambient") || w.includes("inactivity")).join(" ")),
       h("details", {}, h("summary", {}, "Review publication"),
         h("p", {}, preview.published ? "Update this Home Starter dashboard. If it was edited in Home Assistant, publication will stop." : "Add a new Home Assistant dashboard. Your current dashboards stay in place."),
         h("p", { class: "small muted" }, "Saving is verified by reading the dashboard back. Check important controls on its intended screen after opening it."),

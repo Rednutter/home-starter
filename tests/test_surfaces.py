@@ -45,7 +45,7 @@ def inventory():
         "sensor.room_temperature": {"device_class": "temperature"},
         "sensor.service_temperature": {"device_class": "temperature"},
         "binary_sensor.leak": {"device_class": "moisture"},
-        "climate.kitchen": {"hvac_action": "cooling"},
+        "climate.kitchen": {"hvac_action": "cooling", "supported_features": 1, "hvac_modes": ["off", "cool"], "temperature": 22},
     }
     states = [{"entity_id": e["entity_id"], "state": e["state"], "attributes": attributes.get(e["entity_id"], {})} for e in entities]
     return {

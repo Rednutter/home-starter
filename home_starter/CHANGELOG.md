@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.4.0
+
+- Phone, tablet and AirTouch/specialist now share House + saved people navigation,
+  with stable ordering and collision-free contextual routes. Rooms, climate,
+  calendar and music expand into native subviews; absent capabilities are omitted.
+- AirTouch climate is prominent. Registry-platform admission includes all available
+  zones; temperature/HVAC/fan controls use advertised capabilities. Damper position
+  is informational. Unknown zone temperatures are not invented.
+- Personal pages retain person preferences within the physical audience ceiling;
+  child context uses explicitly linked screen rooms. Safety stays visible on every
+  view and conditional opening exceptions retain their prominent summary.
+- Manual Active/Ambient/Dark presentation is per browser. Ambient shows live context;
+  Dark uses a black background with a Wake target and HA chrome. Automatic idle,
+  brightness/full black and physical wake/sleep require verified device management,
+  such as Fully Kiosk Remote Administration plus its HA integration.
+- Existing settings, phone addresses, inventory, Music Assistant, explicit appliance
+  activity and preview/publication/readback protections remain in place.
+- Added shared-shell regression coverage and populated fixture ingress acceptance.
+  Native/device acceptance evidence and environment limits are recorded separately;
+  fixtures do not establish live control verification.
+
 ## 0.3.3
 
 - Critical security interruptions are informational safety alerts on every profile,

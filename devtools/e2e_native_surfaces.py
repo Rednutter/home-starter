@@ -61,11 +61,15 @@ def main():
                 verify_target(original)
             # Templates must render; a visible section is not sufficient evidence.
             if profile in ("phone", "specialist"):
+                page.get_by_role("button", name="Around the house", exact=True).click()
                 expect(page.get_by_text("21.5°C", exact=True)).to_be_visible(timeout=30000)
+                assert page.locator("hui-error-card").count() == 0
+                page.goto(base + "/" + path + "/home")
             page.screenshot(path=str(shots / f"native-{profile}-desktop.png"))
         page.locator(f'a[href="/{paths["phone"]}"]').click()
         page.set_viewport_size({"width": 390, "height": 844})
         expect(page.get_by_text("Loading...", exact=True)).not_to_be_visible(timeout=30000)
+        page.get_by_role("button", name="Around the house", exact=True).click()
         expect(page.get_by_text("21.5°C", exact=True)).to_be_visible(timeout=30000)
         page.screenshot(path=str(shots / "native-phone-mobile.png"))
         browser.close()
