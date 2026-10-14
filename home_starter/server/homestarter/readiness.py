@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import re
 from datetime import UTC, date, datetime, timedelta
 from urllib.parse import urlencode
 
@@ -206,7 +207,8 @@ async def verify(core, value, key, inventory, states):
         raise ValueError("A selected source is missing or unavailable.")
     now = datetime.now(UTC)
     if key in ("calendars", "waste"):
-        query = urlencode({"start": now.isoformat(), "end": (now + timedelta(days=90 if key == "waste" else 30)).isoformat()})
+        until = now + timedelta(days=90 if key == "waste" else 30)
+        query = urlencode({"start": now.isoformat(), "end": until.isoformat()})
         events = await core.rest_get("/calendars/" + choice["sources"][0] + "?" + query)
 
         def credible(event):
@@ -214,14 +216,14 @@ async def verify(core, value, key, inventory, states):
                 return False
             start = event["start"]
             try:
-                upcoming = (
-                    datetime.fromisoformat(start["dateTime"]).astimezone(UTC) >= now
-                    if start.get("dateTime")
-                    else date.fromisoformat(start["date"]) >= now.date()
-                )
+                if start.get("dateTime"):
+                    when = datetime.fromisoformat(start["dateTime"])
+                    upcoming = when.tzinfo is not None and now <= when.astimezone(UTC) <= until
+                else:
+                    upcoming = now.date() <= date.fromisoformat(start["date"]) <= until.date()
             except (ValueError, KeyError, TypeError):
                 return False
-            collection = any(word in event["summary"].casefold() for word in ("collection", "waste", "bin", "recycl", "rubbish", "garbage"))
+            collection = bool(re.search(r"\b(?:collection|waste|bins?|recycling|recycle|rubbish|garbage)\b", event["summary"], re.IGNORECASE))
             known_service = any(e["entity_id"] == choice["sources"][0] and e.get("platform") in WASTE for e in entities(inventory))
             return upcoming and bool(event["summary"].strip()) and (key != "waste" or collection or known_service)
 

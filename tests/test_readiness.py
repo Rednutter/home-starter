@@ -170,6 +170,9 @@ async def test_bins_require_real_event_explicit_display_and_repeat_safe_proof(tm
         [{"summary": "Example collection", "start": {"date": "not-a-date"}}],
         [{"summary": "Example collection", "start": {"date": "2000-01-01"}}],
         [{"summary": "Example birthday", "start": {"date": (datetime.now(UTC) + timedelta(days=1)).date().isoformat()}}],
+        [{"summary": "Robin birthday", "start": {"date": (datetime.now(UTC) + timedelta(days=1)).date().isoformat()}}],
+        [{"summary": "Example collection", "start": {"date": (datetime.now(UTC) + timedelta(days=100)).date().isoformat()}}],
+        [{"summary": "Example collection", "start": {"dateTime": "2099-01-01T12:00:00"}}],
     ):
         with pytest.raises(ValueError, match="upcoming"):
             await r.verify(CalendarCore(events), value, "waste", inv, states)
