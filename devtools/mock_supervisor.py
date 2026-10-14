@@ -111,6 +111,16 @@ class MockSupervisor:
         self.ws_calls: list[dict[str, Any]] = []
         self.calendar_events: dict[str, list[dict]] = {}
         self.devices = core_fix("device_registry_list.json")
+        self.areas = core_fix("area_registry_list.json")
+        self.floors = core_fix("floor_registry_list.json")
+        self.persons = {
+            "storage": [
+                {"id": "example_adult", "name": "Example adult", "device_trackers": []},
+                {"id": "example_child", "name": "Example child", "device_trackers": []},
+                {"id": "example_display", "name": "Example display", "device_trackers": []},
+            ],
+            "config": [],
+        }
         self.entity_registry = core_fix("inventory_entity_registry_list.json")
         self.dashboard_configs: dict[str, Any] = {}
         self.dashboards: list[dict] = []
@@ -361,7 +371,23 @@ class MockSupervisor:
             device["area_id"] = msg["area_id"]
             return device
         if t == "config/floor_registry/list":
-            return core_fix("floor_registry_list.json")
+            return self.floors
+        if t == "person/list":
+            return self.persons
+        for kind, items in (("floor", self.floors), ("area", self.areas)):
+            key = kind + "_id"
+            if t == f"config/{kind}_registry/create":
+                item = {
+                    key: f"example_{kind}_{len(items)}",
+                    "name": msg["name"],
+                    **({"level": msg.get("level")} if kind == "floor" else {"floor_id": msg.get("floor_id")}),
+                }
+                items.append(item)
+                return item
+            if t == f"config/{kind}_registry/update":
+                item = next(i for i in items if i[key] == msg[key])
+                item.update({k: v for k, v in msg.items() if k not in {"id", "type"}})
+                return item
         if t == "config/auth/list":
             return self.users
         if t == "config_entries/get":
@@ -372,7 +398,7 @@ class MockSupervisor:
         if t == "config_entries/flow/progress":
             return core_fix("flow_progress.json") + self.flows
         if t == "config/area_registry/list":
-            return core_fix("area_registry_list.json")
+            return self.areas
         if t == "config/entity_registry/list":
             return self.entity_registry
         if t == "repairs/list_issues":

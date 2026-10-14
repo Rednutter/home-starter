@@ -1,5 +1,6 @@
 import { apiUrl, navigateHA } from "./routes.js";
 import { initHouse } from "./house.js";
+import { initThisHouse } from "./this-house.js";
 import { initSurfaces } from "./surfaces.js";
 import { initInstallation } from "./installation.js";
 import { initReadiness } from "./readiness.js";
@@ -347,6 +348,7 @@ async function init() {
   document.getElementById("music-runtime").append(musicRuntime({ h, api, navigateHA }));
   const refreshInstallation = await initInstallation({ h, api, navigateHA });
   const refreshHouse = initHouse({ h, api, navigateHA, scan });
+  initThisHouse({ h, api, navigateHA });
   initSurfaces({ h, api, navigateHA });
   initReadiness({ h, api, navigateHA });
   renderOutcomes();

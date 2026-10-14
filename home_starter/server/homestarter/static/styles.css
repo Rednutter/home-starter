@@ -33,6 +33,16 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--text); }
 [hidden] { display: none !important; }
+.house-part { border-top: 1px solid var(--line); margin-top: 24px; padding-top: 12px; }
+.house-part summary, .house-pending > summary { min-height: 44px; padding: 10px 0; cursor: pointer; overflow-wrap: anywhere; }
+.house-row { border-bottom: 1px solid var(--line); padding: 2px 0 10px; }
+.house-row > summary > span { display: block; margin: 4px 0 0 18px; }
+.house-row .btn { margin: 8px 8px 0 0; }
+.house-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 12px; }
+.house-part input, .house-part select { max-width: 100%; min-width: 0; }
+.house-review { overflow-wrap: anywhere; }
+.house-part .plain, .house-pending { overflow-wrap: anywhere; }
+.house-part .screen-field { margin: 10px 0; }
 body { line-height: 1.45; }
 .wrap { max-width: 920px; margin: 0 auto; padding: 20px 16px 48px; }
 .house-nav { display: flex; flex-wrap: wrap; gap: 12px 24px; margin: 12px 0 24px; }

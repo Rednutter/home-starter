@@ -23,7 +23,7 @@ from typing import Any
 import aiohttp
 from aiohttp import web
 
-from . import __version__, commissioning, readiness
+from . import __version__, commissioning, readiness, this_house
 from .activity import update_activity
 from .core import CoreClient, CoreError
 from .household import PROFILES, HouseholdStore, validate_household
@@ -44,6 +44,7 @@ STATIC_FILES = {
     "app.js": "text/javascript",
     "routes.js": "text/javascript",
     "house.js": "text/javascript",
+    "this-house.js": "text/javascript",
     "surfaces.js": "text/javascript",
     "installation.js": "text/javascript",
     "readiness.js": "text/javascript",
@@ -304,6 +305,24 @@ async def api_inventory(request: web.Request) -> web.Response:
         return _json(await collect_inventory(request.app[K_STATE].core))
     except (KeyError, TypeError, ValueError, AttributeError):
         return _json({"error": "Couldn't read the house inventory. Check again."}, status=503)
+
+
+async def api_this_house(request: web.Request) -> web.Response:
+    state = await household_admin(request)
+    try:
+        async with state.household_lock, state.inventory_write_lock:
+            if request.method == "GET":
+                return _json(await this_house.inspect(state.core, state.household))
+            commissioning.gate(state.household)
+            body = await household_body(request)
+            return _json(await this_house.act(state.core, state.household, request.match_info["action"], body))
+    except ValueError as error:
+        return _json({"error": str(error), "verified": False}, 409)
+    except (CoreError, OSError, KeyError, TypeError, AttributeError):
+        return _json(
+            {"error": "House changes could not be verified. HA may have changed; refresh before retrying. Saved settings are preserved.", "verified": False},
+            503,
+        )
 
 
 async def api_assign_area(request: web.Request) -> web.Response:
@@ -815,6 +834,8 @@ def create_app(settings: Settings, session: aiohttp.ClientSession | None = None)
     app.router.add_get("/api/health", health)
     app.router.add_get("/api/scan", api_scan)
     app.router.add_get("/api/inventory", api_inventory)
+    app.router.add_get("/api/house", api_this_house)
+    app.router.add_post("/api/house/{action}", api_this_house)
     app.router.add_get("/api/household", api_household)
     app.router.add_get("/api/commissioning", api_commissioning)
     app.router.add_post("/api/commissioning/{action}", api_commissioning_action)

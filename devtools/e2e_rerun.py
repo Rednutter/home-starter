@@ -21,10 +21,10 @@ def main():
         expect(frame.locator("body")).to_have_attribute("data-commissioning", "maintenance")
         expect(frame.get_by_role("button", name="Finish setup", exact=True)).to_be_visible()
         expect(frame.locator("body")).to_have_attribute("data-setup-state", "existing")
-        frame.get_by_role("link", name="People", exact=True).click()
+        frame.get_by_role("link", name="Screens", exact=True).click()
         frame.get_by_label("Person name", exact=True).fill("Adult 1")
         frame.get_by_label("Person audience", exact=True).select_option("adult")
-        frame.get_by_role("button", name="Add person", exact=True).click()
+        frame.get_by_role("button", name="Add screen profile", exact=True).click()
         frame.get_by_label("Screen name", exact=True).fill("Example tablet")
         frame.get_by_label("Screen type", exact=True).select_option("tablet")
         frame.get_by_role("button", name="Add screen", exact=True).click()
@@ -50,7 +50,7 @@ def main():
         for _ in range(2):
             page.reload()
             expect(frame.locator("body")).to_have_attribute("data-setup-state", "existing")
-            expect(frame.locator("#installation-body")).to_contain_text("1 people · 1 screens · 1 activity rules")
+            expect(frame.locator("#installation-body")).to_contain_text("1 saved screen profiles · 1 screens · 1 activity rules")
             expect(frame.locator("#installation-body")).to_contain_text("Published · matches saved version")
             assert "false" not in frame.locator("#installation-body").inner_text()
             assert frame.locator("#review-setup").get_attribute("open") is None

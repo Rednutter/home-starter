@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.0
+
+- Add This House: live HA people, trackers, floors, areas and physical equipment,
+  with discrepancies first and optional inspection of already placed devices.
+- Review and write floor, area and device placement changes through supported HA
+  registry APIs, with stale-change checks and readback before confirmation.
+- Retain private household roles, area grouping intent, portable-equipment intent
+  and short physical notes without duplicating HA's registry. Native changes reopen
+  affected confirmations. Keep screen preferences distinct from HA Person records.
+- Preserve existing Music checks, published dashboards and saved screen settings.
+
 ## 0.4.8
 
 - Distinguish audible confirmation from automatic progress evidence for speakers

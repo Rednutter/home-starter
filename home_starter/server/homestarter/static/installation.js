@@ -9,7 +9,7 @@ export async function initInstallation({ h, api, navigateHA }) {
   const status = document.getElementById("installation-status");
   const changes = document.getElementById("changes-body");
   const setup = document.getElementById("review-setup");
-  for (const id of ["fresh-batteries", "useful-things", "forgotten"]) {
+  for (const id of ["fresh-batteries", "useful-things", "forgotten", "your-home"]) {
     const section = document.getElementById(id); section.hidden = false; setup.append(section);
   }
   let data = null, busy = false;
@@ -29,8 +29,8 @@ export async function initInstallation({ h, api, navigateHA }) {
     setup.hidden = false;
     if (previous !== mode) setup.open = mode === "first-run";
     document.querySelector(".house-nav").replaceChildren(...[
-      ["house-status", "House status"], ["home-readiness", "Home Readiness"], ["house-changes", "New / changed things"], ["surfaces", "Screens"],
-      ["household-people", "People"], ["music", "Music"], ["house-climate", "Climate"],
+      ["this-house", "This House"], ["house-status", "House status"], ["home-readiness", "Home Readiness"], ["house-changes", "New / changed things"], ["surfaces", "Screens"],
+      ["this-house-people", "People"], ["music", "Music"], ["house-climate", "Climate"],
       ["household-activities", "Activities"], ["review-setup", "Review setup"],
     ].map(([id, label]) => h("a", { href: "#" + id, onclick: () => {
       const target = document.getElementById(id);
@@ -44,7 +44,7 @@ export async function initInstallation({ h, api, navigateHA }) {
     const climate = data.screens.find(s => s.profile === "specialist" && s.status === "published") ||
       data.screens.find(s => ["phone", "tablet"].includes(s.profile) && s.status === "published");
     replace(root,
-      h("p", {}, `${data.counts.people} people · ${data.counts.screens} screens · ${data.counts.activities} activity rules`),
+      h("p", {}, `${data.counts.people} saved screen profiles · ${data.counts.screens} screens · ${data.counts.activities} activity rules`),
       !data.inventory_complete && h("p", { class: "warn" }, "Inventory is incomplete. The last complete baseline is preserved."),
       data.baseline_created && h("p", { class: "small muted" }, "First comparison baseline recorded. Future launches show differences without rebuilding setup."),
       h("h3", {}, "Screens"),
@@ -72,8 +72,8 @@ export async function initInstallation({ h, api, navigateHA }) {
     const reset = button("Reset Home Starter setup", () => action("reset", data.revision, confirmation.value), true);
     confirmation.addEventListener("input", () => { reset.disabled = busy || confirmation.value !== "RESET HOME STARTER"; });
     setup.append(h("details", { id: "reset-setup" }, h("summary", {}, "Reset Home Starter setup"),
-      h("p", {}, "Clears saved people, screen profiles, preferences, names, activity rules, Home Readiness decisions and the comparison baseline. A local recovery copy is retained. " +
-        "HA dashboards, devices, entities and integrations stay in place. Publication ownership and activity history are retained for protection and recovery."),
+      h("p", {}, "Clears saved screen profiles, preferences, names, activity rules, Home Readiness decisions and the comparison baseline. A local recovery copy is retained. " +
+        "HA dashboards, people, devices, entities and integrations stay in place. This House confirmations, publication ownership and activity history are retained for protection and recovery."),
       h("label", { class: "screen-field" }, h("span", {}, "Type RESET HOME STARTER to confirm"), confirmation), reset));
   }
   async function action(name, revision, acknowledgement) {

@@ -1,5 +1,9 @@
 # Home Starter
 
+**This House** compares live HA people, floors, rooms and equipment with the
+physical home. Review discrepancies and confirm changes before writing them back.
+See [house commissioning and limits](THIS_HOUSE.md).
+
 Scan your Home Assistant, pick what you want to do, and let Home Starter set
 up the sensible existing component the Home Assistant way, then check it works.
 

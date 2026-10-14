@@ -66,11 +66,11 @@ export function initSurfaces({ h, api, navigateHA }) {
   function renderPeople() {
     const name = input("Person name", "", { placeholder: "Name" });
     const audience = select("Person audience", [["everyone", "Everyone"], ["adult", "Adult"]], "everyone");
-    return h("details", { id: "household-people", open: editingPeople || !draft.people.length }, h("summary", {}, "People"),
-      h("p", { class: "small muted" }, "These are screen preferences, not new Home Assistant accounts. Account access stays in Home Assistant."),
+    return h("details", { id: "household-people", open: editingPeople || !draft.people.length }, h("summary", {}, "Screen profiles"),
+      h("p", { class: "small muted" }, "Saved screen preferences. Household members and presence trackers are reviewed in This House; account access stays in Home Assistant."),
       draft.people.map(p => h("div", { class: "screen-row" }, h("strong", {}, p.name), h("span", { class: "muted" }, p.audience === "adult" ? "Adult" : "Everyone"))),
       h("div", { class: "screen-fields" }, field("Name", name), field("Audience", audience)),
-      button("Add person", () => { if (!name.value.trim()) { name.focus(); return; } editingPeople = true; draft.people.push({ id: id("person"), name: name.value.trim(), audience: audience.value }); changed(); render(); }));
+      button("Add screen profile", () => { if (!name.value.trim()) { name.focus(); return; } editingPeople = true; draft.people.push({ id: id("person"), name: name.value.trim(), audience: audience.value }); changed(); render(); }));
   }
   function renderAddScreen() {
     const name = input("Screen name", "", { placeholder: "e.g. Kitchen tablet" });

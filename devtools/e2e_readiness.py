@@ -17,11 +17,11 @@ def main():
         frame = page.frame_locator("#panel")
         expect(frame.locator("#readiness-status")).to_contain_text("Saved decisions loaded")
         # Run after synthetic commissioning or on a fresh maintenance fixture.
-        frame.get_by_role("link", name="People", exact=True).click()
+        frame.get_by_role("link", name="Screens", exact=True).click()
         for name, audience in (("Adult 1", "adult"), ("Child 1", "everyone")):
             frame.get_by_label("Person name", exact=True).fill(name)
             frame.get_by_label("Person audience", exact=True).select_option(audience)
-            frame.get_by_role("button", name="Add person", exact=True).click()
+            frame.get_by_role("button", name="Add screen profile", exact=True).click()
         frame.get_by_label("Screen name", exact=True).fill("Example phone")
         frame.get_by_role("button", name="Add screen", exact=True).click()
         frame.get_by_role("button", name="Save household settings", exact=True).click()

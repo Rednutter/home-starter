@@ -30,7 +30,7 @@ def main():
         frame.get_by_role("link", name="Screens", exact=True).click()
         frame.get_by_label("Person name", exact=True).fill("Alex")
         frame.get_by_label("Person audience", exact=True).select_option("adult")
-        frame.get_by_role("button", name="Add person", exact=True).click()
+        frame.get_by_role("button", name="Add screen profile", exact=True).click()
         person = frame.get_by_label("Screen person", exact=True).locator("option").filter(has_text="Alex").get_attribute("value")
         surface_ids = {}
         for profile, label in (("phone", "Alex phone"), ("tablet", "House tablet"), ("specialist", "Kitchen AC panel"), ("wall", "Wall display")):

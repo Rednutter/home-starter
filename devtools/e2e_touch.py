@@ -59,16 +59,16 @@ def main():
 
 
 def add_people(frame):
-    people = frame.locator("details").filter(has=frame.get_by_text("People", exact=True))
+    people = frame.locator("details").filter(has=frame.get_by_text("Screen profiles", exact=True))
     if people.get_attribute("open") is None:
         people.locator("summary").click()
     frame.get_by_label("Person name", exact=True).fill("Fixture adult")
     frame.get_by_label("Person audience", exact=True).select_option("adult")
-    frame.get_by_role("button", name="Add person", exact=True).click()
+    frame.get_by_role("button", name="Add screen profile", exact=True).click()
     if people.get_attribute("open") is None:
         people.locator("summary").click()
     frame.get_by_label("Person name", exact=True).fill("Fixture child")
-    frame.get_by_role("button", name="Add person", exact=True).click()
+    frame.get_by_role("button", name="Add screen profile", exact=True).click()
 
 
 if __name__ == "__main__":

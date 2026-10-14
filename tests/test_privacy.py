@@ -34,6 +34,8 @@ def test_ignored_runtime_paths_and_source_visibility():
         "music-connection.json",
         "music-connection.tmp",
         "music-playback.json",
+        "house-confirmations.json",
+        "house-confirmations.tmp",
     ]
     git = shutil.which("git")
     result = subprocess.check_output([git, "check-ignore", "--no-index", *paths], text=True).splitlines()  # noqa: S603 -- synthetic literal paths
@@ -64,6 +66,8 @@ def test_private_runtime_paths_cannot_be_forced_into_a_release():
         "commissioning.json",
         "music-connection.json",
         "music-playback.json",
+        "house-confirmations.json",
+        "house-confirmations.tmp",
         "screens/capture.png",
         ".env",
         "dump.db",
