@@ -1,5 +1,6 @@
 """Music acceptance against the fixed synthetic loopback harness only."""
 
+import argparse
 from pathlib import Path
 
 from mock_music_runtime import TOKEN
@@ -18,6 +19,9 @@ def capture(page, frame, target, shots, state):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--infrequent", action="store_true")
+    args = parser.parse_args()
     shots = Path("screens/music-ui")
     shots.mkdir(parents=True, exist_ok=True)
     with sync_playwright() as p:
@@ -47,6 +51,8 @@ def main():
         runtime.get_by_label("Speaker to test").select_option("fixture_speaker")
         runtime.get_by_role("button", name="Check selected speaker playback", exact=True).click()
         expect(runtime.get_by_role("button", name="I heard it on this speaker", exact=True)).to_be_visible(timeout=20000)
+        if args.infrequent:
+            expect(runtime.get_by_text("MA reports playback; automatic progress is unverified", exact=False)).to_be_visible()
         capture(page, frame, runtime, shots, "pending-")
         # A reload must not fabricate audible confirmation.
         page.reload()
@@ -56,6 +62,8 @@ def main():
         expect(runtime.get_by_text("Music is incomplete until", exact=False)).to_be_visible()
         runtime.get_by_role("button", name="I heard it on this speaker", exact=True).click()
         expect(runtime.get_by_text("Playback verified: Fixture radio on Fixture speaker.", exact=False)).to_be_visible()
+        if args.infrequent:
+            expect(runtime.get_by_text("You confirmed hearing it; automatic progress is unverified.", exact=False)).to_be_visible()
         capture(page, frame, runtime, shots, "")
         runtime.get_by_text("Music Assistant connection", exact=True).click()
         runtime.get_by_label("Music Assistant API token", exact=True).fill("invalid-fixture-token")
@@ -65,7 +73,7 @@ def main():
         expect(runtime.get_by_text("Fixture radio · connected", exact=True)).to_be_visible()
         assert not errors, errors
         browser.close()
-    print("Music browser flow passed: recognition, missing-source guide, fresh progress, reload, hearing, scoped proof and failed-replacement preservation.")
+    print("Music browser flow passed: recognition, missing-source guide, playback evidence, reload, hearing, scoped proof and failed-replacement preservation.")
 
 
 if __name__ == "__main__":

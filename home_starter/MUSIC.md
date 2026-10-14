@@ -23,9 +23,11 @@ Home Starter observes; it never sends transport, queue, volume or grouping comma
 The read API allowlist is `providers`, `config/providers`, `players/all`,
 `players/get`, and `player_queues/get_active_queue`.
 
-The check requires matching source/queue/item/speaker identity, active playback,
-fresh raw device timestamps and advancing raw position. Extrapolated clocks and a
-static playing label do not pass. Unsupported device feedback remains incomplete.
+The check requires matching source/queue/item/speaker identity, active playback
+and fresh raw device timestamps. Advancing raw position is recorded separately;
+extrapolated clocks never establish automatic progress. Speakers with infrequent
+updates can be audibly confirmed, with automatic progress explicitly unverified.
+Missing source attribution, stale feedback or a playing label alone never completes Music.
 It waits up to twenty seconds for playback to start before sampling progress.
 After observation, the same HA administrator must confirm **I heard it on this
 speaker** within ten minutes. A negative answer removes the candidate. An older
@@ -39,7 +41,7 @@ available before commissioning Go; they neither apply household plans nor mutate
 Commissioning Retry consumes valid proof; installation alone stays incomplete.
 
 Supported API contract: MA 2.10.6 / models 1.1.205. This is an observed software
-progress check plus human audible confirmation, not acoustic measurement. Other
+playback attribution plus human audible confirmation, not acoustic measurement. Other
 sources, speakers and groups remain untested.
 
 Sources: [MA API](https://www.music-assistant.io/api/) and

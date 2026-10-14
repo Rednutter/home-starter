@@ -19,6 +19,7 @@ async def main():
     parser.add_argument("--data-dir", type=Path, help="Ignored runtime directory for isolated repeat-launch acceptance.")
     parser.add_argument("--fresh", action="store_true", help="Start genuine first-run commissioning instead of a maintenance fixture.")
     parser.add_argument("--music-ready", action="store_true", help="Commissioning fixture: existing MA connection, no provider/playback proof.")
+    parser.add_argument("--music-infrequent", action="store_true", help="Synthetic speaker reports fresh playback without frequent position updates.")
     args = parser.parse_args()
     credentials = {"user_id": "a1b2c3d4e5f6"} if args.fixtures else json.loads(Path("screens/v3-core-credentials.json").read_text())
     mock = MockSupervisor(
@@ -88,6 +89,9 @@ async def main():
             await runner.setup()
             await web.TCPSite(runner, "127.0.0.1", port).start()
             runners.append(runner)
+        if args.music_infrequent:
+            mock.music_api.progress = False
+            mock.music_api.fresh_static = True
         print("V3 test harness listening on loopback only.", flush=True)
         try:
             await asyncio.Event().wait()

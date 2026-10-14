@@ -200,7 +200,9 @@ class MusicRuntime:
         result["proof"] = self.valid_proof(result)
         pending = self.evidence().get("pending")
         if isinstance(pending, dict) and self.valid_record(pending, result, timedelta(minutes=10)):
-            result["pending"] = {k: pending[k] for k in ("id", "provider_id", "player_id", "at")}
+            result["pending"] = {k: pending[k] for k in ("id", "provider_id", "player_id", "at")} | {
+                "progress_verified": pending.get("progress_verified", True)
+            }
         return result
 
     async def verified(self):
@@ -233,7 +235,7 @@ class MusicRuntime:
     def valid_proof(self, snapshot):
         record = self.evidence().get("verified", {})
         if record.get("heard") is True and self.valid_record(record, snapshot, timedelta(days=1)):
-            return {k: record[k] for k in ("at", "provider_id", "player_id")}
+            return {k: record[k] for k in ("at", "provider_id", "player_id")} | {"progress_verified": record.get("progress_verified", True)}
         return None
 
     async def sample(self, endpoint, connection, provider_id, player_id):
@@ -292,8 +294,6 @@ class MusicRuntime:
                 if current["timestamp"] > first["timestamp"] and current["position"] - first["position"] >= 2:
                     found = True
                     break
-            if not found:
-                raise MusicRuntimeError("No fresh speaker progress was observed. A playing label alone is insufficient; retry once playback is progressing.")
             if signature != self.signature(await self.snapshot(), provider_id, player_id):
                 raise MusicRuntimeError("Music sources or speaker membership changed. Check again.")
             value = self.evidence()
@@ -304,12 +304,18 @@ class MusicRuntime:
                 "provider_id": provider_id,
                 "player_id": player_id,
                 "owner": digest(user),
+                "progress_verified": found,
             }
             private_write(self.proof_path, value)
             return {
                 "observed": True,
                 "id": value["pending"]["id"],
-                "detail": "Fresh device progress matched this provider and speaker. Confirm you heard it; other paths remain untested.",
+                "detail": (
+                    "Fresh device progress matched this provider and speaker."
+                    if found
+                    else "MA reported the selected source playing on this speaker, but automatic progress was not verified."
+                )
+                + " Confirm you heard it; a playing label alone does not complete Music.",
             }
 
     async def heard(self, identifier, user):

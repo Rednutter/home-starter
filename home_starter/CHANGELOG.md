@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.8
+
+- Distinguish audible confirmation from automatic progress evidence for speakers
+  with infrequent status updates. Require an attributed, active source/queue/player
+  path and human confirmation; disclose when automatic progress remains unverified.
+
 ## 0.4.7
 
 - Wait briefly for a chosen speaker to start or finish buffering before observing

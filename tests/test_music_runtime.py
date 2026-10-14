@@ -76,7 +76,7 @@ async def test_decline_and_failed_recheck_preserve_prior_scoped_proof(make_env):
     await runtime.decline(pending["id"], "fixture-admin")
     assert "pending" not in runtime.evidence()
     assert runtime.evidence()["verified"] == saved
-    env.mock.music_api.progress = False
+    env.mock.music_api.player["playback_state"] = "paused"
     with pytest.raises(MusicRuntimeError):
         await runtime.observe("fixture_radio", "fixture_speaker", "fixture-admin")
     assert runtime.evidence()["verified"] == saved
@@ -122,6 +122,7 @@ async def test_fresh_progress_and_hearing_required_then_expiry_health_and_reset_
         await runtime.heard(observed["id"], "different-admin")
     await runtime.heard(observed["id"], "fixture-admin")
     assert (await runtime.snapshot())["proof"]["player_id"] == "fixture_speaker"
+    assert (await runtime.snapshot())["proof"]["progress_verified"] is True
     saved = runtime.evidence()
     env.mock.music_api.player["available"] = False
     assert (await runtime.snapshot())["proof"] is None
@@ -138,7 +139,7 @@ async def test_fresh_progress_and_hearing_required_then_expiry_health_and_reset_
     assert runtime.connection_path.exists()
 
 
-@pytest.mark.parametrize("failure", ["static", "stale", "wrong_provider", "group", "wrong_item", "paused", "wrong_queue", "builtin"])
+@pytest.mark.parametrize("failure", ["stale", "wrong_provider", "group", "wrong_item", "paused", "wrong_queue", "builtin"])
 async def test_playing_labels_and_wrong_paths_cannot_pass(make_env, failure):
     runtime, env = await runtime_for(make_env)
     api = env.mock.music_api
@@ -170,6 +171,20 @@ async def test_playing_labels_and_wrong_paths_cannot_pass(make_env, failure):
         assert "fixture_connect" not in str(error.value)
     assert (await runtime.snapshot())["proof"] is None
     assert not runtime.proof_path.exists()
+
+
+async def test_infrequent_progress_requires_hearing_and_discloses_limited_evidence(make_env):
+    runtime, env = await runtime_for(make_env)
+    env.mock.music_api.progress = False
+    observed = await runtime.observe("fixture_radio", "fixture_speaker", "fixture-admin")
+    result = await runtime.snapshot()
+    assert result["proof"] is None
+    assert result["pending"]["progress_verified"] is False
+    assert "automatic progress was not verified" in observed["detail"]
+    await runtime.heard(observed["id"], "fixture-admin")
+    proof = (await runtime.snapshot())["proof"]
+    assert proof["progress_verified"] is False
+    assert proof["player_id"] == "fixture_speaker"
 
 
 async def test_api_admin_pre_go_connection_and_secret_response_guard(make_env):

@@ -314,7 +314,7 @@ async def execute(store, value, core, setup, user, music_runtime=None):
                 record(
                     key,
                     "verified",
-                    "Playback verified for the chosen Music Assistant source and speaker, including audible confirmation. Other paths are untested.",
+                    "Audible playback confirmed for the chosen source and speaker. Music shows device progress separately; other paths are untested.",
                 )
             else:
                 record(key, "incomplete", "Service configuration and an appropriate operation test remain incomplete. Fix now or deliberately skip.")

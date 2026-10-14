@@ -46,7 +46,7 @@ export function musicRuntime({ h, api, navigateHA }, openPath = "/config/apps") 
         : `For ${desired.value}, open Music Assistant → Settings → Music sources → Add a music source. If it is already listed, inspect that source instead of adding a duplicate. Availability and sign-in requirements depend on MA support. Complete sign-in there, then return and refresh sources here.`;
     });
     root.replaceChildren(...[h("h3", {}, "Sources and speaker playback"), notice,
-      proof ? h("p", {}, h("strong", {}, `Playback verified: ${providerName(proof.provider_id)} on ${playerName(proof.player_id)}. `), `Checked ${new Date(proof.at).toLocaleString()}. This check expires after 24 hours; other sources and speakers remain untested.`)
+      proof ? h("p", {}, h("strong", {}, `Playback verified: ${providerName(proof.provider_id)} on ${playerName(proof.player_id)}. `), proof.progress_verified === false ? "You confirmed hearing it; automatic progress is unverified. " : "Device progress and hearing confirmed. ", `Checked ${new Date(proof.at).toLocaleString()}. This check expires after 24 hours; other sources and speakers remain untested.`)
         : h("p", {}, "Music is incomplete until a connected source plays on your chosen speaker and you confirm you heard it."),
       connection,
       h("h4", {}, "Connected music sources"),
@@ -67,7 +67,7 @@ export function musicRuntime({ h, api, navigateHA }, openPath = "/config/apps") 
           if (!providerId || !playerId) { notice.textContent = "Choose a connected music source and an available speaker first."; notice.focus(); return; }
           return act("observe", { provider_id: providerId, player_id: playerId });
         }),
-        pending && h("div", {}, h("p", {}, `Fresh playback progress observed from ${providerName(pending.provider_id)} on ${playerName(pending.player_id)}. Did you hear it?`),
+        pending && h("div", {}, h("p", {}, `${pending.progress_verified === false ? "MA reports playback; automatic progress is unverified" : "Fresh playback progress observed"} from ${providerName(pending.provider_id)} on ${playerName(pending.player_id)}. Did you hear it?`),
           button("I heard it on this speaker", () => act("heard", { id: pending.id, confirm: true })),
           button("I could not hear it", () => act("decline", { id: pending.id, confirm: true }))))].filter(child => child != null && child !== false));
   }

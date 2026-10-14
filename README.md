@@ -114,8 +114,9 @@ See [inventory rules, API adjustments and limits](home_starter/INVENTORY.md).
   unverified because public entry summaries don't expose server IDs or URLs.
   This alone never completes Music. A separate authenticated, read-only MA connection
   recognises connected providers and guides missing setup. Choose a provider and
-  speaker, start playback in MA, observe fresh device progress, then confirm you
-  heard it. Proof covers that source/speaker only, expires after 24 hours and is
+  speaker, start playback in MA, check the attributed playback, then confirm you
+  heard it. Automatic progress evidence is disclosed separately for speakers with
+  infrequent updates. Proof covers that source/speaker only, expires after 24 hours and is
   invalidated by relevant connection/device changes. Existing accounts, queues,
   groups and volume are preserved. See [Music setup and verification](home_starter/MUSIC.md).
 * **Open Music Assistant** asks Home Assistant to navigate to the app's

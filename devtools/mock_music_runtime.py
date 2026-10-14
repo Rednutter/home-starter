@@ -12,6 +12,7 @@ class MockMusicRuntime:
     def __init__(self):
         self.calls = []
         self.progress = True
+        self.fresh_static = False
         self.timestamp = time.time()
         self.started = time.monotonic()
         self.providers = [
@@ -58,7 +59,7 @@ class MockMusicRuntime:
         if command == "players/get":
             player = copy.deepcopy(self.player)
             player["elapsed_time"] = 10 + (time.monotonic() - self.started if self.progress else 0)
-            player["elapsed_time_last_updated"] = time.time() if self.progress else self.timestamp
+            player["elapsed_time_last_updated"] = time.time() if self.progress or self.fresh_static else self.timestamp
             return web.json_response(player)
         if command == "player_queues/get_active_queue":
             return web.json_response(self.queue)
