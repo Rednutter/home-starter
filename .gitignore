@@ -22,6 +22,10 @@ installation.json
 inventory-history.json
 readiness.json
 commissioning.json
+music-connection.json
+music-connection.tmp
+music-playback.json
+music-playback.tmp
 reset-history.json
 *-token.txt
 *-credentials.json

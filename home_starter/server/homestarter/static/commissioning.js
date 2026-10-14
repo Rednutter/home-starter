@@ -1,4 +1,5 @@
 import { PREPARATION } from "./house.js";
+import { musicRuntime } from "./music-runtime.js";
 
 const TITLES = { music: "Music & radio", displays: "Household displays", calendars: "Calendars & events", climate: "Heating & cooling", communications: "Household calling / intercom", cameras: "Cameras & doorbells", presence: "Presence", appliances: "Appliances", lighting: "Lighting & power", waste: "Waste collection / bins", voice: "Voice" };
 const STAGES = ["Welcome", "Prepare", "Found", "Household", "Choose", "Configure", "Review", "Verify"];
@@ -113,6 +114,7 @@ export async function initCommissioning({ h, api, navigateHA }) {
           (found?.guide || []).map(text => h("p", {}, text)),
           key === "music" && h("p", {}, "Music Assistant: " + (data.music?.title || state.review?.music_state || "Check the existing service") + ". This does not establish connected providers or successful playback. Apple Music and other services depend on provider support in Music Assistant."),
           key === "music" && check("Run Music Assistant setup after Go if needed", draft.install_music, yes => draft.install_music = yes),
+          key === "music" && musicRuntime({ h, api, navigateHA }, data.music?.open_path || data.music?.handoff_path),
           checks("Sources for " + TITLES[key], (found?.sources || []).map(s => [s.id, s.name + (s.available ? "" : " · unavailable")]), choice.sources, value => choice.sources = value),
           checks("Displays for " + TITLES[key], draft.house.surfaces.map(s => [s.id, s.name]), choice.screens, value => choice.screens = value),
           Object.entries(discovery?.answer_options[key] || {}).map(([question, options]) => {
@@ -168,6 +170,7 @@ export async function initCommissioning({ h, api, navigateHA }) {
         !done && ["incomplete", "published"].includes(result.status) && !["household", "execution", "music_installer"].includes(key) && btn("Skip " + (TITLES[key] || "this display") + " for now", () => action("skip", { key, confirm: true })),
         !done && result.status === "incomplete" && TITLES[key] && btn("Fix " + TITLES[key] + " now", () => navigateHA(key === "music" ? data.music?.open_path || data.music?.handoff_path || "/config/apps" : "/config/integrations"))))),
       state.phase === "executing" && h("p", { role: "status" }, "Progress is saved after each result. You can return if this page closes."),
+      !done && state.phase === "verification_incomplete" && state.results.music?.status === "incomplete" && musicRuntime({ h, api, navigateHA }, data.music?.open_path || data.music?.handoff_path),
       state.phase === "verification_incomplete" && h("div", { class: "actions" }, btn("Retry incomplete checks", () => action("retry")), btn("Edit and review plan", () => action("edit"))),
       done && btn("Go to Home Readiness", () => location.reload(), true));
   }

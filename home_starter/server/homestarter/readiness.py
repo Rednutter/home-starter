@@ -25,7 +25,7 @@ CAPABILITIES = {
 }
 ANSWERS = {
     "music": {
-        "providers": {"spotify", "local", "radio", "podcasts", "other"},
+        "providers": {"spotify", "apple_music", "local", "radio", "podcasts", "other"},
         "accounts": {"shared", "individual", "mixed"},
         "groups": {"none", "configure_in_ma"},
     },
@@ -387,6 +387,8 @@ def report(house, value, inventory, states, music):
                     status = "Music Assistant stopped" if music["state"] == "stopped" else "Music Assistant check unavailable"
                 else:
                     status = "Provider choice/setup unverified" if not choice["answers"].get("providers") else "Provider/playback unverified"
+                if music.get("runtime", {}).get("proof"):
+                    status = "Verified chosen provider and speaker · other paths untested"
             if key in ("calendars", "waste") and healthy and proof_valid(value, key, inventory):
                 status = "Verified upcoming event" if choice["screens"] else "Verified source · choose displays"
             if key == "presence":
@@ -411,7 +413,9 @@ def report(house, value, inventory, states, music):
                     "ask": intent is not None,
                     "source_selection": bool(choice.get("sources")),
                     "configure": key in ("calendars", "waste") and bool(choice.get("screens")) and proof_valid(value, key, inventory),
-                    "verify": proof_valid(value, key, inventory) if key in ("calendars", "waste") else False,
+                    "verify": proof_valid(value, key, inventory)
+                    if key in ("calendars", "waste")
+                    else key == "music" and bool(music.get("runtime", {}).get("proof")),
                     "monitor": inventory["complete"],
                 },
             }

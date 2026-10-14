@@ -294,6 +294,44 @@ async def test_music_installer_is_explicit_post_go_and_not_replayed(make_env, mo
         await client.close()
 
 
+async def test_music_retry_requires_device_progress_and_hearing(make_env):
+    from mock_music_runtime import TOKEN
+
+    env = await make_env("ready", fresh=True)
+    client, headers = await client_for(env)
+    try:
+        state = await reviewed(client, headers, ["music"])
+        await action(client, headers, state, "go", token=state["review"]["token"], confirm=True)
+        state = await wait_result(client, headers)
+        assert state["results"]["music"]["status"] == "incomplete"
+        runtime = client.app[K_STATE].music_runtime
+        await runtime.connect(TOKEN)
+        runtime.interval = 0.01
+        original = runtime.sample
+
+        async def progress(*args):
+            value = await original(*args)
+            env.mock.music_api.started -= 3
+            return value
+
+        runtime.sample = progress
+        observed = await runtime.observe("fixture_radio", "fixture_speaker", headers["X-Remote-User-Id"])
+        await action(client, headers, state, "retry")
+        state = await wait_result(client, headers)
+        assert state["results"]["music"]["status"] == "incomplete"
+        await runtime.heard(observed["id"], headers["X-Remote-User-Id"])
+        await action(client, headers, state, "retry")
+        state = await wait_result(client, headers)
+        assert state["results"]["music"]["status"] == "verified"
+        assert state["phase"] == "commissioned"
+        assert not env.mock.music_api.calls or all(
+            command in {"providers", "config/providers", "players/all", "players/get", "player_queues/get_active_queue"}
+            for command, _ in env.mock.music_api.calls
+        )
+    finally:
+        await client.close()
+
+
 async def test_edit_before_go_keeps_the_entire_unapplied_plan(make_env):
     env = await make_env(fresh=True)
     client, headers = await client_for(env)

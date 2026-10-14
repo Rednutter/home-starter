@@ -22,6 +22,10 @@ RUNTIME = {
     "reset-history.json",
     "readiness.json",
     "commissioning.json",
+    "music-connection.json",
+    "music-connection.tmp",
+    "music-playback.json",
+    "music-playback.tmp",
 }
 CONTACT = re.compile(r"[\w.+-]+@([\w.-]+\.[A-Za-z]{2,})")
 KEY = re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{30,}")

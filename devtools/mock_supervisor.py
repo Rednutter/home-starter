@@ -437,7 +437,11 @@ class MockSupervisor:
     def ma_app(self) -> web.Application:
         """Stand-in for the Music Assistant server's own port (GET /info)."""
         app = web.Application()
+        from mock_music_runtime import MockMusicRuntime
+
+        self.music_api = MockMusicRuntime()
         app.router.add_get("/info", self.ma_server_info)
+        app.router.add_post("/api", self.music_api.api)
         return app
 
     def app(self) -> web.Application:

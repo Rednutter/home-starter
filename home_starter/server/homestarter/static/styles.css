@@ -171,6 +171,10 @@ body[data-commissioning="loading"] #rescan, body[data-commissioning="active"] #r
 .commission-choice, .commission-result { padding: 12px 0; border-bottom: 1px solid var(--line); }
 .commission-choice p, .commission-result p { margin-top: 4px; }
 .commission-summary { padding-left: 24px; line-height: 1.9; }
+.music-runtime { max-width: 72ch; overflow-wrap: anywhere; }
+.music-runtime .btn { margin: 8px 8px 0 0; }
+.music-runtime h4 { margin: 24px 0 8px; }
+.music-runtime summary { min-height: 44px; padding: 10px 0; }
 .screen-preview { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--line); }
 .preview-nav { display: flex; gap: 20px; flex-wrap: wrap; margin: 16px 0; color: var(--muted); }
 .preview-nav span:first-child { color: var(--text); font-weight: 600; }

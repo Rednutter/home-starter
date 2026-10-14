@@ -251,7 +251,7 @@ def check_go(store, value, token, inventory, states):
         raise ValueError("Saved settings changed. Review again before applying changes.")
 
 
-async def execute(store, value, core, setup, user):
+async def execute(store, value, core, setup, user, music_runtime=None):
     """Journal each independent result; retries never replay successful writes."""
     results = value["results"]
 
@@ -309,6 +309,12 @@ async def execute(store, value, core, setup, user):
                     key,
                     "verified" if valid else "incomplete",
                     "Available source mapped to a confirmed member; no automation created." if valid else "Map a valid source to a household member.",
+                )
+            elif key == "music" and music_runtime is not None and await music_runtime.verified():
+                record(
+                    key,
+                    "verified",
+                    "Playback verified for the chosen Music Assistant source and speaker, including audible confirmation. Other paths are untested.",
                 )
             else:
                 record(key, "incomplete", "Service configuration and an appropriate operation test remain incomplete. Fix now or deliberately skip.")

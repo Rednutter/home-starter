@@ -29,6 +29,8 @@ from .core import CoreClient, CoreError
 from .household import PROFILES, HouseholdStore, validate_household
 from .inventory import assign_area, collect_inventory
 from .music import MusicSetup, evaluate, gather_facts
+from .music_runtime import MusicRuntime, MusicRuntimeError
+from .music_runtime import digest as music_digest
 from .reconcile import acknowledge, observe
 from .scan import ha_version_from_scan, run_scan
 from .settings import Settings
@@ -46,6 +48,7 @@ STATIC_FILES = {
     "installation.js": "text/javascript",
     "readiness.js": "text/javascript",
     "commissioning.js": "text/javascript",
+    "music-runtime.js": "text/javascript",
     "styles.css": "text/css",
     "icon.svg": "image/svg+xml",
 }
@@ -68,6 +71,7 @@ class State:
         self.supervisor = SupervisorClient(session, settings.supervisor_url, settings.token)
         self.core = CoreClient(session, settings.core_api_url, settings.core_ws_url, settings.token)
         self.setup = MusicSetup(self.supervisor)
+        self.music_runtime = MusicRuntime(self.supervisor, session, settings.data_dir, settings.music_assistant_port)
         self.scan: dict[str, Any] | None = None
         self.scan_at = 0.0
         self.scan_lock = asyncio.Lock()
@@ -114,7 +118,13 @@ class State:
             ha_version=await self.ha_version(),
             ma_port=self.settings.music_assistant_port,
         )
-        return evaluate(facts, operation)
+        result = evaluate(facts, operation)
+        try:
+            runtime = await self.music_runtime.snapshot()
+            result["runtime"] = {k: runtime.get(k) for k in ("connected", "proof")}
+        except (MusicRuntimeError, SupervisorError, OSError, ValueError, KeyError, TypeError):
+            result["runtime"] = {"connected": False, "proof": None}
+        return result
 
     async def installation(self) -> dict:
         async with self.household_lock:
@@ -125,7 +135,14 @@ class State:
             screens = await screen_status(self.core, house, self.household.read(self.household.publication_path, {}))
         try:
             music = await self.music()
-            music = {k: music.get(k) for k in ("state", "title", "verified")}
+            proof = music.get("runtime", {}).get("proof")
+            music = {
+                "state": music["state"],
+                "verified": bool(proof),
+                "title": "Playback verified for the chosen source and speaker; other paths untested."
+                if proof
+                else "Provider and speaker playback unverified. " + music["title"],
+            }
         except (CoreError, SupervisorError, ValueError, KeyError, TypeError):
             music = {"state": "unavailable", "title": "Music check unavailable", "verified": False}
         return {
@@ -169,6 +186,7 @@ async def harden(request: web.Request, handler):
             and request.path.startswith("/api/")
             and not request.path.startswith("/api/commissioning/")
             and request.path != "/api/installation/reset"
+            and not request.path.startswith("/api/music/runtime")
         ):
             await household_admin(request)
             try:
@@ -182,11 +200,17 @@ async def harden(request: web.Request, handler):
     response.headers.setdefault("Referrer-Policy", "same-origin")
     response.headers.setdefault("Content-Security-Policy", CSP)
     response.headers.setdefault("Cache-Control", "no-store")
-    # Last line of defence: the Supervisor token must never leave the server.
-    token = request.app[K_SETTINGS].token.reveal()
+    # Neither service credential may leave the server, even through provider metadata.
+    tokens = [request.app[K_SETTINGS].token.reveal()]
+    try:
+        connection = request.app[K_STATE].music_runtime.connection()
+        if connection:
+            tokens.append(connection["token"].reveal())
+    except (MusicRuntimeError, OSError, ValueError):
+        pass
     body = getattr(response, "body", None)
-    if token and isinstance(body, (bytes, bytearray)) and token.encode() in body:
-        _LOGGER.error("Blocked a response that contained the Supervisor token")
+    if isinstance(body, (bytes, bytearray)) and any(token and token.encode() in body for token in tokens):
+        _LOGGER.error("Blocked a response that contained a service credential")
         return web.json_response({"error": "internal"}, status=500)
     if isinstance(response, web.HTTPException):
         raise response
@@ -245,6 +269,34 @@ async def api_scan(request: web.Request) -> web.Response:
 
 async def api_music(request: web.Request) -> web.Response:
     return _json(await request.app[K_STATE].music())
+
+
+async def api_music_runtime(request):
+    state = await household_admin(request)
+    try:
+        runtime = state.music_runtime
+        if request.method == "POST":
+            body = await household_body(request)
+            action = request.match_info["action"]
+            if action == "connect" and set(body) == {"token"}:
+                await runtime.connect(body["token"])
+            elif action == "observe" and set(body) == {"provider_id", "player_id"} and all(isinstance(v, str) for v in body.values()):
+                return _json(await runtime.observe(body["provider_id"], body["player_id"], _user(request)))
+            elif action in ("heard", "decline") and set(body) == {"id", "confirm"} and body["confirm"] is True and isinstance(body["id"], str):
+                await getattr(runtime, action)(body["id"], _user(request))
+            else:
+                raise ValueError("Review the Music action and try again.")
+        result = await runtime.snapshot()
+        pending = runtime.evidence().get("pending", {})
+        if pending.get("owner") != music_digest(_user(request)):
+            result.pop("pending", None)
+        return _json(result)
+    except MusicRuntimeError as error:
+        return _json({"error": str(error)}, 409)
+    except (SupervisorError, OSError, KeyError, TypeError):
+        return _json({"error": "Music could not be checked. Existing settings are preserved; retry."}, 503)
+    except ValueError as error:
+        return _json({"error": str(error)}, 400)
 
 
 async def api_inventory(request: web.Request) -> web.Response:
@@ -462,7 +514,9 @@ async def api_commissioning_action(request):
                     value["results"].pop("execution", None)
                 value["phase"] = "executing"
                 commissioning.write(store, value)
-                state.commissioning_task = asyncio.create_task(commissioning.execute(store, value, state.core, state.setup, _user(request)))
+                state.commissioning_task = asyncio.create_task(
+                    commissioning.execute(store, value, state.core, state.setup, _user(request), state.music_runtime)
+                )
             elif action == "edit":
                 if value["phase"] not in ("verification_incomplete", "reviewed"):
                     raise ValueError("There is no reviewed plan to edit.")
@@ -773,6 +827,8 @@ def create_app(settings: Settings, session: aiohttp.ClientSession | None = None)
     app.router.add_post("/api/surfaces/{surface}/publish", api_surface_publish)
     app.router.add_post("/api/inventory/area", api_assign_area)
     app.router.add_get("/api/music", api_music)
+    app.router.add_get("/api/music/runtime", api_music_runtime)
+    app.router.add_post("/api/music/runtime/{action}", api_music_runtime)
     app.router.add_post("/api/music/setup", api_music_setup)
     app.router.add_get("/api/music/operation", api_music_operation)
     return app

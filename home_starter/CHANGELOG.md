@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.5
+
+- Recognise actual MA music providers separately from plugins and built-in URLs;
+  guide missing source setup without changing existing provider accounts.
+- Add a private, explicitly connected MA API credential with safe replacement.
+- Observe fresh playback from a chosen provider and speaker, then require audible
+  confirmation. Scope and expire proof; never complete Music from installation.
+- Preserve provider settings, queues, groups, volume and household dashboards.
+
 ## 0.4.4
 
 - Separate first-run commissioning from returning-home maintenance.

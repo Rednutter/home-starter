@@ -107,12 +107,17 @@ See [inventory rules, API adjustments and limits](home_starter/INVENTORY.md).
   the exact Home Assistant screen (the app's store page, the add-repository
   dialog, Devices & services, the integration page) and offers **Check again**
   when you come back. It also re-checks when you return to the page.
-* **Verification** requires all of: Supervisor reports it installed and
+* **Installation verification** requires all of: Supervisor reports it installed and
   started, its internal ingress listener responds, its server version matches
   the installed app, first-run setup is complete, and one app-discovered
   integration is `loaded`. Multiple apps/entries and manual integrations stay
   unverified because public entry summaries don't expose server IDs or URLs.
-  Provider sign-ins, speaker availability and playback require checks in MA.
+  This alone never completes Music. A separate authenticated, read-only MA connection
+  recognises connected providers and guides missing setup. Choose a provider and
+  speaker, start playback in MA, observe fresh device progress, then confirm you
+  heard it. Proof covers that source/speaker only, expires after 24 hours and is
+  invalidated by relevant connection/device changes. Existing accounts, queues,
+  groups and volume are preserved. See [Music setup and verification](home_starter/MUSIC.md).
 * **Open Music Assistant** asks Home Assistant to navigate to the app's
   ingress panel (`/app/<slug>`, or `/hassio/ingress/<slug>` before HA 2026.2),
   using the frontend's own iframe navigation message, with a same-origin

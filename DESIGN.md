@@ -159,6 +159,14 @@ Save settings precedes Generate screen; unsaved changes invalidate the preview. 
 
 Native Sections, Tile, Markdown, Clock, Thermostat and Calendar form the household screen vocabulary, with native Media control and Weather where supported. Specialist screens put alerts before dominant air-conditioning thermostats. Wall dashboards use a large clock and informational context, exceptions and activity, with no generated control widgets, actionable taps or room navigation. This constraint applies to generated dashboard content; native Home Assistant chrome remains present.
 
+### Music addition evidence
+
+Music extends Code-led Operate in maintenance and commissioning: the same blue actions, flat bordered card, modest headings and system font stack (Segoe UI verified on the captured Windows browser). The reading column caps at (72ch), wraps long content and keeps full-width native selectors. Native connection and source-repair disclosures use (44px) minimum summaries. Installation/HA health remains a separate disclosure below source and speaker checks.
+
+The API connection uses a labeled password field; provider sign-in stays in Music Assistant. Read-only inspection lists actual providers; native selectors scope the check, and playback instructions hand off to Music Assistant. Text distinguishes loading, errors, busy actions, observed progress awaiting hearing confirmation, and verified playback scoped to one source and speaker with (24-hour) expiry. Installation and provider labels are never playback proof.
+
+Evidence: `home_starter/server/homestarter/static/{music-runtime.js,commissioning.js,index.html,styles.css}` and `home_starter/MUSIC.md`; final synthetic captures in `screens/music-ui/`: `desktop.png`, `mobile.png`, `connection-desktop.png`, `connection-mobile.png`, `pending-desktop.png`, `pending-mobile.png`. These demonstrate UI acceptance only; live household playback remains pending the user's private API connection and audible confirmation. Fixture names and simulated success are not design patterns or live verification.
+
 ## Do's and Don'ts
 
 - Do preserve the incumbent admin tokens and progressive disclosure.
