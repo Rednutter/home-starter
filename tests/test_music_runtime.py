@@ -84,6 +84,27 @@ async def test_decline_and_failed_recheck_preserve_prior_scoped_proof(make_env):
     assert (await runtime.snapshot())["proof"] is None
 
 
+async def test_buffering_can_start_during_check_without_weakening_progress(make_env):
+    runtime, env = await runtime_for(make_env)
+    original = runtime.sample
+    attempts = 0
+
+    async def starting(*args):
+        nonlocal attempts
+        attempts += 1
+        if attempts < 3:
+            raise MusicRuntimeError("Playback check incomplete — missing: speaker playing.")
+        result = await original(*args)
+        env.mock.music_api.started -= 3
+        return result
+
+    runtime.sample = starting
+    observed = await runtime.observe("fixture_radio", "fixture_speaker", "fixture-admin")
+    assert attempts >= 4
+    assert observed["observed"] is True
+    assert (await runtime.snapshot())["proof"] is None
+
+
 async def test_fresh_progress_and_hearing_required_then_expiry_health_and_reset_invalidate(make_env):
     runtime, env = await runtime_for(make_env)
     # Advance genuine raw feedback between reads without waiting in the suite.

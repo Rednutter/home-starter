@@ -59,6 +59,7 @@ class MusicRuntime:
         self.lock = asyncio.Lock()
         self.interval = 2.0
         self.samples = 7
+        self.startup_samples = 10
 
     def connection(self):
         value = self.store.read(self.connection_path, None)
@@ -274,7 +275,14 @@ class MusicRuntime:
             snapshot = await self.snapshot()
             signature = self.signature(snapshot, provider_id, player_id)
             endpoint, connection = await self.endpoint(), self.connection()
-            first = await self.sample(endpoint, connection, provider_id, player_id)
+            for attempt in range(self.startup_samples + 1):
+                try:
+                    first = await self.sample(endpoint, connection, provider_id, player_id)
+                    break
+                except MusicRuntimeError as error:
+                    if attempt == self.startup_samples or not str(error).startswith("Playback check incomplete"):
+                        raise
+                    await asyncio.sleep(self.interval)
             found = False
             for _ in range(self.samples):
                 await asyncio.sleep(self.interval)

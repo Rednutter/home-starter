@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.7
+
+- Wait briefly for a chosen speaker to start or finish buffering before observing
+  advancing playback. Keep authentication, source attribution and hearing checks.
+
 ## 0.4.6
 
 - Explain which playback evidence is missing instead of issuing a generic retry.

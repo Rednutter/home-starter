@@ -26,6 +26,7 @@ The read API allowlist is `providers`, `config/providers`, `players/all`,
 The check requires matching source/queue/item/speaker identity, active playback,
 fresh raw device timestamps and advancing raw position. Extrapolated clocks and a
 static playing label do not pass. Unsupported device feedback remains incomplete.
+It waits up to twenty seconds for playback to start before sampling progress.
 After observation, the same HA administrator must confirm **I heard it on this
 speaker** within ten minutes. A negative answer removes the candidate. An older
 valid check is preserved on failed/declined attempts.
