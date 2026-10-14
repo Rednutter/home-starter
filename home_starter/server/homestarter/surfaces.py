@@ -530,7 +530,7 @@ def touch_dashboard(house: dict, surface: dict, items: list[dict], eligible: lis
         if climate:
             # Main units advertise fan modes; this orders the glance without guessing identities.
             main = next((i for i in climate if i.get("attributes", {}).get("fan_modes")), climate[0])
-            controls = [card_for(i, person_surface, "large" if i is main else "normal") for i in climate]
+            controls = [card_for(main, person_surface, "large")] + [card_for(i, person_surface) for i in climate if i is not main]
             glance = card_for(main, person_surface, "large" if surface["profile"] == "specialist" else "compact")
             if glance["type"] == "tile":
                 glance["tap_action"] = {"action": "navigate", "navigation_path": base + "/" + ("climate" if page_path == "home" else page_path + "-climate")}

@@ -125,6 +125,25 @@ def test_airtouch_all_zones_admitted_by_registry_platform_dampers_are_informatio
     assert not admitted(unrelated, house["surfaces"][0], house, preferences(house, house["surfaces"][0]))
 
 
+def test_expanded_climate_puts_system_before_alphabetically_earlier_zones():
+    house = household("tablet")
+    classified = items(house)
+    main = next(i for i in classified if i["domain"] == "climate")
+    main["name"] = "Whole system"
+    main["attributes"].update(fan_modes=["auto"], supported_features=9)
+    zone = {
+        **main,
+        "id": "climate.zone",
+        "entity_id": "climate.zone",
+        "name": "A zone",
+        "attributes": {"supported_features": 1, "hvac_modes": ["off", "fan_only"]},
+    }
+    config = generate(house, house["surfaces"][0], [zone] + classified, inventory()[0]["areas"])["config"]
+    detail = next(v for v in config["views"] if v["path"] == "climate")
+    controls = [c for c in cards(detail) if c.get("entity", "").startswith("climate.")]
+    assert [c["entity"] for c in controls] == [main["entity_id"], zone["entity_id"]]
+
+
 def test_person_pages_never_elevate_physical_audience_and_children_favour_configured_room():
     house = household("tablet")
     house["surfaces"][0].update(person_id=None, audience="adult")

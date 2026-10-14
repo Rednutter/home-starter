@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.1
+
+- Put the main system thermostat before zone/damper controls in expanded Climate.
+  This preserves first-class climate emphasis when zone names sort earlier.
+- Live Green acceptance of 0.4.0 verified publication/readback, native House/person
+  navigation, room details, manual display views, main target adjustment and one-zone
+  off/on control with restoration. See [acceptance evidence](ACCEPTANCE.md).
+
 ## 0.4.0
 
 - Phone, tablet and AirTouch/specialist now share House + saved people navigation,

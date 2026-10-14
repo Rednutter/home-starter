@@ -27,6 +27,12 @@
    belong either to a person or the physical screen. Publication creates its own
    dashboard and verifies it by reading it back. Open that dashboard on its intended
    device and check the useful controls. Read [surface rules and limits](SURFACES.md).
+   Phone, tablet and AirTouch/specialist screens share **House + saved people** tabs.
+   Rooms and Climate/Today/Music expand into contextual views. Use **Ambient** or
+   **Dark** under Display to reduce information; **Active/Wake** returns to House.
+   Dark keeps HA chrome and a Wake target. Automatic idle and physical wake/sleep
+   require verified device management; no such integration is installed for you.
+   Link a child's personal screen to their room to establish personal room context.
 
 If any step can't be done directly, Home Starter sends you to the matching
 Home Assistant screen instead, and re-checks when you come back.
