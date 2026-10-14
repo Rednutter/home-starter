@@ -9,7 +9,7 @@ export async function initInstallation({ h, api, navigateHA }) {
   const status = document.getElementById("installation-status");
   const changes = document.getElementById("changes-body");
   const setup = document.getElementById("review-setup");
-  for (const id of ["fresh-batteries", "useful-things", "forgotten", "your-home"]) {
+  for (const id of ["home-readiness", "fresh-batteries", "useful-things", "forgotten", "your-home"]) {
     const section = document.getElementById(id); section.hidden = false; setup.append(section);
   }
   let data = null, busy = false;

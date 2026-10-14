@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.1
+
+- Show integration provenance and flag same-named equipment records for review,
+  keeping valid views of the same hardware separate without proposing deletion.
+- Keep earlier capability-planning choices under Review setup and explain their
+  screen-profile context, distinct from live This House and Music verification.
+- Use plain confirmation labels for household size and area purpose.
+
 ## 0.5.0
 
 - Add This House: live HA people, trackers, floors, areas and physical equipment,

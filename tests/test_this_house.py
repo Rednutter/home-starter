@@ -116,6 +116,22 @@ async def test_reset_preserves_physical_confirmations(env):
     assert env.store.this_house_path.read_bytes() == before
 
 
+async def test_same_named_equipment_stays_separate_with_integration_provenance(env):
+    env.mock.entries.append({"entry_id": "fixture_view", "domain": "fixture", "title": "Fixture", "state": "loaded"})
+    next(d for d in env.mock.devices if d["id"] == "fixture_kitchen")["config_entries"] = ["fixture_view"]
+    duplicate = copy.deepcopy(next(d for d in env.mock.devices if d["id"] == "fixture_kitchen"))
+    duplicate["id"] = "fixture_second_view"
+    env.mock.devices.append(duplicate)
+    original_entity = next(e for e in env.mock.entity_registry if e.get("device_id") == "fixture_kitchen")
+    env.mock.entity_registry.append({**original_entity, "entity_id": "light.fixture_second_view", "device_id": duplicate["id"]})
+    view = await house.inspect(env.core, env.store)
+    devices = [d for d in view["devices"] if d["id"] in {"fixture_kitchen", "fixture_second_view"}]
+    assert len(devices) == 2 and all(d["attention"] for d in devices)
+    assert all(any("share this name" in r for r in d["reasons"]) for d in devices)
+    assert all(d["integrations"] for d in devices)
+    assert not writes(env)
+
+
 async def test_success_without_readback_does_not_persist_confirmation(env):
     view = await house.inspect(env.core, env.store)
     device = next(d for d in view["devices"] if d["id"] == "fixture_kitchen")

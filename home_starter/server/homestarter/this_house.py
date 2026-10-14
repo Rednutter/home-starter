@@ -204,6 +204,7 @@ async def inspect(core, store):
         intent = saved["area_intent"].get(area["area_id"])
         area["kind"] = intent["kind"] if intent and intent["signature"] == area["signature"] else None
     area_ids = {a["area_id"] for a in areas}
+    names = [d["name"].casefold() for d in inventory["devices"] if equipment(d) and d.get("model") != "Google Cast Group"]
     devices = []
     for device in inventory["devices"]:
         if not equipment(device):
@@ -212,6 +213,11 @@ async def inspect(core, store):
         floor = next((f for f in floors if area and f["floor_id"] == area["floor_id"]), None)
         token = placement_signature(device, area, floor)
         reasons = [r for f in inventory["findings"] if device["id"] in f["device_ids"] and f["category"] != "needs_room" for r in f["reasons"]]
+        if names.count(device["name"].casefold()) > 1:
+            reasons.append(
+                "Several HA equipment records share this name. Compare their integrations and models; "
+                "these may be valid views of the same hardware. Nothing is merged or removed."
+            )
         overrides = [e["entity_id"] for e in device["entities"] if e.get("area_id") and e["area_id"] != device.get("area_id")]
         if overrides:
             reasons.append(f"{len(overrides)} entities have a different room override; device placement will preserve those overrides.")
@@ -227,6 +233,7 @@ async def inspect(core, store):
                 "name": device["name"],
                 "manufacturer": device.get("manufacturer"),
                 "model": device.get("model"),
+                "integrations": sorted({e["domain"] for e in device["integrations"]}),
                 "area_id": device.get("area_id"),
                 "path": device["path"],
                 "signature": token,

@@ -46,7 +46,7 @@ export function initThisHouse({ h, api, navigateHA }) {
 
   function review(container, description, action, payload, success) {
     container.replaceChildren(h("p", {}, description), h("div", { class: "actions" },
-      button("Confirm " + (action === "placement" ? "placement" : action === "relationship" ? "physical note" : action === "person" ? "person" : action === "structure" ? "house structure" : action + " change"),
+      button("Confirm " + (action === "placement" ? "placement" : action === "relationship" ? "physical note" : action === "person" ? "person" : action === "structure" ? "house structure" : action === "area_intent" ? "area purpose" : action === "expectation" ? "household size" : action + " change"),
         () => save(action, payload, success), true), button("Cancel", () => { container.replaceChildren(); dirty = false; })));
   }
 
@@ -125,7 +125,7 @@ export function initThisHouse({ h, api, navigateHA }) {
     row.addEventListener("toggle", () => {
       if (!row.open || row.dataset.built) return;
       row.dataset.built = "true";
-      row.append(h("p", { class: "small muted" }, [device.manufacturer, device.model, `${device.entity_count} entities`].filter(Boolean).join(" · ")),
+      row.append(h("p", { class: "small muted" }, [device.manufacturer, device.model, ...(device.integrations || []), `${device.entity_count} entities`].filter(Boolean).join(" · ")),
         h("p", {}, device.shared ? "HA identifies this as a shared media group, which has no single physical room." : device.portable ? "You confirmed this equipment has no fixed room." : `HA says this is in ${roomName(device.area_id)}. Is that right?`),
         ...(device.reasons.length ? [h("ul", { class: "plain" }, device.reasons.map(reason => h("li", {}, reason)))] : []));
       const area = select([["", "Choose a room"], ...data.areas.filter(a => a.kind !== "group").map(a => [a.area_id, `${floorName(a.floor_id)} / ${a.name}`])], device.area_id, "Room for " + device.name);
