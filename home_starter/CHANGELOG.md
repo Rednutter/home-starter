@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.6
+
+- Explain which playback evidence is missing instead of issuing a generic retry.
+  Preserve strict verification and all existing service settings.
+
 ## 0.4.5
 
 - Recognise actual MA music providers separately from plugins and built-in URLs;

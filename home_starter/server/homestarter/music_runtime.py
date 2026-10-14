@@ -248,28 +248,24 @@ class MusicRuntime:
         if not isinstance(stream, dict) or not isinstance(media, dict):
             raise MusicRuntimeError("Music Assistant playback feedback is unsupported. Keep Music incomplete and retry after checking MA.")
         position, timestamp = player.get("elapsed_time"), player.get("elapsed_time_last_updated")
-        if (
-            player.get("player_id") != player_id
-            or player.get("available") is not True
-            or player.get("type") != "player"
-            or player.get("synced_to")
-            or set(player.get("group_members") or []) - {player_id}
-            or set(player.get("static_group_members") or []) - {player_id}
-            or player.get("playback_state", player.get("state")) != "playing"
-            or queue.get("queue_id") != player_id
-            or queue.get("active") is not True
-            or queue.get("state") != "playing"
-            or stream.get("provider") != provider_id
-            or stream.get("stream_error") is True
-            or not isinstance(item.get("queue_item_id"), str)
-            or media.get("queue_item_id") != item["queue_item_id"]
-            or player.get("active_source") != queue["queue_id"]
-            or not number(position)
-            or not number(timestamp)
-            or not 0 <= time.time() - timestamp <= 20
-        ):
+        checks = {
+            "available single speaker": player.get("player_id") == player_id
+            and player.get("available") is True
+            and player.get("type") == "player"
+            and not player.get("synced_to")
+            and not (set(player.get("group_members") or []) - {player_id})
+            and not (set(player.get("static_group_members") or []) - {player_id}),
+            "speaker playing": player.get("playback_state", player.get("state")) == "playing",
+            "active speaker queue": queue.get("queue_id") == player_id and queue.get("active") is True and queue.get("state") == "playing",
+            "selected source": stream.get("provider") == provider_id and stream.get("stream_error") is not True,
+            "matching queue item": isinstance(item.get("queue_item_id"), str) and media.get("queue_item_id") == item["queue_item_id"],
+            "speaker queue source": player.get("active_source") == queue.get("queue_id"),
+            "fresh raw position": number(position) and number(timestamp) and 0 <= time.time() - timestamp <= 20,
+        }
+        failed = [label for label, passed in checks.items() if not passed]
+        if failed:
             raise MusicRuntimeError(
-                "Playback could not be attributed to this source and speaker with fresh device feedback. Play it through the selected MA source and retry."
+                "Playback check incomplete — missing: " + ", ".join(failed) + ". Keep the selected source playing on this speaker in MA, then retry."
             )
         return {"item": digest(item["queue_item_id"]), "position": position, "timestamp": timestamp}
 

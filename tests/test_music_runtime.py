@@ -135,8 +135,18 @@ async def test_playing_labels_and_wrong_paths_cannot_pass(make_env, failure):
         api.player["playback_state"] = "paused"
     if failure == "wrong_queue":
         api.queue["queue_id"] = "fixture_other"
-    with pytest.raises(MusicRuntimeError):
+    with pytest.raises(MusicRuntimeError) as error:
         await runtime.observe("fixture_urls" if failure == "builtin" else "fixture_radio", "fixture_speaker", "fixture-admin")
+    expected = {
+        "stale": "fresh raw position",
+        "wrong_provider": "selected source",
+        "wrong_item": "matching queue item",
+        "paused": "speaker playing",
+        "wrong_queue": "active speaker queue",
+    }
+    if failure in expected:
+        assert expected[failure] in str(error.value)
+        assert "fixture_connect" not in str(error.value)
     assert (await runtime.snapshot())["proof"] is None
     assert not runtime.proof_path.exists()
 
