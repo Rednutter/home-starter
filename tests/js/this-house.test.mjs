@@ -17,3 +17,9 @@ test("a loaded registry is not a commissioned physical house", () => {
   assert.ok(pending.includes("Compare floors and rooms with the physical house"));
   assert.ok(pending.includes("2 equipment records need a room"));
 });
+
+test("reviewed coverage can be healthy without a single physical room", () => {
+  const view={devices:[{id:"zone",name:"Shared zone",placed:false,multiroom:true,needs_room:false,attention:false}]};
+  assert.deepEqual(devicesFor(view,"room"),[]);
+  assert.deepEqual(devicesFor(view,"placed").map(d=>d.id),["zone"]);
+});

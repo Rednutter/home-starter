@@ -21,6 +21,11 @@ inventing a fixed room. Already placed devices need no routine interaction. Revi
 attention separately: availability, duplicate names and entity overrides do not
 establish physical function or justify deletion.
 
+Equipment serving several rooms can be confirmed separately after recording its
+coverage in a physical note. This keeps a combined climate zone out of missing-room
+work without assigning it to an invented room. Its console/controller still has a
+separate physical location to review. Native record changes reopen this intent.
+
 Device placement writes only `area_id` through `config/device_registry/update`.
 Names, entity IDs, integrations and entity-level area overrides are preserved.
 The app checks the live record against the reviewed signature, then reads back

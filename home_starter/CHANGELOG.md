@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.2
+
+- Confirm equipment that serves several rooms using a required physical coverage
+  note, without inventing a single room or changing HA assignments. Keep a wall
+  controller's physical placement separate from the zone it controls.
+- Preserve existing confirmations when these optional intent fields are added.
+
 ## 0.5.1
 
 - Show integration provenance and flag same-named equipment records for review,

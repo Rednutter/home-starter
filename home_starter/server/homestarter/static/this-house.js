@@ -1,6 +1,6 @@
 // HA owns the people and registries. This view stores only reviewed intent.
 export function devicesFor(view, filter, query = "") {
-  return view.devices.filter(d => (filter === "all" || (filter === "room" ? d.needs_room : filter === "attention" ? d.attention : (d.placed || d.shared || d.portable) && !d.attention)) &&
+  return view.devices.filter(d => (filter === "all" || (filter === "room" ? d.needs_room : filter === "attention" ? d.attention : (d.placed || d.shared || d.portable || d.multiroom) && !d.attention)) &&
     [d.name, d.manufacturer, d.model].filter(Boolean).join(" ").toLowerCase().includes(query.toLowerCase()))
     .sort((a, b) => Number(a.attention) - Number(b.attention) || a.name.localeCompare(b.name));
 }
@@ -46,7 +46,7 @@ export function initThisHouse({ h, api, navigateHA }) {
 
   function review(container, description, action, payload, success) {
     container.replaceChildren(h("p", {}, description), h("div", { class: "actions" },
-      button("Confirm " + (action === "placement" ? "placement" : action === "relationship" ? "physical note" : action === "person" ? "person" : action === "structure" ? "house structure" : action === "area_intent" ? "area purpose" : action === "expectation" ? "household size" : action + " change"),
+      button("Confirm " + (action === "placement" ? "placement" : action === "relationship" ? "physical note" : action === "person" ? "person" : action === "structure" ? "house structure" : action === "area_intent" ? "area purpose" : action === "expectation" ? "household size" : action === "multiroom" ? "coverage" : action + " change"),
         () => save(action, payload, success), true), button("Cancel", () => { container.replaceChildren(); dirty = false; })));
   }
 
@@ -121,12 +121,12 @@ export function initThisHouse({ h, api, navigateHA }) {
 
   function deviceView(device) {
     const row = h("details", { class: "house-row", id: "placement-" + device.id }, h("summary", {}, h("strong", {}, device.name),
-      h("span", { class: "small muted" }, `${device.shared ? "Shared media group" : device.portable ? "Portable · no fixed room" : roomName(device.area_id)}${device.confirmed ? " · confirmed" : device.changed ? " · changed since confirmation" : ""}${device.attention ? " · needs attention" : ""}`)));
+      h("span", { class: "small muted" }, `${device.shared ? "Shared media group" : device.multiroom ? "Serves several rooms · coverage recorded" : device.portable ? "Portable · no fixed room" : roomName(device.area_id)}${device.confirmed ? " · confirmed" : device.changed ? " · changed since confirmation" : ""}${device.attention ? " · needs attention" : ""}`)));
     row.addEventListener("toggle", () => {
       if (!row.open || row.dataset.built) return;
       row.dataset.built = "true";
       row.append(h("p", { class: "small muted" }, [device.manufacturer, device.model, ...(device.integrations || []), `${device.entity_count} entities`].filter(Boolean).join(" · ")),
-        h("p", {}, device.shared ? "HA identifies this as a shared media group, which has no single physical room." : device.portable ? "You confirmed this equipment has no fixed room." : `HA says this is in ${roomName(device.area_id)}. Is that right?`),
+        h("p", {}, device.shared ? "HA identifies this as a shared media group, which has no single physical room." : device.multiroom ? "You confirmed this equipment serves several rooms. Its physical note records the coverage; a console or controller can have its own physical placement." : device.portable ? "You confirmed this equipment has no fixed room." : `HA says this is in ${roomName(device.area_id)}. Is that right?`),
         ...(device.reasons.length ? [h("ul", { class: "plain" }, device.reasons.map(reason => h("li", {}, reason)))] : []));
       const area = select([["", "Choose a room"], ...data.areas.filter(a => a.kind !== "group").map(a => [a.area_id, `${floorName(a.floor_id)} / ${a.name}`])], device.area_id, "Room for " + device.name);
       const panel = h("div", { class: "house-review" });
@@ -135,6 +135,8 @@ export function initThisHouse({ h, api, navigateHA }) {
         "placement", { device_id: device.id, area_id: area.value, expected: device.signature }, "Device placement confirmed and read back from HA.")), panel);
       if (!device.shared && !device.portable) row.append(button("No fixed room (portable equipment)", () => review(panel,
         `Confirm ${device.name} moves around and should not need a fixed room? Its HA area stays unchanged.`, "portable", { device_id: device.id, expected: device.signature }, "Portable equipment confirmed.")));
+      if (!device.shared && !device.multiroom) row.append(button("Serves several rooms", () => review(panel,
+        `Confirm ${device.name} serves several rooms as described in its saved physical note? Its HA assignment stays unchanged. Record the coverage note first.`, "multiroom", { device_id: device.id, expected: device.signature }, "Equipment coverage confirmed.")));
       const notes = h("details", {}, h("summary", {}, "Physical connection or function"));
       const note = input(device.relationship, { maxlength: "240", "aria-label": "Physical note for " + device.name });
       const noteReview = h("div", { class: "house-review" });
@@ -150,7 +152,7 @@ export function initThisHouse({ h, api, navigateHA }) {
     const c = data.counts, pending = pendingHouse(data);
     root.replaceChildren(h("p", { class: "inventory-summary" }, `${c.members} confirmed household members${data.expectation ? ` / ${data.expectation.people} expected` : ""} · ${c.floors} floors · ${c.areas} rooms / areas`),
       h("p", {}, `${c.devices} equipment records · ${c.placed} already placed · ${c.needs_room} need a room · ${c.attention} need attention`),
-      h("p", { class: "small muted" }, `${c.shared} shared media groups · ${c.portable} confirmed portable records · ${c.members_without_tracker} household members without a usable tracker`),
+      h("p", { class: "small muted" }, `${c.shared} shared media groups · ${c.portable} confirmed portable records · ${c.multiroom || 0} records serving several rooms · ${c.members_without_tracker} household members without a usable tracker`),
       h("p", { class: "small muted" }, `HA contains ${c.people} Person records and ${c.registry_devices} device records in total. Service-only records are kept out of placement work. Attention and missing-room counts can overlap.`));
     if (notice) root.append(h("p", { class: "notice", role: "status" }, notice));
     if (!data.complete) root.append(h("p", { class: "error" }, "The house view is incomplete. Changes are disabled until its HA sources can be read."));

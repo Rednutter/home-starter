@@ -44,6 +44,7 @@ def empty():
         "people": {},
         "placements": {},
         "portable": {},
+        "multiroom": {},
         "area_intent": {},
         "relationships": {},
         "structure": None,
@@ -55,6 +56,7 @@ def load(store):
     value = store.read(store.this_house_path, empty())
     if isinstance(value, dict):
         value.setdefault("area_intent", {})
+        value.setdefault("multiroom", {})
     if (
         not isinstance(value, dict)
         or set(value) != set(empty())
@@ -62,7 +64,7 @@ def load(store):
         or value["version"] != 1
         or type(value["revision"]) is not int
         or value["revision"] < 0
-        or any(not isinstance(value[k], dict) for k in ("people", "placements", "portable", "relationships", "area_intent"))
+        or any(not isinstance(value[k], dict) for k in ("people", "placements", "portable", "multiroom", "relationships", "area_intent"))
         or not isinstance(value["changes"], list)
         or len(value["changes"]) > 100
     ):
@@ -87,7 +89,7 @@ def load(store):
         ):
             raise ValueError("Invalid person confirmation. Existing data is preserved.")
     if (
-        any(not signature(v) for key in ("placements", "portable") for v in value[key].values())
+        any(not signature(v) for key in ("placements", "portable", "multiroom") for v in value[key].values())
         or value["structure"] is not None
         and not signature(value["structure"])
     ):
@@ -221,8 +223,9 @@ async def inspect(core, store):
         overrides = [e["entity_id"] for e in device["entities"] if e.get("area_id") and e["area_id"] != device.get("area_id")]
         if overrides:
             reasons.append(f"{len(overrides)} entities have a different room override; device placement will preserve those overrides.")
+        multiroom = saved["multiroom"].get(device["id"]) == token and bool(saved["relationships"].get(device["id"]))
         placed = device.get("area_id") in area_ids
-        if area and area["kind"] == "group":
+        if area and area["kind"] == "group" and not multiroom:
             placed = False
             reasons.append("Assigned to a group of rooms or whole level; choose its individual physical room.")
         shared = device.get("model") == "Google Cast Group"
@@ -239,7 +242,8 @@ async def inspect(core, store):
                 "signature": token,
                 "shared": shared,
                 "portable": portable,
-                "needs_room": not placed and not shared and not portable,
+                "multiroom": multiroom,
+                "needs_room": not placed and not shared and not portable and not multiroom,
                 "confirmed": placed and saved["placements"].get(device["id"]) == token,
                 "changed": device["id"] in saved["placements"] and saved["placements"][device["id"]] != token,
                 "attention": bool(reasons),
@@ -286,6 +290,7 @@ async def inspect(core, store):
             "members_without_tracker": sum(not p["usable_tracker"] for p in members),
             "shared": sum(d["shared"] for d in devices),
             "portable": sum(d["portable"] for d in devices),
+            "multiroom": sum(d["multiroom"] for d in devices),
             "expectation_matches": bool(expectation and expectation == {"people": len(members), "adults": adults}),
         },
     }
@@ -366,7 +371,7 @@ async def act(core, store, action, body):
             if not readback or any(readback.get(k) != v for k, v in expected.items()):
                 raise ValueError("HA may have changed, but readback did not match. Refresh before retrying.")
             change.update(id=identifier, before=current, after={k: readback.get(k) for k in (key, *expected)})
-    elif action in {"placement", "relationship", "portable"}:
+    elif action in {"placement", "relationship", "portable", "multiroom"}:
         fields(body, {"device_id", "expected"} | ({"area_id"} if action == "placement" else {"text"} if action == "relationship" else set()))
         device = next((d for d in view["devices"] if d["id"] == body["device_id"]), None)
         if not device or device["signature"] != body["expected"]:
@@ -374,6 +379,12 @@ async def act(core, store, action, body):
         change["id"] = device["id"]
         if action == "portable":
             updated["portable"][device["id"]] = device["signature"]
+            updated["multiroom"].pop(device["id"], None)
+        elif action == "multiroom":
+            if not saved["relationships"].get(device["id"]):
+                raise ValueError("Record which rooms this equipment serves in its physical note first.")
+            updated["multiroom"][device["id"]] = device["signature"]
+            updated["portable"].pop(device["id"], None)
         elif action == "relationship":
             if not isinstance(body["text"], str) or body["text"] and not text(body["text"], 240):
                 raise ValueError("Use a physical connection or function note of at most 240 characters.")
@@ -383,6 +394,7 @@ async def act(core, store, action, body):
                 updated["relationships"].pop(device["id"], None)
         else:
             updated["portable"].pop(device["id"], None)
+            updated["multiroom"].pop(device["id"], None)
             if body["area_id"] not in {a["area_id"] for a in view["areas"] if a["kind"] != "group"}:
                 raise ValueError("Choose an existing room.")
             if body["area_id"] != device["area_id"]:

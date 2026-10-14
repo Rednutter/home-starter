@@ -116,6 +116,32 @@ async def test_reset_preserves_physical_confirmations(env):
     assert env.store.this_house_path.read_bytes() == before
 
 
+async def test_coverage_requires_a_note_and_never_invents_a_physical_room(env):
+    raw = next(d for d in env.mock.devices if d["id"] == "fixture_kitchen")
+    raw["area_id"] = None
+    device = next(d for d in (await house.inspect(env.core, env.store))["devices"] if d["id"] == raw["id"])
+    with pytest.raises(ValueError, match="physical note first"):
+        await do(env, "multiroom", device_id=device["id"], expected=device["signature"])
+    await do(env, "relationship", device_id=device["id"], expected=device["signature"], text="Zone serves kitchen and dining.")
+    await do(env, "multiroom", device_id=device["id"], expected=device["signature"])
+    fresh = await house.inspect(env.core, env.store)
+    device = next(d for d in fresh["devices"] if d["id"] == raw["id"])
+    assert fresh["counts"]["multiroom"] == 1 and device["multiroom"] and not device["needs_room"]
+    assert raw["area_id"] is None and not writes(env)
+    raw["name_by_user"] = "Renamed zone"
+    assert not next(d for d in (await house.inspect(env.core, env.store))["devices"] if d["id"] == raw["id"])["multiroom"]
+
+
+async def test_optional_intent_additions_preserve_earlier_confirmations(env):
+    await do(env, "expectation", people=5, adults=2)
+    before = house.load(env.store)
+    earlier = {k: v for k, v in before.items() if k not in {"multiroom", "area_intent"}}
+    env.store.this_house_path.write_text(json.dumps(earlier))
+    loaded = house.load(env.store)
+    assert loaded["expectation"] == before["expectation"] and loaded["revision"] == before["revision"]
+    assert loaded["multiroom"] == {} and loaded["area_intent"] == {}
+
+
 async def test_same_named_equipment_stays_separate_with_integration_provenance(env):
     env.mock.entries.append({"entry_id": "fixture_view", "domain": "fixture", "title": "Fixture", "state": "loaded"})
     next(d for d in env.mock.devices if d["id"] == "fixture_kitchen")["config_entries"] = ["fixture_view"]
