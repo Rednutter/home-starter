@@ -17,10 +17,12 @@ async def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--fixtures", action="store_true", help="Use contract fixtures instead of disposable Core; never claims native rendering.")
     parser.add_argument("--data-dir", type=Path, help="Ignored runtime directory for isolated repeat-launch acceptance.")
+    parser.add_argument("--fresh", action="store_true", help="Start genuine first-run commissioning instead of a maintenance fixture.")
+    parser.add_argument("--music-ready", action="store_true", help="Commissioning fixture: existing MA connection, no provider/playback proof.")
     args = parser.parse_args()
     credentials = {"user_id": "a1b2c3d4e5f6"} if args.fixtures else json.loads(Path("screens/v3-core-credentials.json").read_text())
     mock = MockSupervisor(
-        "absent" if args.fixtures else "ready",
+        "ready" if args.music_ready or not args.fixtures else "absent",
         core_url=None if args.fixtures else "http://127.0.0.1:18123",
         core_token=credentials.get("token"),
         ma_host="127.0.0.1",
@@ -68,6 +70,12 @@ async def main():
             "HOME_STARTER_MA_PORT": "8195",
         }
     )
+    if args.fixtures and not args.fresh:
+        from homestarter.household import HouseholdStore
+
+        store = HouseholdStore(settings.data_dir)
+        if not store.path.exists():
+            store.save(store.load())
     async with aiohttp.ClientSession() as session:
         runners = []
         for app, port in (

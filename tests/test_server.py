@@ -168,7 +168,9 @@ async def test_only_ingress_peer_is_allowed(app_client):
 
 async def test_setup_requires_json(app_client):
     client, env = await app_client()
-    resp = await client.post("/api/music/setup", data="confirm=true", headers={"X-Remote-User-Id": "u", "Content-Type": "application/x-www-form-urlencoded"})
+    resp = await client.post(
+        "/api/music/setup", data="confirm=true", headers={"X-Remote-User-Id": env.mock.users[0]["id"], "Content-Type": "application/x-www-form-urlencoded"}
+    )
     assert resp.status == 415
     assert [c for c in env.mock.calls if c[0] == "POST"] == []
 
@@ -182,7 +184,7 @@ async def test_setup_requires_ingress_user(app_client):
 
 async def test_setup_requires_confirmation(app_client):
     client, env = await app_client()
-    resp = await client.post("/api/music/setup", json={}, headers={"X-Remote-User-Id": "u"})
+    resp = await client.post("/api/music/setup", json={}, headers={"X-Remote-User-Id": env.mock.users[0]["id"]})
     assert resp.status == 400
     assert [c for c in env.mock.calls if c[0] == "POST"] == []
 

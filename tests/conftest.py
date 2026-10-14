@@ -46,6 +46,7 @@ async def make_env(tmp_path) -> AsyncIterator:
     sessions: list[aiohttp.ClientSession] = []
 
     async def factory(scenario: str = "absent", **kw) -> Env:
+        fresh = kw.pop("fresh", False)
         mock = MockSupervisor(scenario, ma_host="127.0.0.1", **kw)
         sup_server = TestServer(mock.app())
         ma_server = TestServer(mock.ma_app())
@@ -67,6 +68,11 @@ async def make_env(tmp_path) -> AsyncIterator:
         )
         session = aiohttp.ClientSession()
         sessions.append(session)
+        if not fresh:
+            # Existing API contract tests exercise maintenance, not pre-Go commissioning.
+            from homestarter.household import HouseholdStore, empty_household
+
+            HouseholdStore(settings.data_dir).save(empty_household())
         return Env(
             mock=mock,
             session=session,

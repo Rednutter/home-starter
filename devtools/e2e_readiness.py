@@ -16,12 +16,7 @@ def main():
         page.goto("http://127.0.0.1:8124/home_starter")
         frame = page.frame_locator("#panel")
         expect(frame.locator("#readiness-status")).to_contain_text("Saved decisions loaded")
-        # Explicit reset only in this named loopback fixture stack; never a live home.
-        frame.get_by_role("link", name="Review setup", exact=True).click()
-        frame.locator("#reset-setup > summary").click()
-        frame.get_by_label("Reset confirmation", exact=True).fill("RESET HOME STARTER")
-        frame.get_by_role("button", name="Reset Home Starter setup", exact=True).click()
-        expect(frame.locator("body")).to_have_attribute("data-setup-state", "first-run")
+        # Run after synthetic commissioning or on a fresh maintenance fixture.
         frame.get_by_role("link", name="People", exact=True).click()
         for name, audience in (("Adult 1", "adult"), ("Child 1", "everyone")):
             frame.get_by_label("Person name", exact=True).fill(name)

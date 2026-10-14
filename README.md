@@ -43,6 +43,11 @@ Existing dashboards stay intact until reviewed publication. See the
 [household evidence and setup audit](home_starter/READINESS_AUDIT.md) for rules,
 scenario evidence and deliberately incomplete integrations/tests.
 
+New installations follow Prepare → Scan → Household → Choose → Configure → Review
+→ Set up my home → Verify. Plans are staged before the Go action; existing homes
+keep their maintenance landing and may use Finish setup without automatic dashboard
+updates. See [commissioning flow, write boundary and limits](home_starter/COMMISSIONING.md).
+
 ## Install
 
 Requires Home Assistant OS or a Supervised installation (the App Store).

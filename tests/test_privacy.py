@@ -55,7 +55,7 @@ def test_packaging_uses_deny_by_default_source_allowlist():
 
 
 def test_private_runtime_paths_cannot_be_forced_into_a_release():
-    for path in ("data/household.json", "readiness.json", "screens/capture.png", ".env", "dump.db", "secret.pem"):
+    for path in ("data/household.json", "readiness.json", "commissioning.json", "screens/capture.png", ".env", "dump.db", "secret.pem"):
         assert forbidden_path(path)
     assert not forbidden_path("home_starter/icon.png")
     assert not forbidden_path("tests/test_privacy.py")

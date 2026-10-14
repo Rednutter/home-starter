@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.4
+
+- Separate first-run commissioning from returning-home maintenance.
+- Persist a resumable household/capability draft, explicit consolidated review and
+  Set up my home action before automatic configuration/publication.
+- Preserve existing dashboards by default; update only explicitly selected screens.
+- Journal independent execution results, supported checks and deliberate skips;
+  recover interrupted work without replaying successful publications.
+- Add six flow scenarios and document actual 0.4.2 behavior and remaining service tests.
+
 ## 0.4.3
 
 - Add persistent Home Readiness and conditional household/source/display decisions.

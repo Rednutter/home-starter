@@ -13,7 +13,16 @@ from tempfile import TemporaryDirectory
 from detect_secrets import SecretsCollection
 from detect_secrets.settings import default_settings
 
-RUNTIME = {"household.json", "activity.json", "publications.json", "installation.json", "inventory-history.json", "reset-history.json", "readiness.json"}
+RUNTIME = {
+    "household.json",
+    "activity.json",
+    "publications.json",
+    "installation.json",
+    "inventory-history.json",
+    "reset-history.json",
+    "readiness.json",
+    "commissioning.json",
+}
 CONTACT = re.compile(r"[\w.+-]+@([\w.-]+\.[A-Za-z]{2,})")
 KEY = re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{30,}")
 

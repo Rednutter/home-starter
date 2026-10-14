@@ -3,6 +3,7 @@ import { initHouse } from "./house.js";
 import { initSurfaces } from "./surfaces.js";
 import { initInstallation } from "./installation.js";
 import { initReadiness } from "./readiness.js";
+import { initCommissioning } from "./commissioning.js";
 
 const OUTCOMES = [
   { id: "music", title: "Music around the house", text: "Whole-home music, radio and podcasts with Music Assistant.", available: true },
@@ -341,6 +342,7 @@ async function scan(refresh = false) {
 }
 
 async function init() {
+  if (await initCommissioning({ h, api, navigateHA })) return;
   const refreshInstallation = await initInstallation({ h, api, navigateHA });
   const refreshHouse = initHouse({ h, api, navigateHA, scan });
   initSurfaces({ h, api, navigateHA });

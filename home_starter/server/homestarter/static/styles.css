@@ -159,6 +159,18 @@ ul.plain li { margin: 2px 0; overflow-wrap: anywhere; }
 #readiness-body > details > summary { min-height: 44px; padding: 10px 0; overflow-wrap: anywhere; }
 #readiness-body fieldset { min-width: 0; margin: 12px 0; padding: 12px; border: 1px solid var(--line); }
 #readiness-body .screen-field { margin: 12px 0; }
+body[data-commissioning="loading"] #app > :not(.top):not(#commissioning),
+body[data-commissioning="active"] #app > :not(.top):not(#commissioning) { display: none; }
+body[data-commissioning="loading"] #rescan, body[data-commissioning="active"] #rescan { display: none; }
+.commission-progress { display: flex; flex-wrap: wrap; gap: 8px 24px; padding-left: 24px; margin-bottom: 28px; color: var(--muted); }
+.commission-progress [aria-current="step"] { color: var(--text); font-weight: 700; text-decoration: underline; text-underline-offset: 5px; }
+#commissioning fieldset { min-width: 0; margin: 16px 0; padding: 12px; border: 1px solid var(--line); }
+#commissioning summary { min-height: 44px; padding: 10px 0; overflow-wrap: anywhere; }
+#commissioning .screen-field { margin: 12px 0; }
+#commissioning .btn { margin: 8px 8px 0 0; }
+.commission-choice, .commission-result { padding: 12px 0; border-bottom: 1px solid var(--line); }
+.commission-choice p, .commission-result p { margin-top: 4px; }
+.commission-summary { padding-left: 24px; line-height: 1.9; }
 .screen-preview { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--line); }
 .preview-nav { display: flex; gap: 20px; flex-wrap: wrap; margin: 16px 0; color: var(--muted); }
 .preview-nav span:first-child { color: var(--text); font-weight: 600; }

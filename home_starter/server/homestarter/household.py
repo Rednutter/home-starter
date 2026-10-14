@@ -119,6 +119,7 @@ class HouseholdStore:
         self.observation_path = root / "inventory-history.json"
         self.reset_path = root / "reset-history.json"
         self.readiness_path = root / "readiness.json"
+        self.commissioning_path = root / "commissioning.json"
 
     @staticmethod
     def read(path: Path, default: Any) -> Any:
@@ -177,7 +178,13 @@ class HouseholdStore:
             raise ValueError("Settings changed elsewhere. Review reset again.")
         self.write(
             self.reset_path,
-            {"version": 1, "household": current, "observation": self.read(self.observation_path, None), "readiness": self.read(self.readiness_path, None)},
+            {
+                "version": 1,
+                "household": current,
+                "observation": self.read(self.observation_path, None),
+                "readiness": self.read(self.readiness_path, None),
+                "commissioning": self.read(self.commissioning_path, None),
+            },
         )
         value = empty_household()
         value.update(revision=revision + 1, epoch=current["epoch"] + 1)
@@ -185,4 +192,5 @@ class HouseholdStore:
         # grant authority to overwrite untracked dashboards or double-count activity.
         self.write(self.path, value)
         self.readiness_path.unlink(missing_ok=True)
+        self.commissioning_path.unlink(missing_ok=True)
         return value

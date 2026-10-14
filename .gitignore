@@ -21,6 +21,7 @@ publications.json
 installation.json
 inventory-history.json
 readiness.json
+commissioning.json
 reset-history.json
 *-token.txt
 *-credentials.json

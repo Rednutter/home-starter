@@ -23,7 +23,7 @@ from typing import Any
 import aiohttp
 from aiohttp import web
 
-from . import __version__, readiness
+from . import __version__, commissioning, readiness
 from .activity import update_activity
 from .core import CoreClient, CoreError
 from .household import PROFILES, HouseholdStore, validate_household
@@ -45,6 +45,7 @@ STATIC_FILES = {
     "surfaces.js": "text/javascript",
     "installation.js": "text/javascript",
     "readiness.js": "text/javascript",
+    "commissioning.js": "text/javascript",
     "styles.css": "text/css",
     "icon.svg": "image/svg+xml",
 }
@@ -76,6 +77,7 @@ class State:
         self.household = HouseholdStore(settings.data_dir)
         self.previews: dict[str, dict] = {}
         self.activity_task: asyncio.Task | None = None
+        self.commissioning_task: asyncio.Task | None = None
 
     async def monitor_activity(self) -> None:
         while True:
@@ -162,6 +164,17 @@ async def peer_guard(request: web.Request, handler):
 @web.middleware
 async def harden(request: web.Request, handler):
     try:
+        if (
+            request.method == "POST"
+            and request.path.startswith("/api/")
+            and not request.path.startswith("/api/commissioning/")
+            and request.path != "/api/installation/reset"
+        ):
+            await household_admin(request)
+            try:
+                commissioning.gate(request.app[K_STATE].household)
+            except ValueError as error:
+                raise web.HTTPConflict(text=str(error)) from None
         response = await handler(request)
     except web.HTTPException as exc:
         response = exc
@@ -269,9 +282,10 @@ async def api_assign_area(request: web.Request) -> web.Response:
     if not admin:
         raise web.HTTPForbidden(text="A Home Assistant administrator must assign rooms.")
     try:
-        async with state.inventory_write_lock:
+        async with state.household_lock, state.inventory_write_lock:
+            commissioning.gate(state.household)
             result = await assign_area(state.core, body["device_id"], body["area_id"], body["expected_area_id"])
-    except CoreError:
+    except (CoreError, ValueError):
         result = {"verified": False, "error": "Couldn't confirm the room change. Check again in Home Assistant before retrying."}
     state.scan = None
     return _json(result, status=200 if result["verified"] else 409)
@@ -300,6 +314,7 @@ async def api_music_setup(request: web.Request) -> web.Response:
         raise web.HTTPForbidden(text="A Home Assistant administrator must start setup.")
     try:
         async with state.household_lock:
+            commissioning.gate(state.household)
             state.household.save(state.household.load())
     except (OSError, ValueError):
         return _json({"error": "Could not persist existing setup. Music installation was not started."}, 503)
@@ -372,6 +387,131 @@ async def api_installation(request: web.Request) -> web.Response:
         return _json({"error": "Existing setup could not be read safely. Restore or repair runtime data; onboarding was not restarted."}, 503)
 
 
+async def commissioning_payload(state, value, discovery=False):
+    result = {"state": value, "profiles": PROFILES}
+    if discovery and value["scan"] is not None and value["active"]:
+        inventory = await collect_inventory(state.core)
+        states = await state.core.states()
+        try:
+            music = await state.music()
+        except (CoreError, SupervisorError, ValueError):
+            music = {"state": "unavailable"}
+        result["discovery"] = readiness.report(value["draft"]["house"], value["draft"]["readiness"], inventory, states, music)
+        result["music"] = {k: music.get(k) for k in ("state", "title", "open_path", "handoff_path")}
+    return result
+
+
+async def api_commissioning(request):
+    state = await household_admin(request)
+    try:
+        value = commissioning.load(state.household)
+        if value["phase"] == "executing" and (state.commissioning_task is None or state.commissioning_task.done()):
+            value["phase"] = "verification_incomplete"
+            value["results"]["execution"] = {
+                "status": "incomplete",
+                "detail": "Execution stopped. Inspect saved work, then retry; nothing was replayed on launch.",
+            }
+            commissioning.write(state.household, value)
+        return _json(await commissioning_payload(state, value, discovery=value["phase"] != "executing"))
+    except (OSError, ValueError, KeyError, TypeError, CoreError):
+        return _json({"error": "Could not safely read commissioning. Saved setup is preserved. Restore runtime data or retry."}, 503)
+
+
+async def api_commissioning_action(request):
+    state = await household_admin(request)
+    body = await household_body(request)
+    action = request.match_info["action"]
+    fields = {"revision", "epoch"} | {"save": {"draft", "step"}, "go": {"token", "confirm"}, "skip": {"key", "confirm"}, "display": {"key", "confirm"}}.get(
+        action, set()
+    )
+    if set(body) != fields:
+        raise web.HTTPBadRequest(text="Use the current commissioning step.")
+    try:
+        async with state.household_lock:
+            store = state.household
+            value = commissioning.load(store)
+            commissioning.precondition(value, body)
+            if value["phase"] == "executing":
+                raise ValueError("Setup is running. Wait for its result before changing the plan.")
+            if action == "start":
+                value = commissioning.begin(store, value)
+            elif action == "scan":
+                if value["phase"] in ("not_started", "commissioned", "verification_incomplete"):
+                    raise ValueError("Prepare the house before scanning this setup plan.")
+                inventory, states = await collect_inventory(state.core), await state.core.states()
+                if not inventory["complete"]:
+                    raise ValueError("The scan is incomplete. Saved choices are retained; check access and retry.")
+                value.update(phase="scanned", scan=commissioning.summary(inventory, states), review=None)
+                commissioning.write(store, value)
+            elif action == "save":
+                value = commissioning.save_draft(store, value, body["draft"], body["step"], await collect_inventory(state.core), await state.core.states())
+            elif action == "review":
+                value = await commissioning.make_review(
+                    store, value, state.core, await collect_inventory(state.core), await state.core.states(), await state.music()
+                )
+            elif action in ("go", "retry"):
+                if action == "go":
+                    if body["confirm"] is not True:
+                        raise ValueError("Review and confirm Set up my home.")
+                    commissioning.check_go(store, value, body["token"], await collect_inventory(state.core), await state.core.states())
+                elif value["phase"] != "verification_incomplete":
+                    raise ValueError("There is no incomplete execution to retry.")
+                else:
+                    if commissioning.source_signature(await collect_inventory(state.core), await state.core.states()) != value["review"]["source_signature"]:
+                        raise ValueError("Sources changed. Edit and review the plan before retrying.")
+                    value["results"].pop("execution", None)
+                value["phase"] = "executing"
+                commissioning.write(store, value)
+                state.commissioning_task = asyncio.create_task(commissioning.execute(store, value, state.core, state.setup, _user(request)))
+            elif action == "edit":
+                if value["phase"] not in ("verification_incomplete", "reviewed"):
+                    raise ValueError("There is no reviewed plan to edit.")
+                if value["phase"] == "verification_incomplete":
+                    value["draft"]["house"] = store.load()
+                    value["draft"]["readiness"] = readiness.load(store, value["draft"]["house"])
+                value.update(phase="configuration_incomplete", review=None, results={})
+                commissioning.write(store, value)
+            elif action in ("skip", "display"):
+                key = body["key"]
+                if (
+                    value["phase"] != "verification_incomplete"
+                    or body["confirm"] is not True
+                    or key not in value["results"]
+                    or key in ("household", "execution", "music_installer")
+                ):
+                    raise ValueError("Review an incomplete capability or display first.")
+                if action == "display":
+                    item = next((s for s in value["review"]["screens"] if "display:" + s["generated"]["surface"]["id"] == key), None)
+                    if not item or value["results"][key]["status"] != "published":
+                        raise ValueError("Publish and open this screen before confirming its display.")
+                    async with state.core.websocket() as ws:
+                        current = await ws.command("lovelace/config", url_path=item["generated"]["url_path"], force=True)
+                    if fingerprint(current) != item["generated"]["fingerprint"]:
+                        raise ValueError("This screen changed. Inspect it before confirming.")
+                    value["results"][key].update(
+                        status="verified", detail="Publication readback matched; user confirmed it opened correctly.", verification="user_confirmed_display"
+                    )
+                else:
+                    value["results"][key].update(status="skipped", detail="Deliberately skipped for now; not verified.")
+                    if key in readiness.CAPABILITIES:
+                        rd = readiness.load(store, store.load())
+                        rd["choices"][key]["intent"] = "later"
+                        rd["revision"] += 1
+                        store.write(store.readiness_path, rd)
+                commissioning.finish(store, value)
+            elif action == "leave" and value["legacy"] and value["phase"] not in ("executing", "verification_incomplete"):
+                value["active"] = False
+                commissioning.write(store, value)
+            else:
+                raise ValueError("Unsupported commissioning action.")
+            state.previews.clear()
+        return _json(await commissioning_payload(state, value, discovery=action == "scan"))
+    except ValueError as error:
+        return _json({"error": str(error)}, 409)
+    except (CoreError, SupervisorError, OSError, KeyError, TypeError):
+        return _json({"error": "This step could not be verified. Saved work is retained. Retry or repair the source."}, 503)
+
+
 async def api_installation_action(request: web.Request) -> web.Response:
     state = await household_admin(request)
     body = await household_body(request)
@@ -382,6 +522,10 @@ async def api_installation_action(request: web.Request) -> web.Response:
     try:
         async with state.household_lock:
             house = state.household.load()
+            if action != "reset":
+                commissioning.gate(state.household)
+            elif state.commissioning_task and not state.commissioning_task.done():
+                raise ValueError("Wait for the running setup to finish before resetting its state.")
             if action == "complete":
                 if house["revision"] != body["revision"]:
                     raise ValueError("Settings changed. Refresh before finishing review.")
@@ -429,6 +573,7 @@ async def api_readiness_action(request: web.Request) -> web.Response:
     body = await household_body(request)
     try:
         async with state.household_lock:
+            commissioning.gate(state.household)
             house = state.household.load()
             inventory = await collect_inventory(state.core)
             states = await state.core.states()
@@ -486,6 +631,7 @@ async def api_save_household(request: web.Request) -> web.Response:
     try:
         value = validate_household(value)
         async with state.household_lock:
+            commissioning.gate(state.household)
             current = state.household.load()
             inventory = await collect_inventory(state.core)
             if not inventory["complete"]:
@@ -558,6 +704,7 @@ async def api_surface_publish(request: web.Request) -> web.Response:
         raise web.HTTPBadRequest(text="Review and confirm the generated screen.")
     try:
         async with state.household_lock:
+            commissioning.gate(state.household)
             preview = state.previews.get(request.match_info["surface"])
             if not preview or preview["token"] != body["preview_token"] or preview["user"] != _user(request):
                 raise ValueError("Generate and review this screen first.")
@@ -596,6 +743,10 @@ def create_app(settings: Settings, session: aiohttp.ClientSession | None = None)
         app[K_STATE].activity_task = asyncio.create_task(app[K_STATE].monitor_activity())
 
     async def on_cleanup(app: web.Application) -> None:
+        if task := app[K_STATE].commissioning_task:
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
         if task := app[K_STATE].activity_task:
             task.cancel()
             with suppress(asyncio.CancelledError):
@@ -611,6 +762,8 @@ def create_app(settings: Settings, session: aiohttp.ClientSession | None = None)
     app.router.add_get("/api/scan", api_scan)
     app.router.add_get("/api/inventory", api_inventory)
     app.router.add_get("/api/household", api_household)
+    app.router.add_get("/api/commissioning", api_commissioning)
+    app.router.add_post("/api/commissioning/{action}", api_commissioning_action)
     app.router.add_get("/api/readiness", api_readiness)
     app.router.add_post("/api/readiness/{action}", api_readiness_action)
     app.router.add_get("/api/installation", api_installation)

@@ -152,7 +152,10 @@ async def test_first_second_launch_restart_and_explicit_reset_api(make_env, tmp_
         initial = await (await first.get("/api/installation", headers=headers)).json()
         assert initial["first_run"] and not (tmp_path / "household.json").exists()
         body = {"confirm": True, "revision": initial["revision"]}
-        assert (await first.post("/api/installation/complete", json=body, headers=headers)).status == 200
+        assert (await first.post("/api/installation/complete", json=body, headers=headers)).status == 409
+        # Historical saved installations migrate into maintenance; new installs
+        # use commissioning review/Go (covered by test_commissioning).
+        HouseholdStore(str(tmp_path)).save(HouseholdStore(str(tmp_path)).load())
         assert not (await (await first.get("/api/installation", headers=headers)).json())["first_run"]
     finally:
         await first.close()

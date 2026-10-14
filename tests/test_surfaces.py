@@ -393,6 +393,8 @@ async def test_activity_monitor_catches_short_cycle_and_recreates_only_owned_sta
 async def test_household_api_admin_revision_and_publish_confirmation(make_env, tmp_path):
     env = await make_env("ready")
     settings = replace(env.settings, data_dir=str(tmp_path))
+    legacy_store = HouseholdStore(str(tmp_path))
+    legacy_store.write(legacy_store.path, {**empty_household(), "configured": True})
     app = create_app(settings, env.session)
     client = TestClient(TestServer(app))
     await client.start_server()
