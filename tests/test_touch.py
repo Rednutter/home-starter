@@ -18,8 +18,8 @@ def cards(value):
             yield from cards(child)
 
 
-def generated(house):
-    return generate(house, house["surfaces"][0], items(house), inventory()[0]["areas"])["config"]
+def generated(house, policy=None):
+    return generate(house, house["surfaces"][0], items(house), inventory()[0]["areas"], policy=policy)["config"]
 
 
 @pytest.mark.parametrize("count", [0, 1, 5, 12, 50])
@@ -176,12 +176,14 @@ def test_person_hide_order_and_safety_hold_across_context_and_lifecycle_views():
 
 def test_calendar_uses_admitted_ha_sources_and_no_external_aggregation():
     house = household("tablet")
-    config = generated(house)
+    assert "calendar.family" not in str(generated(house))
+    policy = {"calendars": ["calendar.family"], "calendars_screens": ["phone"]}
+    config = generated(house, policy)
     today = next(v for v in config["views"] if v["path"] == "today")
     assert any(c.get("entities") == ["calendar.family"] for c in cards(today))
     assert "https://" not in str(config)
     house["preferences"]["alex"] = {"pin": [], "hide": ["calendar.family"], "order": []}
-    assert "calendar.family" not in str(generated(house))
+    assert "calendar.family" not in str(generated(house, policy))
 
 
 def test_unplaced_opening_exceptions_remain_prominent_and_hide_is_respected():

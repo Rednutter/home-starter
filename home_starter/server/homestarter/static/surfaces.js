@@ -14,7 +14,7 @@ export function moveItem(order, id, direction) {
 
 export function initSurfaces({ h, api, navigateHA }) {
   const root = document.getElementById("surfaces-body"), status = document.getElementById("surfaces-status");
-  let data = null, draft = null, dirty = false, busy = false, preview = null, selected = "", owner = "", search = "", reloadRequested = false;
+  let data = null, draft = null, dirty = false, busy = false, preview = null, selected = "", owner = "", search = "", reloadRequested = false, editingPeople = false;
   const button = (label, action, primary = false, disabled = false) => h("button", { type: "button", class: `btn ${primary ? "primary" : "ghost"}`, disabled, onclick: action }, label);
   const field = (label, control) => h("label", { class: "screen-field" }, h("span", {}, label), control);
   const input = (label, value = "", attrs = {}) => h("input", { "aria-label": label, value, maxlength: 80, ...attrs });
@@ -50,6 +50,7 @@ export function initSurfaces({ h, api, navigateHA }) {
   }
   async function generate() {
     if (busy || dirty || !selected) return;
+    if (document.getElementById("readiness-body").dataset.dirty === "true") { setStatus("Save your Home Readiness choices before generating a screen.", true); return; }
     busy = true; preview = null; render(); setStatus("Assembling this screen from your house…");
     try { preview = await api(`api/surfaces/${encodeURIComponent(selected)}/preview`); setStatus("Preview ready. Review it before adding or updating the dashboard."); }
     catch (error) { fail(error); } finally { busy = false; render(); document.getElementById("screen-preview")?.focus(); }
@@ -65,11 +66,11 @@ export function initSurfaces({ h, api, navigateHA }) {
   function renderPeople() {
     const name = input("Person name", "", { placeholder: "Name" });
     const audience = select("Person audience", [["everyone", "Everyone"], ["adult", "Adult"]], "everyone");
-    return h("details", { id: "household-people", open: !draft.people.length }, h("summary", {}, "People"),
+    return h("details", { id: "household-people", open: editingPeople || !draft.people.length }, h("summary", {}, "People"),
       h("p", { class: "small muted" }, "These are screen preferences, not new Home Assistant accounts. Account access stays in Home Assistant."),
       draft.people.map(p => h("div", { class: "screen-row" }, h("strong", {}, p.name), h("span", { class: "muted" }, p.audience === "adult" ? "Adult" : "Everyone"))),
       h("div", { class: "screen-fields" }, field("Name", name), field("Audience", audience)),
-      button("Add person", () => { if (!name.value.trim()) { name.focus(); return; } draft.people.push({ id: id("person"), name: name.value.trim(), audience: audience.value }); changed(); render(); }));
+      button("Add person", () => { if (!name.value.trim()) { name.focus(); return; } editingPeople = true; draft.people.push({ id: id("person"), name: name.value.trim(), audience: audience.value }); changed(); render(); }));
   }
   function renderAddScreen() {
     const name = input("Screen name", "", { placeholder: "e.g. Kitchen tablet" });
@@ -196,6 +197,7 @@ export function initSurfaces({ h, api, navigateHA }) {
         button(preview.published ? "Confirm dashboard update" : "Confirm add dashboard", publish, true, busy || !preview.preview_token)),
       preview.published && button("Open dashboard in Home Assistant", () => navigateHA(`/${preview.url_path}/home`), true),
       h("details", {}, h("summary", {}, "Generation details"), h("p", { class: "small muted" }, preview.warnings.join(" ")),
+        h("h4", {}, "Why these items?"), h("ul", {}, preview.admitted.map(item => h("li", {}, `${item.name}: ${item.reason}`))),
         h("pre", {}, JSON.stringify(preview.config, null, 2))));
   }
   function render() {
@@ -216,6 +218,7 @@ export function initSurfaces({ h, api, navigateHA }) {
     if (dirty) { setStatus("Setup changed. Your unsaved choices are retained; review the save precondition before continuing.", true); return; }
     if (busy) reloadRequested = true; else load();
   });
+  document.addEventListener("home-starter-readiness-saved", () => { preview = null; render(); setStatus("Readiness choices saved. Generate a fresh preview before publication."); });
   load();
   return load;
 }

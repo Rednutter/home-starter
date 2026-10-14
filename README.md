@@ -32,6 +32,17 @@ Before every push, inspect status, the complete staged diff and new files, then 
 The reviewed secret baseline contains hashes of synthetic test values only; a
 scanner cannot replace manual privacy review. See [acceptance](home_starter/ACCEPTANCE.md).
 
+Home Readiness is persistent: return to incomplete household, room, Music,
+communications, calendar, display, climate, camera, presence, voice or appliance
+choices. Questions follow discovery and explicit interest. Installed or available
+never means end-to-end verified. Credentials stay in Home Assistant/Music Assistant.
+
+New previews require a selected and verified calendar/waste source and selected
+displays. No waste source means no Bins; no member link means no presence card.
+Existing dashboards stay intact until reviewed publication. See the
+[household evidence and setup audit](home_starter/READINESS_AUDIT.md) for rules,
+scenario evidence and deliberately incomplete integrations/tests.
+
 ## Install
 
 Requires Home Assistant OS or a Supervised installation (the App Store).

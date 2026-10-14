@@ -118,6 +118,7 @@ class HouseholdStore:
         self.installation_path = root / "installation.json"
         self.observation_path = root / "inventory-history.json"
         self.reset_path = root / "reset-history.json"
+        self.readiness_path = root / "readiness.json"
 
     @staticmethod
     def read(path: Path, default: Any) -> Any:
@@ -142,7 +143,7 @@ class HouseholdStore:
             raise ValueError("Unsupported installation state. Existing data is preserved.")
         value = self.read(self.path, None)
         if value is None:
-            if marker or self.read(self.publication_path, {}) or self.read(self.activity_path, {}):
+            if marker or self.read(self.publication_path, {}) or self.read(self.activity_path, {}) or self.read(self.readiness_path, {}):
                 raise ValueError("Saved household settings are missing. Restore runtime data; setup was not reset.")
             return empty_household()
         legacy = isinstance(value, dict) and value.get("version") == 1
@@ -174,10 +175,14 @@ class HouseholdStore:
         current = self.load()
         if current["revision"] != revision:
             raise ValueError("Settings changed elsewhere. Review reset again.")
-        self.write(self.reset_path, {"version": 1, "household": current, "observation": self.read(self.observation_path, None)})
+        self.write(
+            self.reset_path,
+            {"version": 1, "household": current, "observation": self.read(self.observation_path, None), "readiness": self.read(self.readiness_path, None)},
+        )
         value = empty_household()
         value.update(revision=revision + 1, epoch=current["epoch"] + 1)
         # Keep publication ownership and activity history: resetting setup must not
         # grant authority to overwrite untracked dashboards or double-count activity.
         self.write(self.path, value)
+        self.readiness_path.unlink(missing_ok=True)
         return value

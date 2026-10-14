@@ -42,7 +42,7 @@ def main():
             frame.get_by_text("Generation details", exact=True).click()
             config = json.loads(frame.locator("#screen-preview pre").inner_text())
             assert all(v.get("subview") for v in config["views"] if v["path"] in ("ambient", "dark"))
-            assert "climate.fixture_system" in str(config) and "calendar.fixture_family" in str(config)
+            assert "climate.fixture_system" in str(config) and "calendar.fixture_family" not in str(config)
             frame.get_by_text("Generation details", exact=True).click()
             frame.get_by_text("Review publication", exact=True).click()
             frame.get_by_role("button", name="Confirm add dashboard", exact=True).click()
@@ -65,7 +65,8 @@ def add_people(frame):
     frame.get_by_label("Person name", exact=True).fill("Fixture adult")
     frame.get_by_label("Person audience", exact=True).select_option("adult")
     frame.get_by_role("button", name="Add person", exact=True).click()
-    people.locator("summary").click()
+    if people.get_attribute("open") is None:
+        people.locator("summary").click()
     frame.get_by_label("Person name", exact=True).fill("Fixture child")
     frame.get_by_role("button", name="Add person", exact=True).click()
 

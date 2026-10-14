@@ -156,6 +156,9 @@ ul.plain li { margin: 2px 0; overflow-wrap: anywhere; }
 .screen-item > span { min-width: 0; overflow-wrap: anywhere; }
 .screen-item .btn { grid-row: 2; font-size: .8rem; }
 .screen-reason { display: block; }
+#readiness-body > details > summary { min-height: 44px; padding: 10px 0; overflow-wrap: anywhere; }
+#readiness-body fieldset { min-width: 0; margin: 12px 0; padding: 12px; border: 1px solid var(--line); }
+#readiness-body .screen-field { margin: 12px 0; }
 .screen-preview { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--line); }
 .preview-nav { display: flex; gap: 20px; flex-wrap: wrap; margin: 16px 0; color: var(--muted); }
 .preview-nav span:first-child { color: var(--text); font-weight: 600; }

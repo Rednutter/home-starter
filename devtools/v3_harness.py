@@ -27,6 +27,11 @@ async def main():
     )
     mock.ma_port = 8195
     if args.fixtures:
+        from datetime import UTC, datetime, timedelta
+
+        mock.calendar_events["calendar.fixture_family"] = [
+            {"summary": "Fixture event", "start": {"date": (datetime.now(UTC) + timedelta(days=1)).date().isoformat()}}
+        ]
         # Representative synthetic touch sources, separate from captured API fixtures.
         sources = {
             "climate.fixture_system": (

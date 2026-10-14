@@ -12,6 +12,13 @@ Profiles: personal phone, shared tablet, specialist, kitchen, entry, bedside and
 non-touch wall. A screen combines a person with a room and physical purpose. These
 records do not create users or devices.
 
+Home Readiness records optional capability intent and source/display choices in a
+private backed-up sidecar. New previews admit calendars and waste only after an
+explicit selection and a current upcoming-event check; presence requires saved
+member links and display consent. Demo sources are excluded. Existing published
+dashboards remain intact until a reviewed publication. See [the evidence audit](READINESS_AUDIT.md)
+for source rules, verification limits and interview gaps.
+
 ## Shared touch shell
 
 Phone, shared tablet and specialist/AirTouch profiles share **House + configured

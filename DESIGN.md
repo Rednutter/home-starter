@@ -141,7 +141,11 @@ Use the existing gently rounded cards, smaller rounded inputs and buttons, and p
 
 Admin buttons have primary, default and transparent ghost variants. Hover changes the border; disabled controls use (0.55) opacity. Fields retain visible labels, native select behavior and full-width screen inputs. Navigation uses wrapping underlined links; collapsible details keep advanced settings discoverable without crowding the main flow.
 
-Returning visits lead with House status and New / changed things in the existing bordered cards. Keep all eight navigation links available: House status, New / changed things, Screens, People, Music, Climate, Activities and Review setup. Links wrap on narrow screens and open any containing disclosure before reaching their destination. Review setup starts collapsed for saved installations; only the explicit persisted first-run flag opens initial review. An unreadable state presents a recovery message rather than restarting onboarding.
+Returning visits lead with House status and New / changed things in the existing bordered cards. Keep all nine navigation links available: House status, Home Readiness, New / changed things, Screens, People, Music, Climate, Activities and Review setup. Links wrap on narrow screens and open any containing disclosure before reaching their destination. Review setup starts collapsed for saved installations; only the explicit persisted first-run flag opens initial review. An unreadable state presents a recovery message rather than restarting onboarding.
+
+Home Readiness uses the same bordered card and native disclosures. Summaries pair capability titles with text status, offer a minimum (44px) touch height and wrap long names. Build fields only when their disclosure opens; preserve open items during form updates. Group related choices with labeled fieldsets that can shrink within narrow screens. Show detailed source, display and service questions after explicit Wanted intent; retain Not now and Not wanted as saved decisions.
+
+Keep readiness plans visibly separate from working configuration. Status text reports unsaved choices and incomplete inventory; unsaved choices block refresh and verification. Calendar and waste source verification follows saving, while unsupported end-to-end checks remain explicitly incomplete with a service handoff. Keep credentials in Home Assistant or Music Assistant. Discovery, installation and saved choices must not appear as proof of operation.
 
 Reset Home Starter setup is a nested disclosure inside Review setup. Explain its local scope and retained recovery/protection data before the confirmation field; enable reset only after the exact text `RESET HOME STARTER`. Keep the destructive action visually subordinate to routine checks and screen access.
 
@@ -165,3 +169,5 @@ Native Sections, Tile, Markdown, Clock, Thermostat and Calendar form the househo
 Evidence: `home_starter/server/homestarter/static/{styles.css,index.html,surfaces.js}`, `home_starter/server/homestarter/surfaces.py`, and final captures in `screens/v3-ui/`: `setup-desktop.png`, `setup-mobile.png`, `setup-phone-mobile.png`, `native-phone-mobile.png`, `native-specialist-desktop.png`, `native-wall-desktop.png`. Captures are local, ignored test artifacts; code remains the reproducible source of truth.
 
 Returning-installation evidence: `home_starter/server/homestarter/static/installation.js` and synthetic captures `screens/rerun-ui/existing-desktop.png` and `screens/rerun-ui/existing-mobile.png`. Simulated host chrome is not part of the admin design system.
+
+Home Readiness evidence: `home_starter/server/homestarter/static/{readiness.js,index.html,styles.css}`; product and verification limits are recorded in `README.md` and `home_starter/READINESS_AUDIT.md`.

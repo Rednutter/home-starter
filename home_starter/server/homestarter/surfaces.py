@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 from typing import Any
 
 from .core import CoreClient, CoreError
 from .household import PROFILES
+from .readiness import allowed
 
 # The catalogue is a capability contract, not a promise to invent absent sources.
 CATALOGUE = {
@@ -113,13 +115,14 @@ def classify(inventory: dict, states: list[dict], overrides: dict) -> list[dict]
             function, component, audience = "climate", "climate_summary", "everyone"
             reason = "AirTouch exposes a zone damper; show position without overriding automatic temperature control."
         # Diagnostics never become household controls through a pin or name match.
-        if dc in ("battery", "signal_strength") or category in ("diagnostic", "config"):
+        if dc in ("battery", "signal_strength") or category in ("diagnostic", "config") or e.get("platform") == "demo":
             function, level, interaction, visibility, audience, component = "maintenance", 5, "status", "drill_down", "admin", "status_chip"
-            reason = "Home Assistant marks this as maintenance or configuration."
+            reason = "Home Assistant marks this as maintenance, configuration or a demo source."
         usable = (
             e.get("observed")
             and not e.get("disabled_by")
             and not e.get("hidden_by")
+            and e.get("platform") != "demo"
             and e.get("state") not in (None, "unavailable")
             and (domain == "scene" or e.get("state") != "unknown")
         )
@@ -160,6 +163,13 @@ def classify(inventory: dict, states: list[dict], overrides: dict) -> list[dict]
             "available": bool(usable),
             "usable": bool(usable) and (level == 0 or override.get("include") is not False),
             "reason": reason,
+            "evidence": {
+                "entity_id": entity_id,
+                "registry_id": e.get("registry_id"),
+                "device_id": e.get("device_id"),
+                "platform": e.get("platform"),
+                "basis": reason,
+            },
         }
         item["surfaces"] = [profile for profile in PROFILES if suitable(item, profile)]
         result.append(item)
@@ -362,11 +372,36 @@ def room_summary(area: dict, items: list[dict], target: str) -> dict:
     }
 
 
-def generate(house: dict, surface: dict, items: list[dict], areas: list[dict], activity: list[dict] | None = None) -> dict:
+def generate(house: dict, surface: dict, items: list[dict], areas: list[dict], activity: list[dict] | None = None, policy: dict | None = None) -> dict:
+    if policy and policy.get("members"):
+        house = copy.deepcopy(house)
+        for person in house["people"]:
+            if policy["members"].get(person["id"], {}).get("kind") == "child":
+                person["audience"] = "everyone"
+    source_areas = {i["id"]: i["area_id"] for i in items}
+    activity = activity or []
+    activity_decision = (policy or {}).get("features", {}).get("appliances")
+    if activity_decision:
+        activity = [
+            a
+            for a in activity
+            if activity_decision["intent"] == "wanted" and surface["id"] in activity_decision["screens"] and a.get("source") in activity_decision["sources"]
+        ]
+    if surface["profile"] in ("specialist", "kitchen", "bedside"):
+        activity = [a for a in activity if surface["area_id"] and source_areas.get(a.get("source")) == surface["area_id"]]
+    all_items = items
+    # Discovery is not consent to expose calendars or identities on every screen.
+    items = [i for i in items if allowed(i, surface, house, policy)]
+    items = [
+        {**item, "reason": item["reason"] + " Selected for this display in Home Readiness; source/member checks passed."}
+        if item["domain"] in ("calendar", "person", "device_tracker")
+        else item
+        for item in items
+    ]
     pref = preferences(house, surface)
     eligible = [i for i in items if admitted(i, surface, house, pref)]
     # Alarm interruption is informational for everyone; its control remains adult-only.
-    for item in items:
+    for item in all_items:
         if item["domain"] == "alarm_control_panel" and item.get("available", item["usable"]):
             alert = {
                 **item,

@@ -2,6 +2,7 @@ import { apiUrl, navigateHA } from "./routes.js";
 import { initHouse } from "./house.js";
 import { initSurfaces } from "./surfaces.js";
 import { initInstallation } from "./installation.js";
+import { initReadiness } from "./readiness.js";
 
 const OUTCOMES = [
   { id: "music", title: "Music around the house", text: "Whole-home music, radio and podcasts with Music Assistant.", available: true },
@@ -343,6 +344,7 @@ async function init() {
   const refreshInstallation = await initInstallation({ h, api, navigateHA });
   const refreshHouse = initHouse({ h, api, navigateHA, scan });
   initSurfaces({ h, api, navigateHA });
+  initReadiness({ h, api, navigateHA });
   renderOutcomes();
   document.getElementById("rescan").addEventListener("click", async () => {
     await scan(true);

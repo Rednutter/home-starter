@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.3
+
+- Add persistent Home Readiness and conditional household/source/display decisions.
+- Require selected, verified calendar/waste sources and chosen displays. Link presence
+  to actual household members; never assume Spotify or enable SIP from discovery.
+- Keep unsupported provider/playback, calling, camera and physical control tests
+  visibly incomplete. Record explicit Not now/not wanted decisions.
+- Respect opt-outs, ignored devices, child audience ceilings and appliance room
+  relevance while preserving safety interruptions and existing published dashboards.
+- Audit default content, setup gaps and archived examples; add five synthetic
+  household scenarios and source/decision provenance. See READINESS_AUDIT.md.
+
 ## 0.4.2
 
 - Resume explicit versioned setup on subsequent visits. Preserve people, screens,

@@ -34,6 +34,11 @@
       <p id="installation-status" class="muted" role="status">Checking existing Home Starter state…</p>
       <div id="installation-body"></div>
     </section>
+    <section id="home-readiness" class="card" aria-labelledby="readiness-h">
+      <div class="section-top"><h2 id="readiness-h">Home Readiness</h2><button id="readiness-check" class="btn ghost" type="button">Refresh readiness</button></div>
+      <p>Discover → Ask → Configure → Verify → Monitor/revisit. Installed does not mean working.</p>
+      <p id="readiness-status" role="status" class="muted">Reading saved decisions…</p><div id="readiness-body"></div>
+    </section>
     <section id="house-changes" class="card" aria-labelledby="changes-h">
       <h2 id="changes-h">New / changed things</h2><div id="changes-body"></div>
     </section>
@@ -73,6 +78,7 @@
 
     <section id="music" class="card outcome-panel" hidden aria-labelledby="music-h">
       <h2 id="music-h">Music around the house</h2>
+      <p class="small muted">These checks cover the Music Assistant app and HA connection. Review providers, groups and playback in Home Readiness.</p>
       <div id="music-body"><p class="muted">Checking Music Assistant…</p></div>
     </section>
 

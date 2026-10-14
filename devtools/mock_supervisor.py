@@ -109,6 +109,7 @@ class MockSupervisor:
         self.users = [{"id": "a1b2c3d4e5f6", "is_active": True, "is_owner": True, "group_ids": ["system-admin"], "system_generated": False}]
         self.calls: list[tuple[str, str]] = []
         self.ws_calls: list[dict[str, Any]] = []
+        self.calendar_events: dict[str, list[dict]] = {}
         self.devices = core_fix("device_registry_list.json")
         self.entity_registry = core_fix("inventory_entity_registry_list.json")
         self.dashboard_configs: dict[str, Any] = {}
@@ -332,6 +333,8 @@ class MockSupervisor:
             return web.json_response(core_fix("api_config.json"))
         if tail == "states":
             return web.json_response(core_fix("api_states.json") + list(self.activity_states.values()))
+        if tail.startswith("calendars/"):
+            return web.json_response(self.calendar_events.get(tail.removeprefix("calendars/"), []))
         if tail.startswith("states/sensor.home_starter_activity_") and request.method == "POST":
             entity_id = tail.removeprefix("states/")
             self.activity_states[entity_id] = {"entity_id": entity_id, **await request.json()}

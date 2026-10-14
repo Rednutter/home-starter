@@ -23,7 +23,7 @@ from typing import Any
 import aiohttp
 from aiohttp import web
 
-from . import __version__
+from . import __version__, readiness
 from .activity import update_activity
 from .core import CoreClient, CoreError
 from .household import PROFILES, HouseholdStore, validate_household
@@ -44,6 +44,7 @@ STATIC_FILES = {
     "house.js": "text/javascript",
     "surfaces.js": "text/javascript",
     "installation.js": "text/javascript",
+    "readiness.js": "text/javascript",
     "styles.css": "text/css",
     "icon.svg": "image/svg+xml",
 }
@@ -406,6 +407,60 @@ async def api_installation_action(request: web.Request) -> web.Response:
         return _json({"error": "The action could not be verified. Refresh before retrying; existing data is preserved."}, 503)
 
 
+async def api_readiness(request: web.Request) -> web.Response:
+    state = await household_admin(request)
+    try:
+        async with state.household_lock:
+            house = state.household.load()
+            value = readiness.load(state.household, house)
+            inventory = await collect_inventory(state.core)
+            states = await state.core.states()
+        try:
+            music = await state.music()
+        except (CoreError, SupervisorError, ValueError):
+            music = {"state": "unavailable"}
+        return _json(readiness.report(house, value, inventory, states, music))
+    except (OSError, ValueError, KeyError, TypeError, CoreError):
+        return _json({"error": "Readiness could not be read safely. Saved setup is preserved."}, 503)
+
+
+async def api_readiness_action(request: web.Request) -> web.Response:
+    state = await household_admin(request)
+    body = await household_body(request)
+    try:
+        async with state.household_lock:
+            house = state.household.load()
+            inventory = await collect_inventory(state.core)
+            states = await state.core.states()
+            if request.match_info["action"] == "save":
+                value = readiness.save(state.household, house, body, inventory, states, persist=False)
+                state.household.save(house)
+                if value != readiness.load(state.household, house):
+                    state.household.write(state.household.readiness_path, value)
+            elif request.match_info["action"] == "verify":
+                current = readiness.load(state.household, house)
+                if (
+                    set(body) != {"revision", "epoch", "capability", "confirm"}
+                    or body["confirm"] is not True
+                    or type(body["revision"]) is not int
+                    or type(body["epoch"]) is not int
+                    or body["revision"] != current["revision"]
+                    or body["epoch"] != house["epoch"]
+                    or body["capability"] not in readiness.CAPABILITIES
+                ):
+                    raise ValueError("Save and review current readiness choices before verifying.")
+                value = await readiness.verify(state.core, current, body["capability"], inventory, states)
+                state.household.write(state.household.readiness_path, value)
+            else:
+                raise web.HTTPNotFound()
+            state.previews.clear()
+        return _json({"saved": True, "state": value})
+    except ValueError as error:
+        return _json({"error": str(error)}, 409)
+    except (OSError, CoreError, KeyError, TypeError):
+        return _json({"error": "Readiness action could not be verified. Refresh and retry; no HA configuration was changed."}, 503)
+
+
 async def api_household(request: web.Request) -> web.Response:
     state = await household_admin(request)
     try:
@@ -468,7 +523,8 @@ async def api_surface_preview(request: web.Request) -> web.Response:
             items = classify(inventory, await state.core.states(), house["overrides"])
             async with state.activity_lock:
                 activities = await update_activity(state.core, state.household, house["activities"])
-            generated = generate(house, surface, items, inventory["areas"], activities)
+            policy = readiness.policy_for(readiness.load(state.household, house), house, inventory, await state.core.states())
+            generated = generate(house, surface, items, inventory["areas"], activities, policy)
             records = state.household.read(state.household.publication_path, {})
             token = secrets.token_hex(16)
             # One recent preview per screen, bounded by the validated screen count.
@@ -476,6 +532,7 @@ async def api_surface_preview(request: web.Request) -> web.Response:
                 "generated": generated,
                 "token": token,
                 "revision": house["revision"],
+                "readiness_revision": readiness.load(state.household, house)["revision"],
                 "user": _user(request),
                 "at": time.monotonic(),
                 "expected": records.get(generated["url_path"], {}).get("fingerprint"),
@@ -504,7 +561,12 @@ async def api_surface_publish(request: web.Request) -> web.Response:
             preview = state.previews.get(request.match_info["surface"])
             if not preview or preview["token"] != body["preview_token"] or preview["user"] != _user(request):
                 raise ValueError("Generate and review this screen first.")
-            if time.monotonic() - preview["at"] > 600 or preview["revision"] != state.household.load()["revision"]:
+            current_house = state.household.load()
+            if (
+                time.monotonic() - preview["at"] > 600
+                or preview["revision"] != current_house["revision"]
+                or preview["readiness_revision"] != readiness.load(state.household, current_house)["revision"]
+            ):
                 raise ValueError("This preview expired or settings changed. Generate it again.")
             records = state.household.read(state.household.publication_path, {})
             result = await publish(state.core, preview["generated"], preview["expected"], records)
@@ -549,6 +611,8 @@ def create_app(settings: Settings, session: aiohttp.ClientSession | None = None)
     app.router.add_get("/api/scan", api_scan)
     app.router.add_get("/api/inventory", api_inventory)
     app.router.add_get("/api/household", api_household)
+    app.router.add_get("/api/readiness", api_readiness)
+    app.router.add_post("/api/readiness/{action}", api_readiness_action)
     app.router.add_get("/api/installation", api_installation)
     app.router.add_post("/api/installation/{action}", api_installation_action)
     app.router.add_post("/api/household", api_save_household)

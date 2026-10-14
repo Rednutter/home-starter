@@ -29,7 +29,7 @@ export async function initInstallation({ h, api, navigateHA }) {
     setup.hidden = false;
     if (previous !== mode) setup.open = mode === "first-run";
     document.querySelector(".house-nav").replaceChildren(...[
-      ["house-status", "House status"], ["house-changes", "New / changed things"], ["surfaces", "Screens"],
+      ["house-status", "House status"], ["home-readiness", "Home Readiness"], ["house-changes", "New / changed things"], ["surfaces", "Screens"],
       ["household-people", "People"], ["music", "Music"], ["house-climate", "Climate"],
       ["household-activities", "Activities"], ["review-setup", "Review setup"],
     ].map(([id, label]) => h("a", { href: "#" + id, onclick: () => {
@@ -72,7 +72,7 @@ export async function initInstallation({ h, api, navigateHA }) {
     const reset = button("Reset Home Starter setup", () => action("reset", data.revision, confirmation.value), true);
     confirmation.addEventListener("input", () => { reset.disabled = busy || confirmation.value !== "RESET HOME STARTER"; });
     setup.append(h("details", { id: "reset-setup" }, h("summary", {}, "Reset Home Starter setup"),
-      h("p", {}, "Clears saved people, screen profiles, preferences, names, activity rules and the comparison baseline. A local recovery copy is retained. " +
+      h("p", {}, "Clears saved people, screen profiles, preferences, names, activity rules, Home Readiness decisions and the comparison baseline. A local recovery copy is retained. " +
         "HA dashboards, devices, entities and integrations stay in place. Publication ownership and activity history are retained for protection and recovery."),
       h("label", { class: "screen-field" }, h("span", {}, "Type RESET HOME STARTER to confirm"), confirmation), reset));
   }
