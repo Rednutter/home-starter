@@ -1,5 +1,10 @@
 # Home Starter
 
+**AirTouch landscape panel** restores the household composition with native HA
+control subviews. Its optional overview uses installed HACS button-card; only
+explicitly reviewed specialist publication changes the screen. Offline climate
+and uncommissioned capabilities stay honest. See [requirements and verification](AIRTOUCH_PANEL.md).
+
 **Waste collection** uses Council collection areas and the dated annual calendar
 for concise bin reminders and native HA entities. Confirm the proposed service;
 expired schedules require checking. No synthetic calendar events are created.

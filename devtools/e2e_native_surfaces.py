@@ -40,11 +40,13 @@ def main():
         expect(page.get_by_role("button", name="Sidebar toggle", exact=True)).to_be_visible(timeout=30000)
         for profile, path in paths.items():
             page.locator(f'a[href="/{path}"]').click()
-            expect(page.locator("hui-sections-view")).to_be_visible(timeout=30000)
+            expect(page.locator("hui-sections-view, hui-panel-view")).to_be_visible(timeout=30000)
             expect(page.get_by_text("Loading...", exact=True)).not_to_be_visible(timeout=30000)
             expect(page.get_by_text("Needs attention", exact=True)).not_to_be_visible()
             assert page.locator("hui-error-card").count() == 0
             if profile == "specialist":
+                if page.locator("hui-panel-view").count():
+                    page.get_by_role("link", name="Open climate controls", exact=True).click()
                 thermostat = page.locator("hui-thermostat-card")
                 expect(thermostat).to_be_visible()
                 print(
@@ -63,7 +65,11 @@ def main():
                 verify_target(original)
             # Templates must render; a visible section is not sufficient evidence.
             if profile in ("phone", "specialist"):
-                page.get_by_role("button", name="Around the house", exact=True).click()
+                if profile == "specialist":
+                    page.goto(base + "/" + path + "/home")
+                page.get_by_role("link", name="Home", exact=True).or_(page.get_by_role("button", name="Around the house", exact=True)).click()
+                if profile == "specialist":
+                    page.get_by_role("button", name="Kitchen", exact=True).click()
                 expect(page.locator("hui-tile-card").filter(has_text="Kitchen temperature")).to_contain_text(re.compile(r"21\.5\s*°C"), timeout=30000)
                 assert page.locator("hui-error-card").count() == 0
                 page.goto(base + "/" + path + "/home")

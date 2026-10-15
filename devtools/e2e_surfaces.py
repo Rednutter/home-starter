@@ -90,7 +90,7 @@ def main():
         expect(page.get_by_role("button", name="Sidebar toggle", exact=True)).to_be_visible(timeout=30000)
         for profile in paths:
             page.locator(f'a[href="/{paths[profile]}"]').click()
-            expect(page.locator("hui-sections-view")).to_be_visible(timeout=30000)
+            expect(page.locator("hui-sections-view, hui-panel-view")).to_be_visible(timeout=30000)
             expect(page.get_by_text("Loading...", exact=True)).not_to_be_visible(timeout=30000)
             assert page.locator("hui-error-card").count() == 0
             page.screenshot(path=str(shots / f"native-{profile}-desktop.png"))
@@ -104,6 +104,8 @@ def main():
                 tile.locator("ha-tile-icon").click()
                 expect(tile).to_contain_text("Off" if original == "off" else "On")
             if profile == "specialist":
+                if page.locator("hui-panel-view").count():
+                    page.get_by_role("link", name="Open climate controls", exact=True).click()
                 expect(page.locator("hui-thermostat-card")).to_be_visible()
                 page.locator("hui-thermostat-card").get_by_role("button").nth(1).click()
                 expect(page.locator("hui-thermostat-card")).to_contain_text("22.1")

@@ -1,6 +1,6 @@
 ---
 name: Home Starter
-description: Existing administrator setup styling and native household dashboard generation.
+description: Existing administrator styling, native household dashboards and a scoped AirTouch specialist panel.
 colors:
   bg: "#f4f5f7"
   card: "#ffffff"
@@ -26,6 +26,15 @@ colors:
   dark-bad: "#ff8a80"
   dark-info: "#7dbdf0"
   dark-tile: "#20242a"
+  panel-canvas: "#09131b"
+  panel-text: "#f7f8fa"
+  panel-muted: "#cad3db"
+  panel-border: "#52606b"
+  panel-climate-accent: "#56baff"
+  panel-nav: "#081017"
+  panel-nav-active: "#103e59"
+  panel-nav-active-text: "#70c7ff"
+  panel-focus: "#82d2ff"
 typography:
   body:
     fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
@@ -44,17 +53,35 @@ typography:
     letterSpacing: "0.04em"
   preview-clock:
     fontSize: "clamp(2rem, 7vw, 4rem)"
+  panel-body:
+    fontFamily: "Roboto, Arial, sans-serif"
+    fontSize: "20px"
+    lineHeight: 1.4
+  panel-title:
+    fontSize: "26px"
+    fontWeight: 600
+    lineHeight: 1.2
+  panel-temperature:
+    fontSize: "clamp(58px, 7.5cqw, 82px)"
+    fontWeight: 600
+    lineHeight: 1.05
 rounded:
   input: "8px"
   button: "10px"
   confirmation: "12px"
   card: "14px"
   badge: "999px"
+  panel-tile: "24px"
+  panel-tile-narrow: "20px"
+  panel-nav: "22px"
+  panel-nav-item: "16px"
 spacing:
   action-gap: "8px"
   field-gap: "12px"
   section-gap: "16px"
   card-padding: "18px"
+  panel-gap: "14px"
+  panel-tile-padding: "22px 24px"
 components:
   button-primary:
     backgroundColor: "{colors.accent}"
@@ -81,6 +108,14 @@ components:
     textColor: "{colors.text}"
     rounded: "{rounded.card}"
     padding: "{spacing.card-padding}"
+  panel-tile:
+    textColor: "{colors.panel-text}"
+    rounded: "{rounded.panel-tile}"
+    padding: "{spacing.panel-tile-padding}"
+  panel-nav-active:
+    backgroundColor: "{colors.panel-nav-active}"
+    textColor: "{colors.panel-nav-active-text}"
+    rounded: "{rounded.panel-nav-item}"
 ---
 
 # Design System: Home Starter
@@ -92,6 +127,8 @@ components:
 Preserve the incumbent Home Assistant-like administration interface: compact system typography, blue actions, neutral bordered cards and progressive disclosure. The household screen setup extends this identity rather than introducing another visual world.
 
 Home Starter owns the administrator setup and its non-operating layout preview. Generated household dashboards use native Home Assistant cards and the viewer's theme. Their chrome, typography, card styling and sidebar are Home Assistant's responsibility; do not treat those screenshot values as Home Starter tokens. V0.3 establishes admission, hierarchy and generation boundaries, not a finished visual design for every household profile. Operational limits live in [SURFACES.md](home_starter/SURFACES.md).
+
+**Scoped specialist world: AirTouch household panel.** The explicitly requested reference-led AirTouch overview introduces a distinct navy, photographic, white-Roboto and cyan-accented panel. Its direction comes from the supplied `home_starter_airtouch_reference.png` and the contract in `.impeccable/surfaces/airtouch-panel.md`. The `panel-*` tokens apply only to this specialist overview. Administration retains Code-led Operate; native control subviews and Home Assistant chrome retain native styling. The panel reads household state and opens those preserved controls.
 
 **Key Characteristics:**
 - Compact administration with collapsible details.
@@ -115,9 +152,15 @@ The admin palette uses blue for actions and focus, neutral surfaces for structur
 - Main ink and muted text distinguish labels from explanation.
 - Pale divider lines provide card boundaries and row separation.
 
+### AirTouch specialist scope
+
+Panel canvas and navigation use deep navy; panel text and muted text separate primary readings from supporting context. The cool border defines tile edges. Climate accent identifies the climate icon; selected navigation combines its filled blue surface, lighter text and `aria-current`. Panel focus supplies a visible inset outline. These reference palette choices are intentional and do not redefine administrator semantic colors.
+
 ## Typography
 
 Use the existing system font stack throughout administration. Heading levels remain modest: page heading, section heading and title use the corresponding frontmatter roles; small text explains status, suitability and preview limits. Tile labels are uppercase with tracked letters. Preview clocks use responsive sizing and tabular numerals. Native dashboard typography remains theme-owned.
+
+The AirTouch overview intentionally uses native Roboto with Arial/sans-serif fallbacks. Large tabular temperature numerals lead the panel; tile titles, body readings and smaller detail text follow. Clock and date remain compact rather than competing with climate. The panel roles above describe the landscape base; compact landscape reduces titles to (22px), body to (18px) and temperature to (62px). Native thermostats keep their native type.
 
 ## Layout
 
@@ -127,17 +170,37 @@ At (560px) and below, cards use (14px) padding, screen fields and preview sectio
 
 Generated native dashboards use Sections. Phone, bedside and specialist Home views allow one column; other profiles allow up to three. Touch primary navigation is House plus saved people in configured order. Climate, Today, Home / Rooms and Music expand into contextual subviews with explicit back paths; missing sources are omitted. Specialist gives climate a dominant thermostat, while tablet and phone use compact glances. Rooms group only admitted entities into a native navigation Button plus templated Markdown summary, then open a room subview. They do not rely on automatic Area-card summaries. Conditional exception content and its section headings disappear in normal states. Manual Ambient and Dark are contextual display states; Dark preserves a visible Wake target and HA chrome. Both retain safety interruptions.
 
+### AirTouch overview layout
+
+The selected specialist overview replaces the scrolling thermostat stack with one landscape board: clock/date/weather above, dominant climate across two left rows, Today above Call and Cameras on the right, Media and Home beneath, then full-width household navigation. The three columns use (2fr 1fr 1fr), with the bottom row weighted at (.7fr). The viewport frame reserves native HA's (56px) header. Safety attention appears before the board when present. The exact first-viewport composition is scoped to this panel, not a template for other profiles.
+
+At a container width of (720px) or less, the panel grows vertically: climate and Today span both columns, Call/Cameras share a row, Media and Home follow, and navigation wraps. At viewport heights of (650px) or less with widths above (720px), smaller spacing/type and a (112px) bottom board row preserve compact landscape density. Household links keep (56px) minimum width; navigation targets are (56px) tall at base and (52px) in compact landscape. Personal pages retain their existing admission boundary and native contents with back paths.
+
 ## Elevation & Depth
 
 Admin cards and rows use borders and tonal layering. There is no ambient card shadow. The selected outcome uses an inset accent stroke; confirmation panels use accent borders. Preserve visible focus outlines: (3px) accent with (2px) offset for buttons and (3px) for fields, links and summaries.
 
 Progress width transitions over (0.4s ease); indeterminate progress uses (1.4s ease-in-out). Reduced motion stops that animation. Native dashboard elevation and motion remain theme-owned.
 
+The AirTouch overview uses dark gradient overlays on a generic room backdrop, cool fine borders and tonal separation without card shadows. Climate has a cooler overlay; Today/Home have warmer neutral overlays. Call and Cameras use solid surfaces. The shipping `static/panel-room.jpg` is generated imagery with embedded provenance; it contains no user photograph. Keep text contrast in the overlay rather than relying on details of the image. The panel introduces no decorative animation.
+
 ## Shapes
 
 Use the existing gently rounded cards, smaller rounded inputs and buttons, and pill badges. Row dividers carry dense lists; do not wrap every preference or preview item in another card.
 
+The AirTouch overview deliberately uses larger rounded photographic tiles, a rounded navigation tray and inset rounded selected items, using the scoped panel radius tokens. Its fine (1px) tile borders carry structure. These reference-derived radii are intentional and remain local to the specialist panel.
+
 ## Components
+
+### AirTouch household panel
+
+An installed same-origin HACS button-card module renders the custom overview; it does not replace native HA thermostats or permissions. The outer card has no action. Real links inside the panel open retained climate, Today/context, room and media subviews where those targets exist; their keyboard focus uses a (3px) inset panel outline. Household navigation contains House, configured people and Ambient; the active page is explicit. The known offline climate remains inspectable through native controls without inventing a temperature.
+
+Climate distinguishes reported activity from selected mode: `hvac_action` supplies Idle/Cooling/Heating when available; fallback text says Cool mode or Heat mode rather than asserting activity. Missing climate reports Connection unavailable and a temperature dash. Today prioritizes relevant bin context and reports stale schedules textually. Calendar commitments, media and light summaries use selected household sources. Call and Cameras remain visibly uncommissioned/unselected with no fabricated action or imagery. No capability label establishes commissioning or working hardware.
+
+Evidence: `home_starter/server/homestarter/panel.py` and `static/{panel-layout.css,panel-content.js,panel-room.jpg}`. Seven local captures in `screens/panel-ui/` cover `landscape.png`, `compact-landscape.png`, `narrow.png`, `native-climate-controls.png`, `offline.png`, `bins-tonight.png` and `stale.png`. All seven were valid after recapture; the fresh finish review found composition, navigation, typography and density at the achieved ceiling. Its material activity-label finding was fixed and tested. The detector ran exactly once; native Roboto and the reference palette/radii remain intentional advisories.
+
+Disposable Home Assistant (2026.10.0) with button-card (7.0.1) passed nonadministrator navigation, a native thermostat target increase and restore, and reload. This proves the tested native integration flow only. On the actual household Green, all climate entities were unavailable before the change; neither these captures nor disposable tests validate actual AirTouch hardware operation. Physical-screen acceptance and real climate operation remain separate. Captures are local evidence, not product assets or household photography.
 
 Admin buttons have primary, default and transparent ghost variants. Hover changes the border; disabled controls use (0.55) opacity. Fields retain visible labels, native select behavior and full-width screen inputs. Navigation uses wrapping underlined links; collapsible details keep advanced settings discoverable without crowding the main flow.
 
@@ -204,6 +267,8 @@ Evidence: `home_starter/server/homestarter/static/{waste.js,readiness.js}`, `hom
 ## Do's and Don'ts
 
 - Do preserve the incumbent admin tokens and progressive disclosure.
+- Do scope AirTouch panel tokens and its photographic composition to the selected specialist overview, preserving native control subviews.
+- Do distinguish reported climate activity, selected operating mode and unavailable evidence.
 - Do distinguish layout preview, verified publication and native control verification.
 - Do compress admitted household items into room summaries and native subviews.
 - Do retain person-versus-physical-screen preference ownership and suitability explanations.

@@ -95,7 +95,7 @@ def forbidden_path(path: str) -> bool:
         and p.name != ".env.example"
         or p.suffix in (".db", ".sqlite", ".sqlite3", ".har", ".log", ".key", ".pem")
         or p.suffix.lower() in (".png", ".jpg", ".jpeg", ".webp")
-        and path not in ("home_starter/icon.png", "home_starter/logo.png")
+        and path not in ("home_starter/icon.png", "home_starter/logo.png", "home_starter/server/homestarter/static/panel-room.jpg")
     )
 
 

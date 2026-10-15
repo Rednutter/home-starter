@@ -1,5 +1,9 @@
 # Home Starter
 
+The optional [AirTouch landscape panel](home_starter/AIRTOUCH_PANEL.md) follows the
+household reference composition while retaining native HA control subviews and
+explicit publication. Missing climate connectivity remains visible.
+
 An open-source Home Assistant helper for a house that grew piecemeal. Get things
 awake, see what HA knows about your rooms and devices, review explainable findings,
 then take a small explicit action and check whether it worked.

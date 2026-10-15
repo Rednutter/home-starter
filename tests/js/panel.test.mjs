@@ -1,0 +1,41 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+
+const render=new Function("hass","variables","html",readFileSync("home_starter/server/homestarter/static/panel-content.js","utf8"));
+const html=(strings,...values)=>strings.map((s,i)=>s+(typeof values[i]==="string"?values[i]:"")).join("");
+function scene(states={},changes={}) {
+  return render({states,config:{time_zone:"Australia/Sydney"},locale:{language:"en"}}, {panel:{title:"Example panel",base:"/example-panel",path:"/example-panel/home",targets:{climate:"/example-panel/climate"},people:[{name:"House",path:"/example-panel/home",icon:"mdi:home-outline"}],climate:"climate.example",zones:[],calendars:[],media:[],lights:[],alerts:[],bins:false,...changes}},html);
+}
+test("panel renders reported climate, not example temperatures",()=>{
+  const html=scene({"climate.example":{state:"cool",attributes:{temperature:23,current_temperature:21.5}}});
+  assert.match(html,/>23°</);assert.match(html,/Currently 21.5°/);assert.match(html,/Cool mode/);
+});
+
+test("selected climate mode is distinct from reported activity",()=>{
+  for (const state of ["cool","heat"]) {
+    const output=scene({"climate.example":{state,attributes:{hvac_action:"idle"}}});
+    assert.match(output,/>Idle</);assert.doesNotMatch(output,/>Cooling<|>Heating</);
+  }
+  assert.match(scene({"climate.example":{state:"cool",attributes:{hvac_action:"cooling"}}}),/>Cooling</);
+});
+test("offline climate stays honest and native control route remains",()=>{
+  const html=scene({"climate.example":{state:"unavailable",attributes:{temperature:23}}});
+  assert.match(html,/Connection unavailable/);assert.doesNotMatch(html,/>23°</);assert.match(html,/href="\/example-panel\/climate"/);
+});
+test("unselected household data never leaks through automatic discovery",()=>{
+  const html=scene({"calendar.private":{state:"on",attributes:{message:"Private fixture commitment"}},"media_player.private":{state:"playing",attributes:{media_title:"Private fixture track"}}});
+  assert.doesNotMatch(html,/Private fixture/);assert.match(html,/No speaker selected/);
+});
+test("HTML-valued entity labels and household names are escaped",()=>{
+  const html=scene({"media_player.example":{state:"playing",attributes:{friendly_name:'<img src=x>',media_title:'<script>fixture</script>'}}},{media:["media_player.example"],people:[{name:'<img src=x>',path:"/example-panel/home",icon:"mdi:account-circle-outline"}]});
+  assert.doesNotMatch(html,/<img|<script/);assert.match(html,/&lt;img/);
+});
+test("bin attention requires selected service and unexpired projection",()=>{
+  const state={state:"current",attributes:{valid_until:new Date(Date.now()+60000).toISOString(),attention:"tonight",summary:"Bins tonight\n\nGreen · Recycling"}};
+  assert.doesNotMatch(scene({"sensor.home_starter_bin_source":state}),/Green · Recycling/);
+  assert.match(scene({"sensor.home_starter_bin_source":state},{bins:true}),/Green · Recycling/);
+  state.attributes.valid_until="2000-01-01T00:00:00Z";
+  const stale=scene({"sensor.home_starter_bin_source":state},{bins:true});
+  assert.doesNotMatch(stale,/Green · Recycling/);assert.match(stale,/Bin schedule needs checking/);
+});

@@ -904,12 +904,24 @@ async def api_surface_preview(request: web.Request) -> web.Response:
             async with state.activity_lock:
                 activities = await update_activity(state.core, state.household, house["activities"])
             policy = readiness.policy_for(readiness.load(state.household, house), house, inventory, await state.core.states())
+            if surface["profile"] == "specialist":
+                from .panel import resource_ready
+
+                try:
+                    async with state.core.websocket() as ws:
+                        policy["landscape_panel"] = resource_ready(await ws.command("lovelace/resources/list"))
+                except CoreError:
+                    policy["landscape_panel"] = False
             waste_issue = False
             try:
                 policy = waste.screen_policy(policy, waste.load(state.household, house)["confirmed"])
             except (ValueError, OSError, KeyError, TypeError):
                 waste_issue = True
             generated = generate(house, surface, items, inventory["areas"], activities, policy)
+            if surface["profile"] == "specialist" and not policy.get("landscape_panel"):
+                generated["warnings"].append(
+                    "For the landscape AirTouch layout, install button-card through HACS, then generate a fresh preview. Native controls remain available."
+                )
             if waste_issue:
                 generated["warnings"].append("Bin schedule unavailable; existing screen choices preserved.")
             if surface["profile"] == "wall":

@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.8.0
+
+- Restore a reference-led specialist landscape overview with prominent Climate,
+  household context and configured people navigation. Retain native control
+  subviews, permissions and existing household choices.
+- Use an installed official HACS button-card module as the optional visual shell;
+  detect it through supported resources APIs and recheck before publication.
+  Missing dependencies retain the native fallback without dashboard writes.
+- Keep unavailable climate, selected mode versus live activity, missing services
+  and expired bin evidence explicit. No invented temperatures or commissioning.
+- Preserve dashboard ownership/readback and explicit publication. Other screens
+  are unchanged. Add focused tests and disposable native non-admin acceptance.
+  See [the panel contract and verification limits](AIRTOUCH_PANEL.md).
+
 ## 0.7.1
 
 - Keep verified Council-service readiness authoritative over legacy calendar

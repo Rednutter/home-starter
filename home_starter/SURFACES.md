@@ -11,7 +11,9 @@ power remain separate. Publication discloses HA state/recorder exposure. See
 
 Home Starter translates the existing house into native Home Assistant dashboards.
 Setup stays in the administrator-only App; household screens use the viewer's HA
-account. No frontend projects, custom cards or extra integrations are installed.
+account. Native cards supply controls. The specialist landscape overview optionally
+uses an installed HACS button-card module; Home Starter does not install frontend
+resources automatically. See [the AirTouch panel contract](AIRTOUCH_PANEL.md).
 
 ## People and places
 

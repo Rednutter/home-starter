@@ -145,6 +145,7 @@ def classify(inventory: dict, states: list[dict], overrides: dict) -> list[dict]
             "domain": domain,
             "device_class": dc,
             "platform": e.get("platform"),
+            "enabled": not e.get("disabled_by") and not e.get("hidden_by"),
             "attributes": {
                 k: attrs[k]
                 for k in (
@@ -427,7 +428,22 @@ def generate(house: dict, surface: dict, items: list[dict], areas: list[dict], a
     eligible.sort(key=lambda i: (i["level"], i["id"] not in pref["pin"], rank.get(i["id"], 9999), i["name"].casefold(), i["id"]))
     profile = surface["profile"]
     if profile in ("phone", "tablet", "specialist"):
-        return touch_dashboard(house, surface, items, eligible, areas, activity or [], policy)
+        generated = touch_dashboard(house, surface, items, eligible, areas, activity or [], policy)
+        if profile == "specialist" and (policy or {}).get("landscape_panel"):
+            from .panel import apply
+
+            climate = [i for i in eligible if i["domain"] == "climate"]
+            climate += [
+                i
+                for i in items
+                if i not in climate
+                and i["domain"] == "climate"
+                and i.get("platform") == "airtouch5"
+                and i.get("enabled")
+                and admitted({**i, "usable": True}, surface, house, preferences(house, surface))
+            ]
+            return apply(generated, house, climate, policy)
+        return generated
     path = "home-starter-" + surface["id"].replace("_", "-")
     base = "/" + path
     sections, details, other_access = [], [], []
@@ -742,6 +758,11 @@ async def publish(core: CoreClient, generated: dict, expected: str | None, recor
     """Only own tracked dashboards. Never overwrite unknown or externally edited content."""
     path = generated["url_path"]
     async with core.websocket() as ws:
+        if generated["config"]["views"][0].get("type") == "panel":
+            from .panel import resource_ready
+
+            if not resource_ready(await ws.command("lovelace/resources/list")):
+                raise ValueError("The landscape panel's button-card module is no longer registered. Existing dashboard preserved.")
         dashboards = await ws.command("lovelace/dashboards/list")
         existing = next((d for d in dashboards if d.get("url_path") == path), None)
         if existing:
