@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.5
+
+- Carry the specialist dashboard’s navy, cyan and photographic theme into its Climate page.
+- Arrange the main native thermostat beside room controls, with informational airflow readings below; reflow to one column on narrow screens.
+- Preserve native control configurations, entity IDs, Back navigation, permissions and household choices. Require reviewed publication for the selected screen.
+- Check six fictional zones and dampers at four sizes, including non-overlap and native target increase/restore on disposable HA.
+
 ## 0.8.4
 
 - Keep panel tile and footer taps inside the HA Companion app using button-card's supported native navigation action.

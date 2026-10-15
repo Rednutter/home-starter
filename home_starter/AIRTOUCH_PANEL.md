@@ -21,8 +21,11 @@ occurs. A changed publication requires new physical screen verification.
 
 ## Truthful controls and context
 
-Only the overview changes. Native climate, room, music, person and context subviews
-retain their controls, routes and the viewing account's HA permissions. Main
+The overview and its Climate page share the scoped navy/cyan world. Climate uses
+button-card’s supported nested-card layout: the original native thermostat leads,
+room controls sit alongside, and readonly airflow tiles follow. Narrow screens
+stack the controls. Native card configurations, routes, Back navigation and HA
+permissions are preserved; room, music, person and context subviews are unchanged. Main
 climate selection prefers the admitted controller advertising fan modes. Known
 offline AirTouch entities retain an inspectable native route; hidden, disabled,
 excluded or audience-blocked entities remain excluded. Entity IDs are preserved.

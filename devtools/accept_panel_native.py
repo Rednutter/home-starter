@@ -66,6 +66,44 @@ async def main():
         assert len(items) == 1 and items[0]["usable"], "Disposable thermostat must report normally"
         items[0]["area_id"] = "fixture_kitchen"
         items[0]["platform"] = "airtouch5"  # Fictional adapter label; native services remain real.
+        items[0]["attributes"]["fan_modes"] = ["auto"]  # Identify the main unit, as AirTouch does.
+        # Render a full-sized fictional system; only the real fixture thermostat is operated.
+        for index, name in enumerate(["Kitchen / dining / living", "Lounge", "Main bedroom", "Bedroom two", "Bedroom three", "Bedroom four"]):
+            for domain in ("climate", "cover"):
+                entity_id = f"{domain}.fixture_panel_zone_{index}"
+                attrs = (
+                    {
+                        "friendly_name": name,
+                        "temperature": 25,
+                        "current_temperature": 21.5,
+                        "hvac_modes": ["off", "fan_only"],
+                        "supported_features": 385,
+                        "min_temp": 16,
+                        "max_temp": 35,
+                    }
+                    if domain == "climate"
+                    else {"friendly_name": name + " airflow", "device_class": "damper", "current_position": 60, "supported_features": 0}
+                )
+                state = {"entity_id": entity_id, "state": "fan_only" if domain == "climate" else "open", "attributes": attrs}
+                async with session.post(BASE + "/api/states/" + entity_id, headers=headers, json=state) as response:
+                    assert response.status in (200, 201)
+                items += classify(
+                    {
+                        "devices": [],
+                        "unattached_entities": [
+                            {
+                                "entity_id": entity_id,
+                                "name": attrs["friendly_name"],
+                                "platform": "airtouch5",
+                                "observed": True,
+                                "state": state["state"],
+                                "area_id": "fixture_kitchen",
+                            }
+                        ],
+                    },
+                    [state],
+                    {},
+                )
         weather = {"entity_id": "weather.fixture_panel", "state": "partlycloudy", "attributes": {"temperature": 14, "temperature_unit": "°C"}}
         async with session.post(BASE + "/api/states/" + weather["entity_id"], headers=headers, json=weather) as response:
             assert response.status in (200, 201)
@@ -179,6 +217,23 @@ async def main():
             if KIOSK:
                 await expect(page.get_by_role("link", name="Back", exact=True)).to_be_visible()
             thermostat = page.locator("hui-thermostat-card").first
+            for name, width, height in [("landscape", 1280, 800), ("panel-landscape", 1280, 720), ("compact-landscape", 1024, 600), ("narrow", 390, 844)]:
+                await page.set_viewport_size({"width": width, "height": height})
+                await page.evaluate("()=>document.fonts.ready")
+                await page.screenshot(path=str(SHOTS / ("climate-" + name + ".png")), full_page=True)
+                assert await page.locator("hui-error-card").count() == 0
+                await expect(page.locator("hui-tile-card")).to_have_count(12)
+                bounds = await page.locator("hui-tile-card").evaluate_all(
+                    "els=>els.map(e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom}})"
+                )
+                assert all(
+                    a["right"] <= b["x"] + 1 or b["right"] <= a["x"] + 1 or a["bottom"] <= b["y"] + 1 or b["bottom"] <= a["y"] + 1
+                    for i, a in enumerate(bounds)
+                    for b in bounds[i + 1 :]
+                ), "Native zone cards must never overlap"
+                assert await page.locator("hui-panel-view").evaluate("el=>el.scrollWidth<=el.clientWidth+1")
+                assert await thermostat.evaluate("el=>getComputedStyle(el).getPropertyValue('--primary-text-color').trim()") == "#f7f8fa"
+            await page.set_viewport_size({"width": 1280, "height": 800})
             assert await thermostat.get_by_role("button").count() == 3
             assert await thermostat.get_by_role("button").nth(2).get_attribute("aria-label") == "Show more information"
 

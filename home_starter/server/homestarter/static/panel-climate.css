@@ -1,0 +1,47 @@
+:host {
+  --primary-text-color: #f7f8fa;
+  --secondary-text-color: #cad3db;
+  --primary-color: #56baff;
+  --accent-color: #56baff;
+  --ha-card-background: #142632;
+  --card-background-color: #142632;
+  --secondary-background-color: #213b4c;
+  --divider-color: #52606b;
+  --ha-card-border-color: #52606b;
+  --ha-card-border-radius: 20px;
+  --ha-card-box-shadow: none;
+  --state-icon-color: #9bcfee;
+  --state-climate-off-color: #a8bccb;
+  --control-button-background-color: #26465b;
+  --control-button-border-radius: 14px;
+  --control-select-background: #213b4c;
+  --mdc-select-fill-color: #213b4c;
+  --mdc-theme-surface: #142632;
+  --mdc-theme-on-surface: #f7f8fa;
+  color: #f7f8fa;
+  font-family: Roboto, Arial, sans-serif;
+  background: #09131b;
+}
+#card.disabled { pointer-events: auto; cursor: default; }
+#card { min-height: calc(100dvh - 56px); box-sizing: border-box; }
+#system {
+  --ha-card-background: transparent;
+  --ha-card-border-width: 0;
+  padding: 12px;
+  box-sizing: border-box;
+  border: 1px solid #52606b;
+  border-radius: 24px;
+  background: linear-gradient(100deg,rgba(13,40,59,.97),rgba(14,29,41,.72)),var(--hs-backdrop);
+  background-size: cover;
+  background-position: center;
+}
+#airflow { padding-top: 4px; }
+@media (max-width: 720px) {
+  #card { padding: 14px !important; }
+  #container { grid-template-columns: minmax(0,1fr) !important; grid-template-areas: "system" "rooms" "airflow" !important; gap: 16px !important; }
+}
+@media (max-height: 650px) and (min-width: 721px) {
+  #card { padding: 14px !important; }
+  #container { gap: 14px !important; }
+}
+::selection { background: #245f83; color: #fff; }

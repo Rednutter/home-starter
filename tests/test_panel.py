@@ -67,10 +67,33 @@ def test_native_fallback_and_controls_are_preserved_without_household_mutation()
     assert panel["config"]["views"][0]["type"] == "panel"
     for view in native["config"]["views"]:
         if view.get("subview"):
-            assert view in panel["config"]["views"]
+            themed = next(v for v in panel["config"]["views"] if v["path"] == view["path"])
+            if view["path"] == "climate":
+                assert themed["subview"] and themed["back_path"] == view["back_path"]
+                controls = [c for s in view["sections"] for c in s["cards"] if c["type"] != "heading"]
+                assert themed["cards"][0]["custom_fields"]["system"]["card"] == controls[0]
+                assert "#09131b" in themed["cards"][0]["extra_styles"]
+            else:
+                assert view == themed
     card = panel["config"]["views"][0]["cards"][0]
     assert card["variables"]["panel"]["climate"] == "climate.example"
     assert "call_service" not in json.dumps(card) and "fetch(" not in json.dumps(card)
+
+
+def test_climate_layout_preserves_native_zone_and_readonly_damper_cards():
+    from homestarter.panel import climate_panel
+
+    system = {"type": "thermostat", "entity": "climate.example", "features": [{"type": "climate-hvac-modes"}]}
+    zone = {"type": "tile", "entity": "climate.room", "name": "Actual room", "features": [{"type": "target-temperature"}]}
+    damper = {"type": "tile", "entity": "cover.room", "tap_action": {"action": "none"}, "icon_tap_action": {"action": "none"}}
+    view = {"path": "climate", "subview": True, "back_path": "/example/home", "sections": [{"cards": [{"type": "heading"}, system, zone, damper]}]}
+    climate_panel(view, "fixture CSS")
+    fields = view["cards"][0]["custom_fields"]
+    assert fields["system"]["card"] == system
+    assert fields["rooms"]["card"]["custom_fields"]["control0"]["card"] == zone
+    assert fields["airflow"]["card"]["custom_fields"]["control0"]["card"] == damper
+    assert view["subview"] and view["back_path"] == "/example/home"
+    assert "sections" not in view
 
 
 @pytest.mark.parametrize("state", ["unavailable", "unknown"])

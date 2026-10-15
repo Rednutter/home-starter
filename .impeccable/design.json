@@ -499,7 +499,7 @@
   ],
   "narrative": {
     "northStar": "Code-led Operate",
-    "overview": "Preserve the incumbent Home Assistant-like administration interface: compact system typography, blue actions, neutral bordered cards and progressive disclosure. The household screen setup extends this identity rather than introducing another visual world.\n\nHome Starter owns the administrator setup and its non-operating layout preview. Generated household dashboards use native Home Assistant cards and the viewer's theme. Their chrome, typography, card styling and sidebar are Home Assistant's responsibility; do not treat those screenshot values as Home Starter tokens. V0.3 establishes admission, hierarchy and generation boundaries, not a finished visual design for every household profile. Operational limits live in [SURFACES.md](home_starter/SURFACES.md).\n\nScoped specialist world: the reference-led AirTouch overview uses navy, photographic panels, white Roboto and cyan accents. panel-* tokens apply only here; administrator styling and native control subviews retain their existing worlds. See DESIGN.md for scoped evidence and actual-hardware verification limits.",
+    "overview": "Preserve the incumbent Home Assistant-like administration interface: compact system typography, blue actions, neutral bordered cards and progressive disclosure. The household screen setup extends this identity rather than introducing another visual world.\n\nHome Starter owns the administrator setup and its non-operating layout preview. Generated household dashboards use native Home Assistant cards and the viewer's theme. Their chrome, typography, card styling and sidebar are Home Assistant's responsibility; do not treat those screenshot values as Home Starter tokens. V0.3 establishes admission, hierarchy and generation boundaries, not a finished visual design for every household profile. Operational limits live in [SURFACES.md](home_starter/SURFACES.md).\n\nScoped specialist world: the reference-led AirTouch overview uses navy, photographic panels, white Roboto and cyan accents. panel-* tokens apply only here; the Climate page now shares that scoped world through unchanged nested native controls; administrator styling and other subviews retain their existing worlds. See DESIGN.md for scoped evidence and actual-hardware verification limits.",
     "keyCharacteristics": [
       "Compact administration with collapsible details.",
       "Explicit settings, preview and publication states.",
@@ -515,6 +515,11 @@
       {
         "name": "AirTouch kiosk escape",
         "body": "The explicit specialist-only `surface.kiosk` option uses installed Kiosk Mode for the validated dedicated nonadministrator account with a unique display name. It hides the sidebar only on that generated dashboard and hides the header only on its overview; native control subviews retain their header and Back target. The footer adds Settings, which uses native HA navigation to open a Settings subview with HA chrome, Profile/app settings and a Panel mode return. Tile and footer taps use button-card's supported navigation helper so they remain in the Companion app. Administrator chrome and other dashboards retain their existing presentation. This changes presentation only, with no permissions change or cache locking.",
+        "section": "components"
+      },
+      {
+        "name": "AirTouch Climate continuity",
+        "body": "Navy/cyan native Climate controls: photographic main thermostat left, room tiles right, readonly airflow below. Preserve all native configurations and Back navigation. Stack at 720px and below; allow vertical scrolling instead of overlapping or clipping controls.",
         "section": "components"
       }
     ],
