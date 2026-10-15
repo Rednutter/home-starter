@@ -121,6 +121,7 @@ class HouseholdStore:
         self.readiness_path = root / "readiness.json"
         self.commissioning_path = root / "commissioning.json"
         self.this_house_path = root / "house-confirmations.json"
+        self.screen_identity_path = root / "screen-commissioning.json"
 
     @staticmethod
     def read(path: Path, default: Any) -> Any:

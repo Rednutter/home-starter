@@ -38,7 +38,7 @@ export async function initInstallation({ h, api, navigateHA }) {
       if (id === "music") document.dispatchEvent(new CustomEvent("home-starter-music"));
     } }, label)));
     const problem = !data.inventory_complete || data.unavailable.length || data.changes.length ||
-      data.screens.some(s => s.status !== "published") || !data.music.verified;
+      data.screens.some(s => s.status !== "published" || s.commissioning?.required && s.commissioning.stage !== "commissioned") || !data.music.verified;
     status.textContent = mode === "first-run" ? "No saved setup yet. Review the existing house, then finish initial review when ready."
       : problem ? "Saved setup loaded. Review the checks below; nothing was rebuilt." : "Saved setup loaded. Current checks are healthy.";
     const climate = data.screens.find(s => s.profile === "specialist" && s.status === "published") ||
@@ -49,6 +49,8 @@ export async function initInstallation({ h, api, navigateHA }) {
       data.baseline_created && h("p", { class: "small muted" }, "First comparison baseline recorded. Future launches show differences without rebuilding setup."),
       h("h3", {}, "Screens"),
       ...data.screens.map(s => h("div", { class: "screen-row" }, h("strong", {}, s.name), h("span", {}, labels[s.status]),
+        s.commissioning?.required && h("span", {class:"small muted"}, s.commissioning.stage === "commissioned" ? "Physical display commissioned · last check recorded" :
+          s.commissioning.stage === "authenticated" ? "Display account session checked · physical confirmation pending" : "Display identity / persistent login not verified"),
         ["published", "external_edits"].includes(s.status) && button("Open " + s.name, () => navigateHA("/" + s.url_path + "/home")))),
       !data.screens.length && h("p", { class: "muted" }, "No screens configured. Add one when useful; existing HA dashboards stay in place."),
       h("h3", {}, "Music"), h("p", {}, data.music.title || "Music check unavailable"),

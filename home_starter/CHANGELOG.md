@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.6.1
+
+- Separate fixed/shared screen publication from dedicated HA account, session,
+  restart and physical-use commissioning. Keep existing dashboards and settings.
+- Inspect native accounts and guide native credential setup; explicitly prepare
+  suitable existing display accounts through supported local-only/read-only APIs.
+- Verify the native caller with an owned button helper and separate check page.
+  Keep physical use and restart method as explicit owner reports, not inferred facts.
+- Store only private, versioned commissioning evidence. Preserve all 0.6.0 files;
+  an existing published screen begins with its display identity unverified.
+- Add focused lifecycle tests and disposable native HA acceptance, including
+  non-admin climate controls, default dashboard and browser restart persistence.
+  See [scope, privacy and remaining physical steps](SCREEN_COMMISSIONING.md).
+
 ## 0.6.0
 
 - Add Household Context using the chosen verified HA calendar, explicit dated

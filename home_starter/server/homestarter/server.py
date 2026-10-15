@@ -24,7 +24,7 @@ from typing import Any
 import aiohttp
 from aiohttp import web
 
-from . import __version__, commissioning, context, context_runtime, readiness, this_house
+from . import __version__, commissioning, context, context_runtime, readiness, screen_identity, this_house
 from .activity import update_activity
 from .core import CoreClient, CoreError
 from .household import PROFILES, HouseholdStore, validate_household
@@ -47,6 +47,7 @@ STATIC_FILES = {
     "house.js": "text/javascript",
     "this-house.js": "text/javascript",
     "context.js": "text/javascript",
+    "screen-identity.js": "text/javascript",
     "surfaces.js": "text/javascript",
     "installation.js": "text/javascript",
     "readiness.js": "text/javascript",
@@ -145,6 +146,9 @@ class State:
             items = classify(inventory, await self.core.states(), house["overrides"]) if inventory["complete"] else []
             observation = observe(self.household, house, inventory, items)
             screens = await screen_status(self.core, house, self.household.read(self.household.publication_path, {}))
+            identities = await screen_identity.inspect(self.core, self.household, house, screens)
+            for screen in screens:
+                screen["commissioning"] = next(r for r in identities["screens"] if r["id"] == screen["id"])
         try:
             music = await self.music()
             proof = music.get("runtime", {}).get("proof")
@@ -347,6 +351,9 @@ async def api_house_readiness(request: web.Request) -> web.Response:
             pass
         try:
             checks["screens"] = await screen_status(state.core, house, state.household.read(state.household.publication_path, {}))
+            identities = await screen_identity.inspect(state.core, state.household, house, checks["screens"])
+            for screen in checks["screens"]:
+                screen["commissioning"] = next(r for r in identities["screens"] if r["id"] == screen["id"])
         except (ValueError, OSError, KeyError, TypeError, CoreError):
             pass
     except (ValueError, OSError, KeyError, TypeError):
@@ -480,6 +487,7 @@ async def screen_status(core: CoreClient, house: dict, records: dict) -> list[di
                     try:
                         current = await ws.command("lovelace/config", url_path=path, force=True)
                         screen["status"] = "published" if fingerprint(current) == records[path]["fingerprint"] else "external_edits"
+                        screen["fingerprint"] = fingerprint(current)
                     except CoreError:
                         screen["status"] = "unavailable"
     except CoreError:
@@ -494,6 +502,28 @@ async def api_installation(request: web.Request) -> web.Response:
         return _json(await state.installation())
     except (OSError, ValueError, KeyError, TypeError, CoreError):
         return _json({"error": "Existing setup could not be read safely. Restore or repair runtime data; onboarding was not restarted."}, 503)
+
+
+async def api_screen_identity(request: web.Request) -> web.Response:
+    state = await household_admin(request)
+    try:
+        async with state.household_lock:
+            house = state.household.load()
+            publications = await screen_status(state.core, house, state.household.read(state.household.publication_path, {}))
+            if request.method == "POST":
+                commissioning.gate(state.household)
+                await screen_identity.apply(state.core, state.household, house, publications, await household_body(request), _user(request))
+            return _json(await screen_identity.inspect(state.core, state.household, house, publications))
+    except ValueError as error:
+        return _json({"error": str(error), "verified": False}, 409)
+    except (CoreError, OSError, KeyError, TypeError, AttributeError):
+        return _json(
+            {
+                "error": "Display commissioning could not be verified. Refresh and inspect the saved state before retrying; no password is handled here.",
+                "verified": False,
+            },
+            503,
+        )
 
 
 async def commissioning_payload(state, value, discovery=False):
@@ -926,6 +956,8 @@ def create_app(settings: Settings, session: aiohttp.ClientSession | None = None)
     app.router.add_get("/api/house", api_this_house)
     app.router.add_get("/api/context", api_context)
     app.router.add_post("/api/context", api_context)
+    app.router.add_get("/api/screens/identity", api_screen_identity)
+    app.router.add_post("/api/screens/identity", api_screen_identity)
     app.router.add_get("/api/house/status", api_house_readiness)
     app.router.add_post("/api/house/{action}", api_this_house)
     app.router.add_get("/api/household", api_household)

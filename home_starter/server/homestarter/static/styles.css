@@ -201,3 +201,8 @@ body[data-commissioning="loading"] #rescan, body[data-commissioning="active"] #r
 .preview-climate { padding: 24px 0; font-size: 1.2rem; }
 .preview-clock { font-size: clamp(2rem, 7vw, 4rem); font-variant-numeric: tabular-nums; }
 @media (max-width: 560px) { .screen-fields, .preview-sections { grid-template-columns: 1fr; } .screen-item { grid-template-columns: minmax(0, 1fr) auto auto; } }
+#screen-identity { margin-top: 24px; }
+#screen-identity details { margin-block: 16px; }
+#screen-identity .screen-physical-check { display:flex; align-items:center; gap:12px; min-height:44px; }
+#screen-identity fieldset { min-width:0; margin-block:16px; }
+#screen-identity code { overflow-wrap:anywhere; }

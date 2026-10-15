@@ -76,6 +76,11 @@ async def test_deferred_choices_and_dashboard_readback_limits(inventory):
     for status, expected in (("published", "ready"), ("external_edits", "partial"), ("missing", "problem"), ("unavailable", "unknown")):
         row = rows(inventory, screens=[{"status": status}])["dashboards"]
         assert row["state"] == expected and "Physical display" in row["detail"]
+    checks = [{"status": "published", "profile": "specialist", "commissioning": {"required": True, "stage": "published"}}]
+    assert rows(inventory, screens=checks)["dashboards"]["state"] == "ready"
+    assert rows(inventory, screens=checks)["display_commissioning"]["state"] == "partial"
+    checks[0]["commissioning"]["stage"] = "commissioned"
+    assert rows(inventory, screens=checks)["display_commissioning"]["state"] == "ready"
 
 
 async def test_presence_exclusions_are_respected_without_home_away_claims(inventory):

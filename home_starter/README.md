@@ -1,5 +1,10 @@
 # Home Starter
 
+**Physical screen commissioning** separates dashboard publication from a verified
+dedicated HA login, restart and actual display use. Native HA owns credentials;
+existing screen choices and publications remain intact.
+See [supported automation and commissioning limits](SCREEN_COMMISSIONING.md).
+
 **Household Context** turns the chosen verified calendar and explicit household
 rules into a compact passive wall that shifts from today to upcoming weeks.
 See [behaviour, privacy and acceptance limits](HOUSEHOLD_CONTEXT.md).

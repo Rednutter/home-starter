@@ -101,7 +101,10 @@ def report(inventory, people, checks):
         matched = sum(s["status"] == "published" for s in screens)
         statuses = {s["status"] for s in screens}
         state = "ready" if matched == len(screens) else "problem" if "missing" in statuses else "unknown" if "unavailable" in statuses else "partial"
-        detail = f"{matched} of {len(screens)} saved dashboard configurations match readback. Physical display wake, visibility and controls are unverified."
+        detail = (
+            f"{matched} of {len(screens)} saved dashboard configurations match readback. "
+            "Physical display wake, visibility and controls are unverified by publication."
+        )
     rows.append(
         {
             "id": "dashboards",
@@ -110,6 +113,21 @@ def report(inventory, people, checks):
             "confidence": "Confirmed" if screens is not None and state != "unknown" else "Unknown",
             "detail": detail,
             "route": "#house-status",
+        }
+    )
+    fixed = [s for s in screens or [] if s.get("commissioning", {}).get("required", s.get("profile") != "phone")]
+    commissioned = sum(s.get("commissioning", {}).get("stage") == "commissioned" for s in fixed)
+    rows.append(
+        {
+            "id": "display_commissioning",
+            "title": "Physical household screens",
+            "state": "unknown" if screens is None else "not_configured" if not fixed else "ready" if commissioned == len(fixed) else "partial",
+            "confidence": "Unknown" if screens is None else "Scoped checks",
+            "detail": (
+                f"{commissioned} of {len(fixed)} fixed/shared screens commissioned. "
+                "Dashboard publication alone does not verify identity, physical use or restart persistence. Screen power is separate."
+            ),
+            "route": "#screen-identity",
         }
     )
     return rows

@@ -159,6 +159,16 @@ Save settings precedes Generate screen; unsaved changes invalidate the preview. 
 
 Native Sections, Tile, Markdown, Clock, Thermostat and Calendar form the household screen vocabulary, with native Media control and Weather where supported. Specialist screens put alerts before dominant air-conditioning thermostats. Wall dashboards use a large clock and informational context, exceptions and activity, with no generated control widgets, actionable taps or room navigation. This constraint applies to generated dashboard content; native Home Assistant chrome remains present.
 
+### Physical screen commissioning
+
+Physical screen commissioning extends the existing Screens disclosure with the same system typography, neutral borders, native selectors and subordinate ghost actions. Lead with the distinction between dashboard publication and physical commissioning, then the fixed/shared screen selector and its current state, issue and separately dated authentication, restart and owner-confirmed physical evidence. Keep account preparation and physical verification in two bounded disclosures. Checkbox labels retain (44px) minimum touch heights, fieldsets shrink on narrow screens and the check-page address wraps without overflow. Busy actions disable controls; reading, waiting, failure and saved/readback messages remain explicit.
+
+Account creation, passwords, reauthentication and recovery hand off to native HA. Explain the selected account's permissions and local-only preparation before explicit confirmation; a dashboard does not restrict a normal user's access. Confirming the same valid account preserves its checks. A different account or changed account/dashboard settings requires fresh session, restart and physical checks. Passive read-only walls retain an unresolved verification state because the current native check cannot be pressed by that account.
+
+The isolated native helper/check dashboard proves which account pressed it; it does not identify the hardware or change the intended dashboard. Show the waiting stage and (15-minute) attempt expiry. Separately request the owner's physical-screen report of intended dashboard, default landing, working controls and actual restart method. Authentication and a post-restart press must remain distinct from that report; neither publication nor a press on another device is physical-screen proof. Explain that signing out or clearing browser data removes persistence and that future session revocation is not monitored.
+
+Evidence: `home_starter/server/homestarter/static/{screen-identity.js,index.html,styles.css}` and the scoped surface contract in `.impeccable/surfaces/screen-identity.md`. The scoped finish review returned ship; physical household acceptance remains separate from implementation and review evidence.
+
 ### Music addition evidence
 
 Music extends Code-led Operate in maintenance and commissioning: the same blue actions, flat bordered card, modest headings and system font stack (Segoe UI verified on the captured Windows browser). The reading column caps at (72ch), wraps long content and keeps full-width native selectors. Native connection and source-repair disclosures use (44px) minimum summaries. Installation/HA health remains a separate disclosure below source and speaker checks.

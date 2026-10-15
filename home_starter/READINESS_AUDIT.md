@@ -1,5 +1,13 @@
 # Household evidence and setup audit
 
+## 0.6.1 Physical screens
+
+Saved dashboard readiness still means publication/readback. A separate physical
+screen readiness row requires current dedicated-account evidence, two native
+caller checks and an explicit physical-use report. Missing account inspection,
+changed bindings and unverified restart/physical use remain unfinished.
+See [supported mechanisms and acceptance](SCREEN_COMMISSIONING.md).
+
 ## 0.6.0 Household Context
 
 Readiness version 2 adds explicit dated morning rules and occurrence-bound event

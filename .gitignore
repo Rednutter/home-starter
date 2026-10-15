@@ -24,6 +24,8 @@ readiness.json
 commissioning.json
 house-confirmations.json
 house-confirmations.tmp
+screen-commissioning.json
+screen-commissioning.tmp
 music-connection.json
 music-connection.tmp
 music-playback.json

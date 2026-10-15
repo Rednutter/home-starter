@@ -744,7 +744,12 @@ async def publish(core: CoreClient, generated: dict, expected: str | None, recor
             raise ValueError("The published dashboard is missing. Refresh before publishing.")
         else:
             await ws.command(
-                "lovelace/dashboards/create", url_path=path, title=generated["surface"]["name"], require_admin=False, show_in_sidebar=True, icon="mdi:home"
+                "lovelace/dashboards/create",
+                url_path=path,
+                title=generated["surface"]["name"],
+                require_admin=False,
+                show_in_sidebar=generated.get("show_in_sidebar", True),
+                icon="mdi:home",
             )
         await ws.command("lovelace/config/save", url_path=path, config=generated["config"])
         readback = await ws.command("lovelace/config", url_path=path, force=True)
