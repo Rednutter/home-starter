@@ -108,6 +108,14 @@ async def main():
         async with session.post(BASE + "/api/states/" + weather["entity_id"], headers=headers, json=weather) as response:
             assert response.status in (200, 201)
         items += classify({"devices": [], "unattached_entities": [{**weather, "name": "Fixture weather", "observed": True}]}, [weather], {})
+        safety = {
+            "entity_id": "binary_sensor.fixture_panel_smoke",
+            "state": "off",
+            "attributes": {"device_class": "smoke", "friendly_name": "Fixture smoke alarm"},
+        }
+        async with session.post(BASE + "/api/states/" + safety["entity_id"], headers=headers, json=safety) as response:
+            assert response.status in (200, 201)
+        items += classify({"devices": [], "unattached_entities": [{**safety, "name": "Fixture smoke alarm", "observed": True}]}, [safety], {})
         areas = [{"area_id": "fixture_kitchen", "name": "Fixture kitchen"}]
         before = copy.deepcopy(house)
         records_path = ROOT / "publications.json"
@@ -217,10 +225,23 @@ async def main():
             if KIOSK:
                 await expect(page.get_by_role("link", name="Back", exact=True)).to_be_visible()
             thermostat = page.locator("hui-thermostat-card").first
-            for name, width, height in [("landscape", 1280, 800), ("panel-landscape", 1280, 720), ("compact-landscape", 1024, 600), ("narrow", 390, 844)]:
+            for name, width, height in [
+                ("landscape", 1280, 800),
+                ("panel-landscape", 1280, 720),
+                ("compact-landscape", 1024, 600),
+                ("narrow", 390, 844),
+                ("tall-tablet", 800, 1280),
+            ]:
                 await page.set_viewport_size({"width": width, "height": height})
+                await page.reload()  # Reset native view sizing after full-page narrow captures.
+                await expect(thermostat).to_be_visible()
+                await page.wait_for_load_state("networkidle")
+                await expect(page.get_by_text("Loading...", exact=True)).not_to_be_visible()
                 await page.evaluate("()=>document.fonts.ready")
-                await page.screenshot(path=str(SHOTS / ("climate-" + name + ".png")), full_page=True)
+                await page.evaluate("()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))")
+                canvas = await page.locator("button-card").first.evaluate("e=>e.shadowRoot.querySelector('#card').getBoundingClientRect().bottom")
+                assert canvas >= height - 1, f"The navy canvas must fill the viewport: {name}, bottom {canvas}, expected {height}"
+                await page.screenshot(path=str(SHOTS / ("climate-" + name + ".png")), full_page=name != "tall-tablet")
                 assert await page.locator("hui-error-card").count() == 0
                 await expect(page.locator("hui-tile-card")).to_have_count(12)
                 bounds = await page.locator("hui-tile-card").evaluate_all(
@@ -233,6 +254,7 @@ async def main():
                 ), "Native zone cards must never overlap"
                 assert await page.locator("hui-panel-view").evaluate("el=>el.scrollWidth<=el.clientWidth+1")
                 assert await thermostat.evaluate("el=>getComputedStyle(el).getPropertyValue('--primary-text-color').trim()") == "#f7f8fa"
+                assert (await thermostat.bounding_box())["y"] < 130, "Tall screens must not vertically center the whole control page"
             await page.set_viewport_size({"width": 1280, "height": 800})
             assert await thermostat.get_by_role("button").count() == 3
             assert await thermostat.get_by_role("button").nth(2).get_attribute("aria-label") == "Show more information"

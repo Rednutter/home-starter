@@ -86,12 +86,19 @@ def test_climate_layout_preserves_native_zone_and_readonly_damper_cards():
     system = {"type": "thermostat", "entity": "climate.example", "features": [{"type": "climate-hvac-modes"}]}
     zone = {"type": "tile", "entity": "climate.room", "name": "Actual room", "features": [{"type": "target-temperature"}]}
     damper = {"type": "tile", "entity": "cover.room", "tap_action": {"action": "none"}, "icon_tap_action": {"action": "none"}}
-    view = {"path": "climate", "subview": True, "back_path": "/example/home", "sections": [{"cards": [{"type": "heading"}, system, zone, damper]}]}
+    notice = {
+        "type": "conditional",
+        "conditions": [{"condition": "state", "entity": "binary_sensor.example", "state": "on"}],
+        "card": {"type": "tile", "entity": "binary_sensor.example"},
+    }
+    view = {"path": "climate", "subview": True, "back_path": "/example/home", "sections": [{"cards": [{"type": "heading"}, notice, system, zone, damper]}]}
     climate_panel(view, "fixture CSS")
     fields = view["cards"][0]["custom_fields"]
     assert fields["system"]["card"] == system
     assert fields["rooms"]["card"]["custom_fields"]["control0"]["card"] == zone
     assert fields["airflow"]["card"]["custom_fields"]["control0"]["card"] == damper
+    assert fields["notices"]["card"]["cards"] == [notice]
+    assert {"display": "block"} in view["cards"][0]["styles"]["card"]
     assert view["subview"] and view["back_path"] == "/example/home"
     assert "sections" not in view
 

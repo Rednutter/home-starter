@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.6
+
+- Anchor climate controls at the top on tall tablets.
+- Keep native conditional notices outside the airflow grid, avoiding empty outlined slots when inactive.
+- Add tall-tablet canvas/alignment and inactive-alert checks to native acceptance.
+
 ## 0.8.5
 
 - Carry the specialist dashboard’s navy, cyan and photographic theme into its Climate page.

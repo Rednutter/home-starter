@@ -27,7 +27,8 @@ def climate_panel(view, css):
         return
     system = next((card for card in cards if card.get("type") == "thermostat"), cards[0])
     rooms = [card for card in cards if card is not system and card.get("entity", "").startswith("climate.")]
-    airflow = [card for card in cards if card is not system and card not in rooms]
+    notices = [card for card in cards if card.get("type") == "conditional"]
+    airflow = [card for card in cards if card is not system and card not in rooms and card not in notices]
 
     def group(children, columns=2):
         names = [f"control{i}" for i in range(len(children))]
@@ -61,14 +62,27 @@ def climate_panel(view, css):
         }
 
     fields = {"system": {"card": system}}
+    if notices:
+        fields["notices"] = {"card": {"type": "vertical-stack", "cards": notices}}
     if rooms:
         fields["rooms"] = {"card": group(rooms)}
     if airflow:
         fields["airflow"] = {"card": group(airflow, 3)}
     root = group([])
-    root["styles"]["card"] = [{"padding": "22px"}, {"background": "#09131b"}, {"border": "0"}, {"border-radius": "0"}, {"box-shadow": "none"}]
+    root["styles"]["card"] = [
+        {"display": "block"},
+        {"padding": "22px"},
+        {"background": "#09131b"},
+        {"border": "0"},
+        {"border-radius": "0"},
+        {"box-shadow": "none"},
+    ]
     root["styles"]["grid"] = [
-        {"grid-template-areas": '"system rooms" "airflow airflow"'},
+        {
+            "grid-template-areas": ('"notices notices" ' if notices else "")
+            + ('"system rooms" ' if rooms else '"system system" ')
+            + ('"airflow airflow"' if airflow else "")
+        },
         {"grid-template-columns": "minmax(0, .85fr) minmax(0, 1.15fr)"},
         {"gap": "20px"},
         {"align-items": "start"},
@@ -76,7 +90,9 @@ def climate_panel(view, css):
     ]
     root["styles"]["custom_fields"] = {key: [{"min-width": "0"}, {"width": "100%"}, {"align-self": "start"}] for key in fields}
     root["custom_fields"] = fields
-    root["extra_styles"] = css
+    root["extra_styles"] = css.replace(
+        '"system" "rooms" "airflow"', " ".join('"' + key + '"' for key in ["notices", "system", "rooms", "airflow"] if key in fields)
+    )
     view.pop("sections", None)
     view.pop("max_columns", None)
     view.update(type="panel", cards=[root])

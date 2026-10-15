@@ -307,3 +307,7 @@ The specialist Climate route carries the overview’s navy canvas, white Roboto,
 Disposable HA evidence: `screens/panel-ui/climate-{landscape,panel-landscape,compact-landscape,narrow}.png` covers 1280×800, 1280×720, 1024×600 and 390×844 with six fictional zones and six dampers. Acceptance checks every tile’s non-overlap, horizontal bounds, dark text tokens, native target increase/restore, native Back, in-app navigation and reload. This does not establish a physical AirTouch restart proof.
 
 Fresh finish review: **ship**. The three reviewed climate captures preserve the reference material/type/ground, all native controls and readable responsive spacing; no material fix remained. Native HA header/Back are intentionally retained.
+
+Live tablet follow-up: use block layout for the outer climate card so tall viewports keep controls at the top. Preserve conditional notices in a separate native stack, outside the airflow grid; inactive notices must not leave outlined airflow slots. Acceptance adds an 800×1280 tall-tablet capture, top alignment, full-height canvas and inactive fictional safety notice.
+
+Follow-up finish verdict: **ship**. Fresh tall-tablet and landscape captures show top-aligned controls, six distinct zone cards and six airflow tiles without empty bordered notice slots. Native Back, control targets and temperatures remain legible; physical-tablet checks remain separate.
