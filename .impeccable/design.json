@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-15T13:13:17.849280Z",
+  "generatedAt": "2026-10-15T20:47:16.974218Z",
   "title": "Design System: Home Starter",
   "extensions": {
     "colorMeta": {
@@ -388,7 +388,7 @@
         "value": "750px"
       }
     ],
-    "scope": "Administrator primitives plus explicitly scoped panel-* tokens for the AirTouch specialist overview. Native Home Assistant controls and chrome remain theme-owned. Tonal ramps are synthesized panel previews, not implemented palette tokens.",
+    "scope": "Administrator primitives plus explicitly scoped panel-* tokens for the AirTouch specialist overview. Native Home Assistant controls and chrome remain theme-owned. Tonal ramps are synthesized panel previews, not implemented palette tokens. Explicit specialist kiosk presentation hides native chrome only for its validated dedicated nonadministrator viewer; Settings restores it and native control subviews retain Back.",
     "sources": [
       "home_starter/server/homestarter/static/styles.css",
       "home_starter/server/homestarter/static/index.html",
@@ -397,8 +397,34 @@
       "home_starter/SURFACES.md",
       "home_starter/server/homestarter/static/music-runtime.js",
       "home_starter/server/homestarter/static/commissioning.js",
-      "home_starter/MUSIC.md"
-    ]
+      "home_starter/MUSIC.md",
+      "home_starter/server/homestarter/panel.py",
+      "home_starter/server/homestarter/static/panel-content.js",
+      "home_starter/server/homestarter/static/panel-layout.css"
+    ],
+    "airtouchKiosk": {
+      "scope": "Explicit surface.kiosk opt-in for the specialist AirTouch overview only; existing visual worlds and HA permissions are preserved.",
+      "chromeHeight": {
+        "activeDedicatedViewer": "0px",
+        "administratorOrSettingsEscape": "56px",
+        "cssProperty": "--hs-chrome-height"
+      },
+      "nativeIntegration": "Kiosk Mode 15.0.0; sidebar hidden only on the selected generated dashboard for the validated unique-name nonadministrator account. Header hidden only on the overview; native control subviews retain header and Back.",
+      "escape": "Settings opens the overview with ?disable_km; Panel mode removes the query. No cache locking.",
+      "narrowFooter": "At container widths up to 720px, whole items wrap with a 76px minimum width and flex basis; minimum target height remains 56px.",
+      "verification": "Disposable native --kiosk acceptance passed four sizes, footer labels, administrator chrome, nonadministrator climate increase/restore, Settings escape, re-entry, reload and Back. Fresh finish review returned ship after the narrow Settings wrap fix; no regression was found.",
+      "captures": [
+        "screens/panel-ui/kiosk.png",
+        "screens/panel-ui/kiosk-settings.png",
+        "screens/panel-ui/landscape.png",
+        "screens/panel-ui/panel-landscape.png",
+        "screens/panel-ui/compact-landscape.png",
+        "screens/panel-ui/narrow.png",
+        "screens/panel-ui/offline.png",
+        "screens/panel-ui/idle.png"
+      ],
+      "limits": "Green selected-dashboard publication remains pending. Disposable captures do not prove physical-screen acceptance or actual AirTouch operation."
+    }
   },
   "components": [
     {
@@ -466,9 +492,9 @@
       "name": "AirTouch selected navigation",
       "kind": "nav",
       "refersTo": "panel-nav-active",
-      "description": "Scoped specialist household navigation; native controls remain in retained HA subviews.",
-      "html": "<nav class=\"panel-nav\" aria-label=\"Household\"><a href=\"#house\" aria-current=\"page\"><span>House</span></a><a href=\"#ambient\"><span>Ambient</span></a></nav>",
-      "css": ".panel-nav{display:flex;gap:8px;padding:6px;border:1px solid #2b3b48;border-radius:22px;background:#081017;font-family:Roboto,Arial,sans-serif}.panel-nav a{min-width:56px;min-height:56px;flex:1;display:flex;align-items:center;justify-content:center;border-radius:16px;color:#e3e8ed;text-decoration:none;padding:4px 6px;font-size:16px}.panel-nav a[aria-current]{background:#103e59;color:#70c7ff;font-weight:600}.panel-nav a:hover{background-color:#203342}.panel-nav a:focus-visible{outline:3px solid #82d2ff;outline-offset:-5px}.panel-nav a:active{background-color:#203342}"
+      "description": "Scoped specialist household navigation, with Settings escape for explicit kiosk presentation; retained HA control subviews keep Back.",
+      "html": "<nav class=\"ds-panel-nav\" aria-label=\"Household\"><a href=\"#house\" aria-current=\"page\"><span>House</span></a><a href=\"#ambient\"><span>Ambient</span></a><a href=\"?disable_km\"><span>Settings</span></a></nav>",
+      "css": ".ds-panel-nav{display:flex;flex-wrap:wrap;gap:8px;padding:6px;border:1px solid #2b3b48;border-radius:22px;background:#081017;font-family:Roboto,Arial,sans-serif}.ds-panel-nav a{min-width:56px;min-height:56px;flex:1;display:flex;align-items:center;justify-content:center;border-radius:16px;color:#e3e8ed;text-decoration:none;padding:4px 6px;font-size:16px;text-align:center}.ds-panel-nav a[aria-current]{background:#103e59;color:#70c7ff;font-weight:600}.ds-panel-nav a:hover{background-color:#203342}.ds-panel-nav a:focus-visible{outline:3px solid #82d2ff;outline-offset:-5px}.ds-panel-nav a:active{background-color:#203342}@media(max-width:720px){.ds-panel-nav a{flex:1 1 76px;min-width:76px;font-size:14px}}"
     }
   ],
   "narrative": {
@@ -485,6 +511,11 @@
         "name": "AirTouch content bounds",
         "body": "In the specialist overview, the base bottom row uses minmax(150px,.7fr) to retain detail text. At container widths up to 720px, Call and Cameras share an auto-height row. Compact landscape applies through 750px viewport height at widths above 720px and uses its existing 112px bottom row.",
         "section": "layout"
+      },
+      {
+        "name": "AirTouch kiosk escape",
+        "body": "The explicit specialist-only `surface.kiosk` option uses installed Kiosk Mode for the validated dedicated nonadministrator account with a unique display name. It hides the sidebar only on that generated dashboard and hides the header only on its overview; native control subviews retain their header and Back target. The footer adds Settings, which opens the overview with `?disable_km` to restore HA chrome. Its Panel mode return removes that query. Administrator chrome and other dashboards retain their existing presentation. This changes presentation only, with no permissions change or cache locking.",
+        "section": "components"
       }
     ],
     "dos": [

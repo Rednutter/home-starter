@@ -91,7 +91,8 @@ export function initSurfaces({ h, api, navigateHA }) {
       field("Type", select("Saved screen type", Object.entries(data.profiles), surface.profile, e => set("profile", e.target.value))),
       field("Person", select("Saved screen person", [["", "Shared"], ...draft.people.map(p => [p.id, p.name])], surface.person_id || "", e => set("person_id", e.target.value))),
       field("Room", select("Saved screen room", [["", "Whole house"], ...data.areas.map(a => [a.area_id, a.name])], surface.area_id || "", e => set("area_id", e.target.value))),
-      field("Audience", select("Saved screen audience", [["everyone", "Everyone"], ["adult", "Adults"]], surface.audience, e => set("audience", e.target.value)))));
+      field("Audience", select("Saved screen audience", [["everyone", "Everyone"], ["adult", "Adults"]], surface.audience, e => set("audience", e.target.value))),
+      surface.profile === "specialist" && field("Panel presentation", select("Panel presentation", [["normal","Standard HA navigation"],["kiosk","Kiosk — Settings restores navigation"]], surface.kiosk ? "kiosk" : "normal", e => { if(e.target.value === "kiosk") surface.kiosk=true; else delete surface.kiosk; changed(); }))));
   }
   function renderPreferences(surface) {
     if (!surface) return null;

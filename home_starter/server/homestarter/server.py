@@ -909,9 +909,20 @@ async def api_surface_preview(request: web.Request) -> web.Response:
 
                 try:
                     async with state.core.websocket() as ws:
-                        policy["landscape_panel"] = resource_ready(await ws.command("lovelace/resources/list"))
+                        resources = await ws.command("lovelace/resources/list")
+                        policy["landscape_panel"] = resource_ready(resources)
                 except CoreError:
                     policy["landscape_panel"] = False
+                    resources = []
+                if surface.get("kiosk"):
+                    if not policy["landscape_panel"] or not resource_ready(resources, "kiosk-mode"):
+                        raise ValueError("Install button-card and Kiosk Mode through HACS, then generate a fresh preview. Existing dashboard preserved.")
+                    record = screen_identity.load(state.household, house)["screens"].get(surface["id"], {})
+                    users = await screen_identity.accounts(state.core, state.household)
+                    user = next((u for u in users if u["id"] == record.get("user_id") and not u["issue"] and u["permission"] == "control"), None)
+                    if not user or sum(u["name"] == user["name"] for u in users) != 1:
+                        raise ValueError("Confirm a suitable dedicated panel account with a unique display name under Physical screen commissioning first.")
+                    policy["kiosk_user_name"] = user["name"]
             waste_issue = False
             try:
                 policy = waste.screen_policy(policy, waste.load(state.household, house)["confirmed"])

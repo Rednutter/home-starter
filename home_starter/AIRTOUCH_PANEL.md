@@ -51,3 +51,24 @@ source admission, native subview preservation, offline state and HTML escaping.
 These disposable checks prove UI/control behavior, not physical controller
 connectivity. Live HA availability and the actual panel's operation must be checked
 separately before declaring the physical screen commissioned.
+
+## Optional kiosk presentation
+
+For a specialist panel, choose **Screen settings → Panel presentation → Kiosk**,
+save and generate a fresh preview. Install the official HACS **Kiosk Mode** module
+(tested 15.0.0) and confirm the intended dedicated display account under Physical
+screen commissioning first. Missing modules, unsuitable accounts and duplicate
+account display names stop the preview; publication rechecks the modules.
+
+Kiosk applies only to that non-admin account on this dashboard. The overview fills
+the viewport; control/person subviews retain HA's header and Back navigation.
+The footer **Settings** link opens the overview with `?disable_km`, restoring HA
+navigation. **Panel mode** returns without the bypass. No cached global kiosk
+settings or permission changes are applied. Administrator navigation stays visible.
+Android's status/navigation bars remain a separate Companion app Fullscreen choice.
+
+Old household files remain valid without the optional `kiosk` field and are not
+rewritten merely by loading. Save/publication changes invalidate old physical
+proof honestly. `devtools/accept_panel_native.py --kiosk` checks account scope,
+settings exit/reentry, reload, full-height overview, native Back and climate control
+restoration, plus readable footer labels at all four viewport sizes.

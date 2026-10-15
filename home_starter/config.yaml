@@ -1,6 +1,6 @@
 # https://developers.home-assistant.io/docs/apps/configuration#app-configuration
 name: Home Starter
-version: "0.8.2"
+version: "0.8.3"
 slug: home_starter
 description: >-
   Get the house ready, review rooms and devices, set up music,

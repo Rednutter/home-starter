@@ -1,11 +1,12 @@
 """Reference-led specialist shell using mature button-card and native HA controls."""
 
 import base64
+import json
 from pathlib import Path
 from urllib.parse import urlsplit
 
 
-def resource_ready(resources):
+def resource_ready(resources, component="button-card"):
     """Only recognize an installed same-origin module, never fetch third-party JS."""
     for row in resources if isinstance(resources, list) else []:
         parts = urlsplit(row.get("url", ""))
@@ -13,7 +14,7 @@ def resource_ready(resources):
             row.get("type") == "module"
             and not parts.scheme
             and not parts.netloc
-            and parts.path in {"/hacsfiles/button-card/button-card.js", "/local/button-card.js"}
+            and parts.path in {f"/hacsfiles/{component}/{component}.js", f"/local/{component}.js"}
         ):
             return True
     return False
@@ -31,6 +32,15 @@ def apply(generated, house, climate, policy):
     css = ":host { --hs-backdrop: " + image + "; }\n" + css
     config = generated["config"]
     base = "/" + generated["url_path"]
+    kiosk_name = policy.get("kiosk_user_name") if generated["surface"].get("kiosk") else None
+    if generated["surface"].get("kiosk") and not kiosk_name:
+        raise ValueError("Review this panel's dedicated display account before enabling kiosk presentation.")
+    if kiosk_name:
+        viewer = "!user_is_admin && user_name === " + json.dumps(kiosk_name)
+        config["kiosk_mode"] = {
+            "hide_sidebar": "[[[ " + viewer + " ]]]",
+            "hide_header": "[[[ " + viewer + " && " + json.dumps([base, base + "/home"]) + ".includes(panel_url) ]]]",
+        }
     people = [{"name": "House", "path": base + "/home", "icon": "mdi:home-outline"}] + [
         {"name": p["name"], "path": base + "/person-" + p["id"].encode().hex(), "icon": "mdi:account-circle-outline"} for p in house["people"]
     ]
@@ -75,6 +85,7 @@ def apply(generated, house, climate, policy):
             "variables": {
                 "panel": {
                     "base": base,
+                    "kiosk_user_name": kiosk_name,
                     "title": generated["surface"]["name"],
                     "path": base + "/" + path,
                     "people": people,

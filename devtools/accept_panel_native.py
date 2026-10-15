@@ -12,6 +12,7 @@ from playwright.async_api import async_playwright, expect
 
 ROOT = Path(".runtime/panel-native")
 SHOTS = Path("screens/panel-ui")
+KIOSK = "--kiosk" in sys.argv
 
 
 async def main():
@@ -34,7 +35,11 @@ async def main():
             resources = await ws.command("lovelace/resources/list")
             if not any(r["url"].startswith("/local/button-card.js") for r in resources):
                 await ws.command("lovelace/resources/create", url="/local/button-card.js?v=7.0.1", res_type="module")
+            if KIOSK and not any(r["url"].startswith("/local/kiosk-mode.js") for r in resources):
+                await ws.command("lovelace/resources/create", url="/local/kiosk-mode.js?v=15.0.0", res_type="module")
             await ws.command("config/auth/update", user_id=display["user_id"], group_ids=["system-users"], local_only=False)
+            users = await ws.command("config/auth/list")
+            display_name = next(u["name"] for u in users if u["id"] == display["user_id"])
         inv, states = await collect_inventory(core), await core.states()
         for _ in range(40):
             if any(s["entity_id"] == "climate.kitchen_air_conditioning" for s in states):
@@ -54,6 +59,9 @@ async def main():
             "audience": "everyone",
         }
         house["surfaces"] = [surface]
+        if KIOSK:
+            surface["kiosk"] = True
+        panel_policy = {"landscape_panel": True, **({"kiosk_user_name": display_name} if KIOSK else {})}
         items = [i for i in classify(inv, states, {}) if i["entity_id"] == climate["entity_id"]]
         assert len(items) == 1 and items[0]["usable"], "Disposable thermostat must report normally"
         items[0]["area_id"] = "fixture_kitchen"
@@ -66,7 +74,7 @@ async def main():
         before = copy.deepcopy(house)
         records_path = ROOT / "publications.json"
         records = json.loads(records_path.read_text()) if records_path.exists() else {}
-        generated = generate(house, surface, items, areas, policy={"landscape_panel": True})
+        generated = generate(house, surface, items, areas, policy=panel_policy)
         assert generated["config"]["views"][0]["cards"][0]["variables"]["panel"]["weather"] == weather["entity_id"]
         result = await publish(core, generated, records.get(generated["url_path"], {}).get("fingerprint"), records)
         records[result["url_path"]] = result
@@ -122,14 +130,44 @@ async def main():
                 await expect(page.locator(".hs-weather")).to_contain_text("14°")
                 assert header and header["height"] < 70, "Weather icon must not expand the header"
                 await copy_fits()
+                assert await page.locator(".hs-nav a span").evaluate_all(
+                    "els=>els.every(e=>e.getBoundingClientRect().height<=parseFloat(getComputedStyle(e).fontSize)*1.5)"
+                ), "Footer labels must not split midword"
                 assert await page.locator(".hs-panel").evaluate("el=>el.scrollWidth<=el.clientWidth+1")
                 if width > 720:
                     bounds = await page.locator(".hs-nav").evaluate("el=>({bottom:el.getBoundingClientRect().bottom,height:innerHeight})")
                     if bounds["bottom"] > height + 1:
                         layout_issues.append((name, bounds))
             await page.set_viewport_size({"width": 1280, "height": 800})
+            if KIOSK:
+                menu = page.get_by_role("button", name="Sidebar toggle", exact=True)
+                await expect(menu).not_to_be_visible()
+                bounds = await page.locator(".hs-panel").bounding_box()
+                assert bounds and bounds["y"] < 2 and bounds["height"] == 800
+                await page.screenshot(path=str(SHOTS / "kiosk.png"))
+                await page.get_by_role("link", name="Settings", exact=True).click()
+                await expect(menu).to_be_visible()
+                await expect(page.get_by_role("link", name="Panel mode", exact=True)).to_be_visible()
+                await page.wait_for_load_state("networkidle")
+                await page.screenshot(path=str(SHOTS / "kiosk-settings.png"))
+                await page.get_by_role("link", name="Panel mode", exact=True).click()
+                await expect(menu).not_to_be_visible()
+                await page.reload()
+                await expect(page.get_by_role("main", name=surface["name"])).to_be_visible()
+                await expect(menu).not_to_be_visible()
+                owner_context = await browser.new_context(viewport={"width": 1280, "height": 800})
+                owner_page = await owner_context.new_page()
+                await owner_page.goto(BASE + "/" + result["url_path"] + "/home")
+                await owner_page.get_by_label("Username", exact=True).fill(owner["username"])
+                await owner_page.get_by_label("Password", exact=True).fill(owner["password"])
+                await owner_page.get_by_role("button", name="Log in", exact=True).click()
+                await expect(owner_page.get_by_role("main", name=surface["name"])).to_be_visible(timeout=30000)
+                await expect(owner_page.get_by_role("button", name="Sidebar toggle", exact=True)).to_be_visible()
+                await owner_context.close()
             await page.get_by_role("link", name="Open climate controls", exact=True).click()
             await expect(page.locator("hui-thermostat-card")).to_be_visible()
+            if KIOSK:
+                await expect(page.get_by_role("link", name="Back", exact=True)).to_be_visible()
             thermostat = page.locator("hui-thermostat-card").first
             assert await thermostat.get_by_role("button").count() == 3
             assert await thermostat.get_by_role("button").nth(2).get_attribute("aria-label") == "Show more information"
@@ -181,7 +219,7 @@ async def main():
                 BASE + "/api/states/climate.fixture_panel_offline", headers=headers, json={"state": "unavailable", "attributes": climate["attributes"]}
             ) as response:
                 assert response.status in (200, 201)
-            await show_scene(generate(house, surface, offline_items, areas, policy={"landscape_panel": True}))
+            await show_scene(generate(house, surface, offline_items, areas, policy=panel_policy))
             await expect(page.get_by_text("Connection unavailable", exact=True)).to_be_visible()
             await page.set_viewport_size({"width": 1280, "height": 720})
             await copy_fits()
@@ -195,7 +233,7 @@ async def main():
                 json={"state": "cool", "attributes": {**climate["attributes"], "hvac_action": "idle"}},
             ) as response:
                 assert response.status == 200
-            await show_scene(generate(house, surface, idle_items, areas, policy={"landscape_panel": True}))
+            await show_scene(generate(house, surface, idle_items, areas, policy=panel_policy))
             await expect(page.get_by_text("Idle", exact=True)).to_be_visible()
             await page.screenshot(path=str(SHOTS / "idle.png"))
             # Same fixture projection contract as the waste acceptance; restore it.
@@ -222,7 +260,7 @@ async def main():
 
             try:
                 await source_scene()
-                await show_scene(generate(house, surface, items, areas, policy={"landscape_panel": True, "bin_context_screens": [surface["id"]]}))
+                await show_scene(generate(house, surface, items, areas, policy={**panel_policy, "bin_context_screens": [surface["id"]]}))
                 await expect(page.get_by_text("Green · Recycling", exact=False)).to_be_visible()
                 await page.screenshot(path=str(SHOTS / "bins-tonight.png"))
                 await source_scene(expired=True)

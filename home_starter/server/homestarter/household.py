@@ -55,8 +55,10 @@ def validate_household(value: Any) -> dict[str, Any]:
         if set(p) != {"id", "name", "audience"} or p["audience"] not in ("everyone", "adult"):
             raise ValueError("Choose a household audience.")
     for s in value["surfaces"]:
-        if set(s) != {"id", "name", "profile", "person_id", "area_id", "audience"}:
+        if set(s) - {"kiosk"} != {"id", "name", "profile", "person_id", "area_id", "audience"}:
             raise ValueError("Unsupported screen settings.")
+        if "kiosk" in s and (type(s["kiosk"]) is not bool or s["kiosk"] and s["profile"] != "specialist"):
+            raise ValueError("Kiosk presentation is available for specialist panels only.")
         if not isinstance(s["profile"], str) or s["profile"] not in PROFILES:
             raise ValueError("Choose a supported screen type.")
         if s["person_id"] is not None and (not isinstance(s["person_id"], str) or s["person_id"] not in people):

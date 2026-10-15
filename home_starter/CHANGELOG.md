@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.8.3
+
+- Add explicit kiosk presentation for specialist panels with a suitable dedicated
+  non-admin display account and installed official HACS Kiosk Mode module.
+- Fill the overview without HA chrome for that account only. Keep native Back
+  navigation on control pages and a visible Settings escape that restores HA
+  navigation; Panel mode returns to the overview. Admin navigation stays visible.
+- Preserve existing screen choices by default. Require fresh reviewed publication
+  and recheck frontend dependencies before any dashboard write.
+- Verify account scope, settings exit/reentry, reload and native controls using
+  disposable HA with Kiosk Mode 15.0.0. Retain readable narrow navigation labels.
+
 ## 0.8.2
 
 - Apply compact landscape spacing at the actual 720px-high display size so

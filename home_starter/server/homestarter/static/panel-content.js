@@ -1,4 +1,7 @@
 const cfg = variables.panel;
+const displayViewer = !!cfg.kiosk_user_name && hass.user?.name === cfg.kiosk_user_name && !hass.user?.is_admin;
+const escapedKiosk = displayViewer && new URLSearchParams(window.location.search).has("disable_km");
+const kioskActive = displayViewer && !escapedKiosk;
 const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const get = id => id ? hass.states[id] : undefined;
 const usable = state => state && !["unknown", "unavailable"].includes(state.state);
@@ -30,7 +33,7 @@ const tile = (kind,title,ico,body,detail,target) => {
 };
 const alert = cfg.alerts.map(get).find(s=>s?.state === "on");
 const climateTag = cfg.targets.climate ? "a" : "section";
-const body = `<main class="hs-panel" aria-label="${esc(cfg.title)}">
+const body = `<main class="hs-panel" style="--hs-chrome-height:${kioskActive ? 0 : 56}px" aria-label="${esc(cfg.title)}">
   <header class="hs-header"><div><time class="hs-time">${esc(date({hour:"numeric",minute:"2-digit"}))}</time><span class="hs-date">${esc(date({weekday:"short",day:"numeric",month:"short"}))}</span></div>${weatherText ? `<span class="hs-weather">${icon("mdi:weather-partly-cloudy")}${weatherText}</span>` : ""}</header>
   ${alert ? `<aside class="hs-alert" role="alert">${icon("mdi:alert")} ${esc(alert.attributes.friendly_name)} needs attention</aside>` : ""}
   <div class="hs-board">
@@ -45,7 +48,7 @@ const body = `<main class="hs-panel" aria-label="${esc(cfg.title)}">
     ${tile("media","Media","mdi:music",media ? media.attributes.friendly_name : "No speaker selected",media ? media.attributes.media_title || ({playing:"Playing",paused:"Paused",idle:"Ready",off:"Off"}[media.state] || media.state) : "Choose a room speaker in setup",cfg.targets.music)}
     ${tile("home","Home","mdi:home-outline",homeText,lightStates.some(s=>!usable(s)) ? "Some lights are unavailable" : "Open rooms and controls",cfg.targets.rooms || cfg.targets.context)}
   </div>
-  <nav class="hs-nav" aria-label="Household">${cfg.people.map(p=>`<a href="${esc(p.path)}"${p.path === cfg.path ? ' aria-current="page"' : ""}>${icon(p.icon)}<span>${esc(p.name)}</span></a>`).join("")}<a class="hs-display" href="${esc(cfg.base)}/ambient">${icon("mdi:weather-night")}<span>Ambient</span></a></nav>
+  <nav class="hs-nav" aria-label="Household">${cfg.people.map(p=>`<a href="${esc(p.path)}"${p.path === cfg.path ? ' aria-current="page"' : ""}>${icon(p.icon)}<span>${esc(p.name)}</span></a>`).join("")}<a class="hs-display" href="${esc(cfg.base)}/ambient">${icon("mdi:weather-night")}<span>Ambient</span></a>${cfg.kiosk_user_name ? `<a class="hs-display" href="${esc(cfg.base)}/home${displayViewer && escapedKiosk ? "" : "?disable_km"}">${icon(displayViewer && escapedKiosk ? "mdi:fullscreen" : "mdi:cog-outline")}<span>${displayViewer && escapedKiosk ? "Panel mode" : "Settings"}</span></a>` : ""}</nav>
 </main>`;
 // Keep standard links inside this text field independent of the outer card action.
 const stop = event => event.stopPropagation();

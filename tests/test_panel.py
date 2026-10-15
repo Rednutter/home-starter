@@ -4,7 +4,7 @@ import copy
 import json
 
 import pytest
-from homestarter.household import empty_household
+from homestarter.household import empty_household, validate_household
 from homestarter.panel import resource_ready
 from homestarter.surfaces import classify, generate, publish
 
@@ -117,3 +117,119 @@ async def test_publication_stops_if_frontend_dependency_is_removed():
     generated = generate(house, surface, items, areas, policy={"landscape_panel": True})
     with pytest.raises(ValueError, match="no longer registered"):
         await publish(MissingResource(), generated, None, {})
+
+
+def test_kiosk_is_explicit_and_preserves_legacy_state_and_native_back_paths():
+    house, surface, items, areas = fixture()
+    before = copy.deepcopy(house)
+    assert validate_household(house) == before and "kiosk" not in surface
+    surface["kiosk"] = True
+    assert validate_household(house)["surfaces"][0]["kiosk"] is True
+    with pytest.raises(ValueError, match="dedicated"):
+        generate(house, surface, items, areas, policy={"landscape_panel": True})
+    panel = generate(house, surface, items, areas, policy={"landscape_panel": True, "kiosk_user_name": "Fixture panel"})
+    assert "!user_is_admin" in panel["config"]["kiosk_mode"]["hide_header"]
+    assert "panel_url" in panel["config"]["kiosk_mode"]["hide_header"]
+    assert panel["config"]["views"][1]["subview"]
+    assert all(v.get("back_path") for v in panel["config"]["views"] if v.get("subview"))
+    surface["kiosk"] = "yes"
+    with pytest.raises(ValueError, match="Kiosk"):
+        validate_household(house)
+
+
+async def test_removed_kiosk_dependency_stops_before_dashboard_writes():
+    class NoKiosk:
+        def websocket(self):
+            return self
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            pass
+
+        async def command(self, command):
+            assert command == "lovelace/resources/list"
+            return [{"url": "/local/button-card.js", "type": "module"}]
+
+    house, surface, items, areas = fixture()
+    surface["kiosk"] = True
+    generated = generate(house, surface, items, areas, policy={"landscape_panel": True, "kiosk_user_name": "Fixture display"})
+    with pytest.raises(ValueError, match="Kiosk Mode"):
+        await publish(NoKiosk(), generated, None, {})
+
+
+async def test_kiosk_preview_requires_installed_modules_and_suitable_unique_bound_account(make_env, monkeypatch):
+    from aiohttp.test_utils import TestClient, TestServer
+    from homestarter.household import HouseholdStore
+    from homestarter.server import create_app
+    from homestarter.surfaces import fingerprint
+
+    env = await make_env("ready")
+    store = HouseholdStore(env.settings.data_dir)
+    house, surface, _, _ = fixture()
+    surface["kiosk"] = True
+    current = store.load()
+    house.update(revision=current["revision"], epoch=current["epoch"])
+    house = store.save(house)
+    user = {
+        "id": "fixture_display",
+        "name": "Example panel",
+        "username": "example_panel",
+        "is_owner": False,
+        "is_active": True,
+        "local_only": True,
+        "system_generated": False,
+        "group_ids": ["system-users"],
+        "credentials": [{"type": "homeassistant"}],
+    }
+    env.mock.users.append(user)
+    modules = ["button-card", "kiosk-mode"]
+    original = env.mock._fake_ws_result
+
+    def result(message):
+        if message["type"] == "lovelace/resources/list":
+            return [{"type": "module", "url": f"/local/{module}.js"} for module in modules]
+        return original(message)
+
+    monkeypatch.setattr(env.mock, "_fake_ws_result", result)
+    path = "home-starter-example-panel"
+    config = {"views": [{"title": "Existing", "path": "home", "cards": []}]}
+    env.mock.dashboards.append({"url_path": path})
+    env.mock.dashboard_configs[path] = config
+    store.write(store.publication_path, {path: {"fingerprint": fingerprint(config)}})
+    before_house, before_publication = store.path.read_bytes(), store.publication_path.read_bytes()
+    async with TestClient(TestServer(create_app(env.settings))) as client:
+        headers = {"X-Remote-User-Id": env.mock.users[0]["id"]}
+        route = "/api/surfaces/example_panel/preview"
+        assert (await client.get(route, headers=headers)).status == 409
+        identity = await (await client.get("/api/screens/identity", headers=headers)).json()
+        response = await client.post(
+            "/api/screens/identity",
+            headers=headers,
+            json={
+                "revision": identity["revision"],
+                "epoch": identity["epoch"],
+                "surface": surface["id"],
+                "action": "select",
+                "confirm": True,
+                "user_id": user["id"],
+                "permission": "control",
+            },
+        )
+        assert response.status == 200
+        response = await client.get(route, headers=headers)
+        assert response.status == 200, await response.text()
+        preview = await response.json()
+        assert user["name"] in preview["config"]["kiosk_mode"]["hide_header"]
+        env.mock.users.append({**user, "id": "fixture_duplicate"})
+        assert (await client.get(route, headers=headers)).status == 409
+        env.mock.users.pop()
+        user["group_ids"] = ["system-admin"]
+        assert (await client.get(route, headers=headers)).status == 409
+        user["group_ids"] = ["system-users"]
+        modules.remove("kiosk-mode")
+        assert (await client.get(route, headers=headers)).status == 409
+    assert store.path.read_bytes() == before_house
+    assert store.publication_path.read_bytes() == before_publication
+    assert env.mock.dashboard_configs[path] == config

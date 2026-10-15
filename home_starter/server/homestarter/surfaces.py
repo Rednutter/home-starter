@@ -761,8 +761,11 @@ async def publish(core: CoreClient, generated: dict, expected: str | None, recor
         if generated["config"]["views"][0].get("type") == "panel":
             from .panel import resource_ready
 
-            if not resource_ready(await ws.command("lovelace/resources/list")):
+            resources = await ws.command("lovelace/resources/list")
+            if not resource_ready(resources):
                 raise ValueError("The landscape panel's button-card module is no longer registered. Existing dashboard preserved.")
+            if generated["config"].get("kiosk_mode") and not resource_ready(resources, "kiosk-mode"):
+                raise ValueError("The panel's Kiosk Mode module is no longer registered. Existing dashboard preserved.")
         dashboards = await ws.command("lovelace/dashboards/list")
         existing = next((d for d in dashboards if d.get("url_path") == path), None)
         if existing:
