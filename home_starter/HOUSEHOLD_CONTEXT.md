@@ -164,9 +164,12 @@ into broad health/features while this acceptance remains outstanding.
 
 ## Public repository privacy review
 
-The owner approved public access and a historical identifier scrub. The review
-covered all published refs: 33 commits and 496 distinct file blobs before the
-follow-up acceptance commit. No runtime exports or household screenshots were
+The owner approved public access and a historical identifier scrub. The initial
+review included all published refs and available local history: 33 commits and
+496 distinct file blobs before the follow-up acceptance commit. The isolated
+published-branch rescan after rewriting covered 31 commits and 468 distinct file
+blobs, with no privacy/secret findings; the remaining word matches were ordinary
+uses of the verb “grant” in permissions text. No runtime exports or household screenshots were
 tracked; the only binary files were the application icon and logo. Commit
 identities were already neutral. Historical fixture/maintainer identifiers and
 private-network example addresses were selected for replacement with neutral
