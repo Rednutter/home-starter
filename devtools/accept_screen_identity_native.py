@@ -69,6 +69,15 @@ async def main():
             display_person = next((p for p in native_people["storage"] if p.get("user_id") == user["id"]), None)
             if not display_person:
                 display_person = await ws.command("person/create", name="Fixture display record", user_id=user["id"], device_trackers=[])
+            # A tracked display-only Person is not a household member. Preserve its
+            # native link and tracker, matching an existing display-account case.
+            async with session.post(
+                BASE + "/api/states/device_tracker.fixture_display",
+                headers={"Authorization": "Bearer " + token},
+                json={"state": "home", "attributes": {"friendly_name": "Fixture display tracker"}},
+            ) as response:
+                assert response.status in (200, 201)
+            display_person = await ws.command("person/update", person_id=display_person["id"], device_trackers=["device_tracker.fixture_display"])
         mock = MockSupervisor("ready", core_url=BASE, core_token=token, ma_host="127.0.0.1")
         async with TestServer(mock.app()) as supervisor, TestServer(mock.ma_app()) as ma:
             mock.ma_port = ma.port

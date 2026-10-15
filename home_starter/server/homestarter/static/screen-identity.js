@@ -43,7 +43,7 @@ export function initScreenIdentity({h, api, navigateHA}) {
         h("p",{class:"small muted"},"Your authenticated administrator session can create a user without entering the owner password. If HA requests reauthentication, follow its prompt. Stop if the password is unavailable; do not guess repeatedly."),
         button("Open HA user management",()=>navigateHA("/config/users")),
         h("a",{href:"https://www.home-assistant.io/docs/locked_out/",target:"_blank",rel:"noopener noreferrer"},"Supported HA password recovery"),
-        h("p",{class:"small muted"},"A normal non-admin HA user can control ordinary household entities; a dashboard does not restrict that access. A passive wall should prefer read-only. Accounts linked to household members are excluded. A reviewed, untracked display/other Person record may remain."),
+        h("p",{class:"small muted"},"A normal non-admin HA user can control ordinary household entities; a dashboard does not restrict that access. A passive wall should prefer read-only. Accounts linked to household members are excluded. A currently reviewed display/other Person record and its device trackers may remain."),
         h("div",{class:"screen-fields"},field("Dedicated display account",account)),
         h("p",{class:"small muted"},screen.expected_permission==="read_only"?"This passive wall expects a native read-only account. Read-only users cannot press the current native session check; that verification remains unresolved, and this wall cannot be marked commissioned here.":"This interactive panel expects a local non-admin account with household control permissions."),
         button("Confirm this dedicated account",()=>action("select",{user_id:account.value,permission:screen.expected_permission}),!!data.issue),

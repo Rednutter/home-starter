@@ -305,7 +305,10 @@ async def test_all_existing_private_files_survive_identity_selection(setup):
     assert {name: (store.path.parent / name).read_bytes() for name in names} == before
 
 
-@pytest.mark.parametrize("role,tracked,accepted", [("other", False, True), ("adult", False, False), ("child", False, False), ("other", True, False)])
+@pytest.mark.parametrize(
+    "role,tracked,accepted",
+    [("other", False, True), ("other", True, True), ("adult", False, False), ("child", False, False), ("adult", True, False), ("child", True, False)],
+)
 async def test_existing_display_only_person_record_can_remain_without_becoming_a_household_member(setup, role, tracked, accepted):
     from homestarter.this_house import digest, empty
 
@@ -333,6 +336,29 @@ async def test_existing_display_only_person_record_can_remain_without_becoming_a
             await act(setup, "local_only", user_id=user["id"], user_signature=user["signature"])
     assert core.people == before
     assert not any(kind in {"person/update", "config/auth/create", "config/auth/delete"} for kind, _ in core.commands)
+
+
+@pytest.mark.parametrize("change", ["tracker", "duplicate_link"])
+async def test_stale_or_ambiguous_display_person_review_cannot_prepare_account(setup, change):
+    from homestarter.this_house import digest, empty
+
+    core, store, _, _ = setup
+    person = {"id": "fixture_display_person", "name": "Fixture display record", "user_id": "fixture_display", "device_trackers": []}
+    core.people["storage"] = [person]
+    reviewed = empty()
+    reviewed["people"][person["id"]] = {"role": "other", "signature": digest([person["id"], person["name"], []])}
+    store.write(store.this_house_path, reviewed)
+    if change == "tracker":
+        person["device_trackers"] = ["device_tracker.fixture_changed"]
+    else:
+        core.people["storage"].append({**person, "id": "fixture_second_person"})
+    core.users[0]["local_only"] = False
+    user = (await identity.accounts(core, store))[0]
+    assert user["issue"] == "Linked to a HA Person"
+    assert user["can_prepare"] is False
+    with pytest.raises(ValueError):
+        await act(setup, "local_only", user_id=user["id"], user_signature=user["signature"])
+    assert core.users[0]["local_only"] is False
 
 
 async def test_personal_phone_is_not_treated_as_a_fixed_display(setup):

@@ -1,6 +1,6 @@
 # Physical screen commissioning
 
-Home Starter 0.6.1 keeps dashboard publication separate from a working physical
+Home Starter 0.6.2 keeps dashboard publication separate from a working physical
 display. Existing 0.6.0 settings and publications remain usable.
 
 ## Supported HA boundary
@@ -27,8 +27,10 @@ explicitly unresolved and cannot be marked commissioned by this implementation.
 The future Kitchen Wall is represented without changing or reflashing a Pi.
 
 An existing Person linked to a display account may remain only when This House
-has a current explicit `other` confirmation, no trackers, and exactly one matching
-native Person link. Household member accounts remain excluded. Home Starter does
+has a current explicit `other` confirmation and exactly one matching native Person
+link. Its device trackers may remain: a tracked display is not a household member.
+Changed Person/tracker details invalidate that confirmation. Household member
+accounts remain excluded. Home Starter does
 not create, rename, delete or unlink Persons as part of this flow.
 
 ## States and evidence
@@ -86,7 +88,7 @@ report, app restart, and desktop/mobile views. Its physical report is a fixture
 attestation: it does not establish a real AirTouch login or Android device reboot.
 The test browser's private login storage is outside Home Starter and outside Git.
 
-Release validation: 453 Python tests (42 focused screen tests), 18 JavaScript
+Release validation: 457 Python tests (46 focused screen tests), 18 JavaScript
 tests, Ruff lint/format, installer/inventory/readiness/rerun/touch/commissioning/
 Music browser flows, This House and Context desktop/mobile checks, four native
 screen profiles with control restoration, eight native Context scenes and native

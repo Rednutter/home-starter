@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.2
+
+- Reuse an existing dedicated display account linked to a currently reviewed
+  display/other Person, preserving its native tracker assignments. A device
+  tracker does not make a display a household member. Household-member accounts,
+  stale confirmations and ambiguous Person links remain protected.
+- This correction follows live inspection after 0.6.1 deployment; no native
+  Person records, trackers or credentials were changed to satisfy eligibility.
+
 ## 0.6.1
 
 - Separate fixed/shared screen publication from dedicated HA account, session,

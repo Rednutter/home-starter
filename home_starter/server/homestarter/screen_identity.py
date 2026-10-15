@@ -122,10 +122,8 @@ async def accounts(core, store=None):
     for source in ("storage", "config"):
         for person in people[source]:
             decision = reviewed.get(person.get("id"), {})
-            if (
-                decision.get("role") == "other"
-                and not person.get("device_trackers")
-                and decision.get("signature") == digest([person["id"], person["name"], sorted(person.get("device_trackers", []))])
+            if decision.get("role") == "other" and decision.get("signature") == digest(
+                [person["id"], person["name"], sorted(person.get("device_trackers", []))]
             ):
                 display_links.add(person.get("user_id"))
     display_links = {u for u in display_links if sum(p.get("user_id") == u for source in ("storage", "config") for p in people[source]) == 1}
