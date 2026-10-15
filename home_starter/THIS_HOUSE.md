@@ -90,3 +90,18 @@ upcoming events, bins/weather and relevant activity context. 0.7 owns physical
 display construction and verification. 0.8 owns deeper integration health and
 guided repair. Unresolved physical placement and whole-house structure still
 require household confirmation; a loaded registry is not a commissioned home.
+
+Release acceptance: implementation commit `dd5237a` passed GitHub CI, including
+tests, the app linter and amd64/arm64 image builds. Live deployment is blocked:
+Supervisor cannot authenticate to the private source repository during its normal
+catalogue refresh. The Green remains on 0.5.3; no update or rollback backup began.
+New 0.5.4 views therefore have synthetic browser acceptance only, not live Green
+acceptance. Do not describe this as a deployed or fully commissioned release.
+
+The existing Green was read successfully before and after the failed catalogue
+refresh and after browser reload. Exact saved screen preferences, existing
+Person/structure/placement confirmations and physical notes, device/entity IDs,
+Music connection and original playback proof remained unchanged. All saved
+dashboard configurations still matched their publication fingerprints; existing
+AirTouch sources were reporting. This preservation check does not substitute for
+deploying and verifying the new views, or for another audible playback test.
