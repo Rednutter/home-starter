@@ -24,7 +24,7 @@ from typing import Any
 import aiohttp
 from aiohttp import web
 
-from . import __version__, commissioning, readiness, this_house
+from . import __version__, commissioning, context, context_runtime, readiness, this_house
 from .activity import update_activity
 from .core import CoreClient, CoreError
 from .household import PROFILES, HouseholdStore, validate_household
@@ -46,6 +46,7 @@ STATIC_FILES = {
     "routes.js": "text/javascript",
     "house.js": "text/javascript",
     "this-house.js": "text/javascript",
+    "context.js": "text/javascript",
     "surfaces.js": "text/javascript",
     "installation.js": "text/javascript",
     "readiness.js": "text/javascript",
@@ -84,6 +85,15 @@ class State:
         self.previews: dict[str, dict] = {}
         self.activity_task: asyncio.Task | None = None
         self.commissioning_task: asyncio.Task | None = None
+        self.context_task: asyncio.Task | None = None
+
+    async def monitor_context(self) -> None:
+        while True:
+            try:
+                await context_runtime.update(self.core, self.household)
+            except (CoreError, OSError, ValueError, KeyError, TypeError):
+                _LOGGER.warning("Household context could not refresh; wall content expires rather than keeping old events.")
+            await asyncio.sleep(60)
 
     async def monitor_activity(self) -> None:
         while True:
@@ -772,6 +782,8 @@ async def api_surface_preview(request: web.Request) -> web.Response:
                 activities = await update_activity(state.core, state.household, house["activities"])
             policy = readiness.policy_for(readiness.load(state.household, house), house, inventory, await state.core.states())
             generated = generate(house, surface, items, inventory["areas"], activities, policy)
+            if surface["profile"] == "wall":
+                generated["context_preview"] = await context_runtime.inspect(state.core, state.household, surface)
             records = state.household.read(state.household.publication_path, {})
             token = secrets.token_hex(16)
             # One recent preview per screen, bounded by the validated screen count.
@@ -818,9 +830,17 @@ async def api_surface_publish(request: web.Request) -> web.Response:
                 raise ValueError("This preview expired or settings changed. Generate it again.")
             records = state.household.read(state.household.publication_path, {})
             result = await publish(state.core, preview["generated"], preview["expected"], records)
+            if preview["generated"]["surface"]["profile"] == "wall":
+                result["context"] = 1
+                result["context_epoch"] = current_house["epoch"]
             records[result["url_path"]] = result
             if records != state.household.read(state.household.publication_path, {}):
                 state.household.write(state.household.publication_path, records)
+            if result.get("context") == 1:
+                try:
+                    await context_runtime.update(state.core, state.household)
+                except (CoreError, OSError, ValueError, KeyError, TypeError):
+                    result["context_refresh"] = "pending; dashboard saved, context unavailable"
             state.previews.pop(request.match_info["surface"], None)
             return _json(result)
     except ValueError as err:
@@ -830,6 +850,42 @@ async def api_surface_publish(request: web.Request) -> web.Response:
 
 
 # ---- app factory -----------------------------------------------------------
+
+
+async def api_context(request: web.Request) -> web.Response:
+    state = await household_admin(request)
+    try:
+        view = await context_runtime.inspect(state.core, state.household)
+        if request.method == "GET":
+            return _json(view)
+        body = await household_body(request)
+        async with state.household_lock:
+            commissioning.gate(state.household)
+            house = state.household.load()
+            saved = readiness.load(state.household, house)
+            if (
+                set(body) != {"revision", "epoch", "settings"}
+                or type(body["revision"]) is not int
+                or type(body["epoch"]) is not int
+                or body["revision"] != saved["revision"]
+                or body["epoch"] != house["epoch"]
+            ):
+                raise ValueError("Context changed. Refresh before saving.")
+            settings = context.validate(body["settings"])
+            known = view["people"].keys()
+            if any(not set(r["people"]) <= known for r in settings["rules"] + list(settings["events"].values())):
+                raise ValueError("Confirm these existing HA people in This House first.")
+            if not set(settings["events"]) <= {e["key"] for e in view["events"]} | saved["context"]["events"].keys():
+                raise ValueError("The chosen event changed. Refresh and review it again.")
+            saved["context"] = settings
+            saved["revision"] += 1
+            state.household.write(state.household.readiness_path, saved)
+            state.previews.clear()
+        return _json(await context_runtime.inspect(state.core, state.household))
+    except ValueError as err:
+        return _json({"error": str(err)}, 409)
+    except (CoreError, OSError, KeyError, TypeError):
+        return _json({"error": "Household context unavailable. Saved choices are preserved."}, 503)
 
 
 def create_app(settings: Settings, session: aiohttp.ClientSession | None = None) -> web.Application:
@@ -842,8 +898,13 @@ def create_app(settings: Settings, session: aiohttp.ClientSession | None = None)
         app[K_STATE] = State(settings, sess)
         app[K_OWN_SESSION] = own
         app[K_STATE].activity_task = asyncio.create_task(app[K_STATE].monitor_activity())
+        app[K_STATE].context_task = asyncio.create_task(app[K_STATE].monitor_context())
 
     async def on_cleanup(app: web.Application) -> None:
+        if task := app[K_STATE].context_task:
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
         if task := app[K_STATE].commissioning_task:
             task.cancel()
             with suppress(asyncio.CancelledError):
@@ -863,6 +924,8 @@ def create_app(settings: Settings, session: aiohttp.ClientSession | None = None)
     app.router.add_get("/api/scan", api_scan)
     app.router.add_get("/api/inventory", api_inventory)
     app.router.add_get("/api/house", api_this_house)
+    app.router.add_get("/api/context", api_context)
+    app.router.add_post("/api/context", api_context)
     app.router.add_get("/api/house/status", api_house_readiness)
     app.router.add_post("/api/house/{action}", api_this_house)
     app.router.add_get("/api/household", api_household)

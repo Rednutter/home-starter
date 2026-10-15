@@ -98,5 +98,9 @@ export async function initInstallation({ h, api, navigateHA }) {
   document.getElementById("installation-check").addEventListener("click", refresh);
   document.addEventListener("home-starter-saved", refresh);
   await refresh();
+  // Saved deep links may target a section moved under the maintenance disclosure.
+  const target = document.getElementById(location.hash.slice(1));
+  for (let node = target; node; node = node.parentElement) if (node.tagName === "DETAILS") node.open = true;
+  target?.scrollIntoView();
   return refresh;
 }

@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+from fixture_urls import fixture_url
 from playwright.sync_api import expect, sync_playwright
 
 
@@ -13,19 +14,27 @@ def main():
         page = browser.new_page(viewport={"width": 1280, "height": 1000})
         errors = []
         page.on("pageerror", lambda error: errors.append(str(error)))
-        page.goto("http://127.0.0.1:8124/home_starter")
+        page.goto(fixture_url("/home_starter"))
         frame = page.frame_locator("#panel")
         expect(frame.locator("#readiness-status")).to_contain_text("Saved decisions loaded")
         # Run after synthetic commissioning or on a fresh maintenance fixture.
         frame.get_by_role("link", name="Screens", exact=True).click()
+        expect(frame.locator("#surfaces-status")).to_contain_text("Saved household loaded")
         for name, audience in (("Adult 1", "adult"), ("Child 1", "everyone")):
+            profiles = frame.locator("details").filter(has=frame.get_by_text("Screen profiles", exact=True))
+            if profiles.get_attribute("open") is None:
+                profiles.locator("summary").click()
             frame.get_by_label("Person name", exact=True).fill(name)
             frame.get_by_label("Person audience", exact=True).select_option(audience)
             frame.get_by_role("button", name="Add screen profile", exact=True).click()
+        add_screen = frame.locator("details").filter(has=frame.get_by_text("Add a screen", exact=True))
+        if add_screen.get_attribute("open") is None:
+            add_screen.locator("summary").click()
         frame.get_by_label("Screen name", exact=True).fill("Example phone")
         frame.get_by_role("button", name="Add screen", exact=True).click()
         frame.get_by_role("button", name="Save household settings", exact=True).click()
         expect(frame.locator("#surfaces-status")).to_contain_text("settings saved")
+        frame.get_by_role("link", name="Home Readiness", exact=True).click()
         frame.get_by_role("button", name="Refresh readiness", exact=True).click()
         expect(frame.locator("#readiness-displays")).to_contain_text("1 configured")
         frame.locator("#readiness-household > summary").click()

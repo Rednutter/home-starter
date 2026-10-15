@@ -186,11 +186,12 @@ export function initSurfaces({ h, api, navigateHA }) {
     const home = preview.config.views[0];
     return h("section", { id: "screen-preview", class: "screen-preview", tabindex: "-1", "aria-label": "Generated screen preview" },
       h("h3", {}, preview.surface.name), h("p", { class: "small muted" }, `${data.profiles[preview.surface.profile]} · ${preview.admitted.length} admitted household items`),
+      preview.context_preview && h("div",{},h("h4",{},"Household context now"),h("pre",{},preview.context_preview.near+"\n\n"+preview.context_preview.ahead),h("p",{class:"small muted"},"This is current data, not a native dashboard render. Wall context adapts after publication.")),
       h("p", { class: "small muted" }, "Layout preview; controls become live in the native Home Assistant dashboard. Conditional items appear only when active. Templates and calendar contents are checked there."),
       h("div", { class: "preview-nav" }, preview.config.views.filter(v => !v.subview).map(v => h("span", {}, v.title))),
       h("div", { class: `preview-sections preview-${preview.surface.profile}` }, home.sections.map(s => { const cards = s.cards.map(previewCard).filter(Boolean); return cards.length > 1 ? h("div", { class: "preview-section" }, cards) : null; })),
       h("p", { class: "small muted" }, "Names and audience choices arrange screens; Home Assistant account permissions still govern access."),
-      preview.warnings && h("p", { class: "small muted" }, preview.warnings.filter(w => w.includes("Ambient") || w.includes("inactivity")).join(" ")),
+      preview.warnings && h("p", { class: "small muted" }, preview.warnings.filter(w => w.includes("Ambient") || w.includes("inactivity") || w.includes("Wall context")).join(" ")),
       h("details", {}, h("summary", {}, "Review publication"),
         h("p", {}, preview.published ? "Update this Home Starter dashboard. If it was edited in Home Assistant, publication will stop." : "Add a new Home Assistant dashboard. Your current dashboards stay in place."),
         h("p", { class: "small muted" }, "Saving is verified by reading the dashboard back. Check important controls on its intended screen after opening it."),

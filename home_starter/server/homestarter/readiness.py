@@ -9,6 +9,7 @@ import re
 from datetime import UTC, date, datetime, timedelta
 from urllib.parse import urlencode
 
+from . import context
 from .household import HouseholdStore
 
 CAPABILITIES = {
@@ -43,18 +44,22 @@ def digest(value):
 
 
 def empty(epoch):
-    return {"version": 1, "epoch": epoch, "revision": 0, "choices": {}, "members": {}, "devices": {}, "verified": {}}
+    return {"version": 2, "epoch": epoch, "revision": 0, "choices": {}, "members": {}, "devices": {}, "verified": {}, "context": context.empty()}
 
 
 def load(store: HouseholdStore, house: dict) -> dict:
     value = store.read(store.readiness_path, None)
     if value is None:
         return empty(house["epoch"])
+    if isinstance(value, dict) and type(value.get("version")) is int and value["version"] == 1:
+        if set(value) != set(empty(0)) - {"context"}:
+            raise ValueError("Unsupported Home Readiness state. Existing data is preserved.")
+        value = {**value, "version": 2, "context": context.empty()}
     if (
         not isinstance(value, dict)
         or set(value) != set(empty(0))
         or type(value.get("version")) is not int
-        or value["version"] != 1
+        or value["version"] != 2
         or type(value.get("epoch")) is not int
         or type(value.get("revision")) is not int
     ):
@@ -63,6 +68,7 @@ def load(store: HouseholdStore, house: dict) -> dict:
         return empty(house["epoch"])
     if any(not isinstance(value[k], dict) for k in ("choices", "members", "devices", "verified")):
         raise ValueError("Invalid Home Readiness state.")
+    context.validate(value["context"])
     return value
 
 
@@ -223,9 +229,7 @@ async def verify(core, value, key, inventory, states):
                     upcoming = now.date() <= date.fromisoformat(start["date"]) <= until.date()
             except (ValueError, KeyError, TypeError):
                 return False
-            collection = bool(re.search(r"\b(?:collection|waste|bins?|recycling|recycle|rubbish|garbage)\b", event["summary"], re.IGNORECASE))
-            known_service = any(e["entity_id"] == choice["sources"][0] and e.get("platform") in WASTE for e in entities(inventory))
-            return upcoming and bool(event["summary"].strip()) and (key != "waste" or collection or known_service)
+            return upcoming and bool(event["summary"].strip()) and (key != "waste" or collection_event(event, choice["sources"][0], inventory))
 
         # Calendar names and stale attributes are not a successful event read.
         if not isinstance(events, list) or not any(credible(event) for event in events):
@@ -243,6 +247,12 @@ async def verify(core, value, key, inventory, states):
     value["verified"][key] = {"at": now.isoformat(), "signature": selection_signature(choice, inventory), "kind": kind}
     value["revision"] += 1
     return value
+
+
+def collection_event(event, source, inventory):
+    collection = bool(re.search(r"\b(?:collection|waste|bins?|recycling|recycle|rubbish|garbage)\b", str(event.get("summary", "")), re.IGNORECASE))
+    known_service = any(e["entity_id"] == source and e.get("platform") in WASTE for e in entities(inventory))
+    return collection or known_service
 
 
 def allowed(item, surface, house, policy):

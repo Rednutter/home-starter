@@ -3,6 +3,7 @@
 import argparse
 from pathlib import Path
 
+from fixture_urls import fixture_url
 from mock_music_runtime import TOKEN
 from playwright.sync_api import expect, sync_playwright
 
@@ -29,7 +30,7 @@ def main():
         page = browser.new_page(viewport={"width": 1280, "height": 900})
         errors = []
         page.on("pageerror", lambda error: errors.append(str(error)))
-        page.goto("http://127.0.0.1:8124/home_starter")
+        page.goto(fixture_url("/home_starter"))
         frame = page.frame_locator("iframe")
         frame.get_by_role("link", name="Music", exact=True).click()
         runtime = frame.locator(".music-runtime")

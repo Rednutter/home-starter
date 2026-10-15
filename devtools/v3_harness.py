@@ -3,10 +3,12 @@
 import argparse
 import asyncio
 import json
+import sys
 from pathlib import Path
 
 import aiohttp
 from aiohttp import web
+from fixture_urls import fixture_url, port
 from homestarter.server import create_app
 from homestarter.settings import Settings
 from ingress_proxy import build_app
@@ -20,6 +22,11 @@ async def main():
     parser.add_argument("--fresh", action="store_true", help="Start genuine first-run commissioning instead of a maintenance fixture.")
     parser.add_argument("--music-ready", action="store_true", help="Commissioning fixture: existing MA connection, no provider/playback proof.")
     parser.add_argument("--music-infrequent", action="store_true", help="Synthetic speaker reports fresh playback without frequent position updates.")
+    parser.add_argument(
+        "--browser-flow",
+        choices=["browser", "rerun", "readiness", "music", "inventory", "commissioning", "touch", "surfaces", "native_surfaces"],
+        help="Run one existing browser acceptance script and clean up this harness.",
+    )
     args = parser.parse_args()
     credentials = {"user_id": "a1b2c3d4e5f6"} if args.fixtures else json.loads(Path("screens/v3-core-credentials.json").read_text())
     mock = MockSupervisor(
@@ -28,7 +35,7 @@ async def main():
         core_token=credentials.get("token"),
         ma_host="127.0.0.1",
     )
-    mock.ma_port = 8195
+    mock.ma_port = port("music")
     if args.fixtures:
         from datetime import UTC, datetime, timedelta
 
@@ -65,10 +72,10 @@ async def main():
     settings = Settings.from_env(
         {
             "SUPERVISOR_TOKEN": TOKEN,
-            "HOME_STARTER_SUPERVISOR_URL": "http://127.0.0.1:8181",
+            "HOME_STARTER_SUPERVISOR_URL": fixture_url(kind="supervisor"),
             "HOME_STARTER_ALLOWED_PEERS": "127.0.0.1",
             "HOME_STARTER_DATA_DIR": str((args.data_dir or Path("screens/v4-fixture-data" if args.fixtures else "screens/v3-data")).resolve()),
-            "HOME_STARTER_MA_PORT": "8195",
+            "HOME_STARTER_MA_PORT": str(port("music")),
         }
     )
     if args.fixtures and not args.fresh:
@@ -79,22 +86,30 @@ async def main():
             store.save(store.load())
     async with aiohttp.ClientSession() as session:
         runners = []
-        for app, port in (
-            (mock.app(), 8181),
-            (mock.ma_app(), 8195),
-            (create_app(settings, session), 8099),
-            (build_app("http://127.0.0.1:8099", user_id=credentials["user_id"]), 8124),
+        for app, listen_port in (
+            (mock.app(), port("supervisor")),
+            (mock.ma_app(), port("music")),
+            (create_app(settings, session), port("app")),
+            (build_app(fixture_url(kind="app"), user_id=credentials["user_id"]), port("ingress")),
         ):
             runner = web.AppRunner(app)
             await runner.setup()
-            await web.TCPSite(runner, "127.0.0.1", port).start()
+            await web.TCPSite(runner, "127.0.0.1", listen_port).start()
             runners.append(runner)
         if args.music_infrequent:
             mock.music_api.progress = False
             mock.music_api.fresh_static = True
         print("V3 test harness listening on loopback only.", flush=True)
         try:
-            await asyncio.Event().wait()
+            if args.browser_flow:
+                command = [sys.executable, str(Path(__file__).with_name("e2e_" + args.browser_flow + ".py"))]
+                if args.browser_flow == "music" and args.music_infrequent:
+                    command.append("--infrequent")
+                process = await asyncio.create_subprocess_exec(*command)
+                if code := await process.wait():
+                    raise SystemExit(code)
+            else:
+                await asyncio.Event().wait()
         finally:
             for runner in reversed(runners):
                 await runner.cleanup()

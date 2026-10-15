@@ -7,6 +7,7 @@ import json
 import re
 from pathlib import Path
 
+from fixture_urls import fixture_url
 from playwright.sync_api import expect, sync_playwright
 
 
@@ -18,7 +19,7 @@ def main():
         page = browser.new_page(viewport={"width": 1440, "height": 1000})
         errors = []
         page.on("pageerror", lambda err: errors.append(str(err)))
-        page.goto("http://127.0.0.1:8124/home_starter")
+        page.goto(fixture_url("/home_starter"))
         frame = page.frame_locator("#panel")
         expect(frame.locator("#surfaces-status")).to_contain_text(re.compile("Saved household loaded|Choose who uses"))
         frame.get_by_role("link", name="Screens", exact=True).click()

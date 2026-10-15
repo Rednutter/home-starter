@@ -2,6 +2,7 @@
 # ruff: noqa: S310 -- URLs are hardcoded to the disposable loopback Core.
 
 import json
+import re
 import time
 from pathlib import Path
 from urllib.request import Request, urlopen
@@ -57,12 +58,13 @@ def main():
                 expect(thermostat).to_contain_text(str(round(original + 0.1, 1)))
                 verify_target(round(original + 0.1, 1))
                 thermostat.get_by_role("button").nth(0).click()  # Observed minus button.
-                expect(thermostat).to_contain_text(str(round(original, 1)))
+                expected = re.escape(f"{round(original, 1):.1f}").replace(r"\.", r"\s*\.")
+                expect(thermostat).to_contain_text(re.compile(expected))
                 verify_target(original)
             # Templates must render; a visible section is not sufficient evidence.
             if profile in ("phone", "specialist"):
                 page.get_by_role("button", name="Around the house", exact=True).click()
-                expect(page.get_by_text("21.5°C", exact=True)).to_be_visible(timeout=30000)
+                expect(page.locator("hui-tile-card").filter(has_text="Kitchen temperature")).to_contain_text(re.compile(r"21\.5\s*°C"), timeout=30000)
                 assert page.locator("hui-error-card").count() == 0
                 page.goto(base + "/" + path + "/home")
             page.screenshot(path=str(shots / f"native-{profile}-desktop.png"))
@@ -70,7 +72,7 @@ def main():
         page.set_viewport_size({"width": 390, "height": 844})
         expect(page.get_by_text("Loading...", exact=True)).not_to_be_visible(timeout=30000)
         page.get_by_role("button", name="Around the house", exact=True).click()
-        expect(page.get_by_text("21.5°C", exact=True)).to_be_visible(timeout=30000)
+        expect(page.locator("hui-tile-card").filter(has_text="Kitchen temperature")).to_contain_text(re.compile(r"21\.5\s*°C"), timeout=30000)
         page.screenshot(path=str(shots / "native-phone-mobile.png"))
         browser.close()
     print("Native dashboards fully loaded; climate target adjusted + restored through generated card; phone/mobile templates verified.")

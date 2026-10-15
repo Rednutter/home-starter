@@ -84,6 +84,27 @@ class CoreClient:
     async def states(self) -> list[dict[str, Any]]:
         return list(await self.rest_get("/states") or [])
 
+    async def context_state(self, entity_id: str, payload: dict) -> None:
+        """Only owned, explicitly published wall context; never hardware service calls."""
+        import re
+
+        if not re.fullmatch(r"sensor\.home_starter_context_[a-f0-9]{12}", entity_id):
+            raise ValueError("Context sensor namespace required.")
+        try:
+            async with self._session.post(
+                f"{self._api}/states/{entity_id}",
+                json=payload,
+                headers={"Authorization": f"Bearer {self._token.reveal()}"},
+                timeout=REST_TIMEOUT,
+            ) as response:
+                if response.status not in (200, 201):
+                    raise CoreError("api", "Context state could not be published.")
+                saved = await response.json()
+                if saved.get("state") != payload["state"] or saved.get("attributes") != payload["attributes"]:
+                    raise CoreError("api", "Context state readback did not match.")
+        except (TimeoutError, aiohttp.ClientError, OSError, ValueError) as err:
+            raise CoreError("unreachable", f"Context state write failed ({type(err).__name__}).") from None
+
     def websocket(self) -> CoreWebSocket:
         return CoreWebSocket(self._session, self._ws_url, self._token)
 

@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.6.0
+
+- Add Household Context using the chosen verified HA calendar, explicit dated
+  morning rules and conservative departure preferences. Preserve existing
+  Readiness choices through a lazy version 1 to 2 migration.
+- Add a compact adaptive native wall: current commitments and a longer upcoming
+  horizon when quiet. Elapsed scheduled events leave the display without a claim
+  of completion. Missing/stale evidence remains explicit.
+- Update only explicitly published walls through owned, expiring HA state with
+  native readback. Respect screen/source exclusions, external dashboard edits and
+  reset/publication boundaries. Disclose HA recorder exposure before publication.
+- Preserve Music, This House, saved screen preferences and other native profiles.
+  Correct the commissioning handoff into the collapsed Home Readiness section.
+- See [acceptance and deployment limits](HOUSEHOLD_CONTEXT.md); disposable native
+  HA success does not establish Green deployment or household operation.
+
 ## 0.5.4
 
 - Inspect live equipment and entity-only services by their native HA floor/area,

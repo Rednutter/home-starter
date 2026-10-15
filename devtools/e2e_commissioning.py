@@ -4,12 +4,13 @@ import json
 from pathlib import Path
 from urllib.request import Request, urlopen
 
+from fixture_urls import fixture_url
 from playwright.sync_api import expect, sync_playwright
 
 
 def fixture_api(path, body=None):
-    request = Request(
-        "http://127.0.0.1:8099/api/" + path,
+    request = Request(  # noqa: S310 -- fixture_url always returns fixed loopback, only port offset varies
+        fixture_url("/api/" + path, "app"),
         data=json.dumps(body).encode() if body is not None else None,
         headers={"Content-Type": "application/json", "X-Remote-User-Id": "a1b2c3d4e5f6"},
     )
@@ -43,7 +44,7 @@ def main():
             page = browser.new_page(viewport={"width": 1280, "height": 1000})
             errors = []
             page.on("pageerror", lambda error, errors=errors: errors.append(str(error)))
-            page.goto("http://127.0.0.1:8124/home_starter")
+            page.goto(fixture_url("/home_starter"))
             frame = page.frame_locator("#panel")
             if scenario == "legacy":
                 expect(frame.locator("body")).to_have_attribute("data-commissioning", "maintenance")

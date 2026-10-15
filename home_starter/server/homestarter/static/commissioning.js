@@ -172,7 +172,7 @@ export async function initCommissioning({ h, api, navigateHA }) {
       state.phase === "executing" && h("p", { role: "status" }, "Progress is saved after each result. You can return if this page closes."),
       !done && state.phase === "verification_incomplete" && state.results.music?.status === "incomplete" && musicRuntime({ h, api, navigateHA }, data.music?.open_path || data.music?.handoff_path),
       state.phase === "verification_incomplete" && h("div", { class: "actions" }, btn("Retry incomplete checks", () => action("retry")), btn("Edit and review plan", () => action("edit"))),
-      done && btn("Go to Home Readiness", () => location.reload(), true));
+      done && btn("Go to Home Readiness", () => { location.hash = "#home-readiness"; location.reload(); }, true));
   }
 
   function render() {

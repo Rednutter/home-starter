@@ -2,6 +2,7 @@ import { apiUrl, navigateHA } from "./routes.js";
 import { initHouse } from "./house.js";
 import { initThisHouse } from "./this-house.js";
 import { initSurfaces } from "./surfaces.js";
+import { initContext } from "./context.js";
 import { initInstallation } from "./installation.js";
 import { initReadiness } from "./readiness.js";
 import { initCommissioning } from "./commissioning.js";
@@ -350,6 +351,7 @@ async function init() {
   const refreshHouse = initHouse({ h, api, navigateHA, scan });
   initThisHouse({ h, api, navigateHA });
   initSurfaces({ h, api, navigateHA });
+  initContext({ h, api });
   initReadiness({ h, api, navigateHA });
   renderOutcomes();
   document.getElementById("rescan").addEventListener("click", async () => {

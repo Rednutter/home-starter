@@ -5,6 +5,7 @@ Start v3_harness.py --fixtures with a fresh ignored --data-dir first.
 
 from pathlib import Path
 
+from fixture_urls import fixture_url
 from playwright.sync_api import expect, sync_playwright
 
 
@@ -16,15 +17,21 @@ def main():
         page = browser.new_page(viewport={"width": 1280, "height": 1000})
         errors = []
         page.on("pageerror", lambda error: errors.append(str(error)))
-        page.goto("http://127.0.0.1:8124/home_starter")
+        page.goto(fixture_url("/home_starter"))
         frame = page.frame_locator("#panel")
         expect(frame.locator("body")).to_have_attribute("data-commissioning", "maintenance")
         expect(frame.get_by_role("button", name="Finish setup", exact=True)).to_be_visible()
         expect(frame.locator("body")).to_have_attribute("data-setup-state", "existing")
         frame.get_by_role("link", name="Screens", exact=True).click()
+        profiles = frame.locator("details").filter(has=frame.get_by_text("Screen profiles", exact=True))
+        if profiles.get_attribute("open") is None:
+            profiles.locator("summary").click()
         frame.get_by_label("Person name", exact=True).fill("Adult 1")
         frame.get_by_label("Person audience", exact=True).select_option("adult")
         frame.get_by_role("button", name="Add screen profile", exact=True).click()
+        add_screen = frame.locator("details").filter(has=frame.get_by_text("Add a screen", exact=True))
+        if add_screen.get_attribute("open") is None:
+            add_screen.locator("summary").click()
         frame.get_by_label("Screen name", exact=True).fill("Example tablet")
         frame.get_by_label("Screen type", exact=True).select_option("tablet")
         frame.get_by_role("button", name="Add screen", exact=True).click()

@@ -1,5 +1,14 @@
 # Household screens — V0.4
 
+## 0.6.0 passive wall extension
+
+Explicitly published walls can consume Household Context through native Markdown
+and owned, expiring HA state. Today stays compact; quiet periods show more of the
+next three weeks. Existing source/admission/privacy choices remain binding. Old
+walls are not republished automatically. Native HA chrome and physical display
+power remain separate. Publication discloses HA state/recorder exposure. See
+[the context contract and acceptance evidence](HOUSEHOLD_CONTEXT.md).
+
 Home Starter translates the existing house into native Home Assistant dashboards.
 Setup stays in the administrator-only App; household screens use the viewer's HA
 account. No frontend projects, custom cards or extra integrations are installed.

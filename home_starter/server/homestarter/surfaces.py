@@ -7,6 +7,7 @@ import hashlib
 import json
 from typing import Any
 
+from .context import wall_cards
 from .core import CoreClient, CoreError
 from .household import PROFILES
 from .readiness import allowed
@@ -224,7 +225,10 @@ def card_for(item: dict, surface: dict, variant: str = "normal") -> dict:
             )
         elif domain == "weather":
             content = (
-                "**{{ "
+                "{% if states('"
+                + entity
+                + "') in ['pouring', 'lightning-rainy', 'snowy-rainy'] %}### {% endif %}"
+                + "**{{ "
                 + safe_name
                 + " }}**: {{ states('"
                 + entity
@@ -427,11 +431,17 @@ def generate(house: dict, surface: dict, items: list[dict], areas: list[dict], a
     path = "home-starter-" + surface["id"].replace("_", "-")
     base = "/" + path
     sections, details, other_access = [], [], []
-    if profile in ("wall", "kitchen", "bedside"):
+    if profile == "wall":
+        sections.append(section("Today", [{"type": "markdown", "content": "## {{ now().strftime('%H:%M') }}\n{{ now().strftime('%A %d %B') }}"}]))
+    elif profile in ("kitchen", "bedside"):
         sections.append(section("Today", [{"type": "clock", "clock_size": "large"}]))
     alerts = [exception_card(i, surface) for i in eligible if i["level"] == 0 or i["domain"] == "alarm_control_panel"]
     if any(alerts):
         sections.append(section("Needs attention", [c for c in alerts if c]))
+    if profile == "wall":
+        near, ahead = wall_cards(surface["id"])
+        sections[0]["cards"].append(near)
+        sections.append(section("Coming up", [ahead]))
     active = [exception_card(i, surface) for i in eligible if i["level"] != 0 and i["domain"] != "alarm_control_panel"]
     climate = [i for i in eligible if i["function"] == "climate" and i["level"] == 2]
     if profile == "specialist":
@@ -484,7 +494,11 @@ def generate(house: dict, surface: dict, items: list[dict], areas: list[dict], a
     if any(active):
         sections.append(section("Happening now", [c for c in active if c]))
     context = [i for i in eligible if i["level"] == 3 and (profile not in ("specialist", "bedside") or i["domain"] in ("weather", "timer"))]
-    if context:
+    if profile == "wall":
+        # No permanent people cards, raw calendar next-event attributes or decorative weather.
+        context = [i for i in context if i["domain"] == "weather"][:1]
+        sections[0]["cards"][2:2] = [card_for(i, surface) for i in context]
+    if context and profile != "wall":
         sections.append(section("What's next" if profile == "wall" else "Household", [card_for(i, surface) for i in context]))
     if activity:
         cards = [
@@ -497,7 +511,13 @@ def generate(house: dict, surface: dict, items: list[dict], areas: list[dict], a
         sections.append(
             section("Home", [{"type": "markdown", "content": "No available household controls yet. Review rooms and household names in Home Starter."}])
         )
-    home = {"type": "sections", "title": "Home", "path": "home", "max_columns": 1 if profile in ("phone", "bedside", "specialist") else 3, "sections": sections}
+    home = {
+        "type": "sections",
+        "title": "Home",
+        "path": "home",
+        "max_columns": 1 if profile in ("phone", "bedside", "specialist") else 2 if profile == "wall" else 3,
+        "sections": sections,
+    }
     views = [home]
     if profile == "tablet":
         for title, function in (("Climate", "climate"), ("Media", "media"), ("Security", "access"), ("Household", "information")):
@@ -525,6 +545,14 @@ def generate(house: dict, surface: dict, items: list[dict], areas: list[dict], a
         "admitted": eligible,
         "catalogue": [{"id": k, "native": v[0], "status": v[1], "variants": ["compact", "normal", "large"]} for k, v in CATALOGUE.items()],
         "warnings": [
+            *(
+                [
+                    "Wall context updates automatically after this explicit publication. Selected events and rules become HA state "
+                    "and may enter recorder history; HA account access applies. Physical screen power, brightness and kiosk chrome are not managed."
+                ]
+                if profile == "wall"
+                else []
+            ),
             "Names and audience choices arrange screens; they do not change Home Assistant account permissions.",
             "Activity today is a snapshot. Regenerate to refresh it; live appliance state still updates in Home Assistant.",
             "Calling, event takeover and music favourites need a supported source and are not installed by this version.",

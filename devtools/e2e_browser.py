@@ -22,10 +22,11 @@ import sys
 import urllib.request
 from pathlib import Path
 
+from fixture_urls import fixture_url
 from ingress_proxy import INGRESS_TOKEN
 from playwright.sync_api import expect, sync_playwright
 
-MOCK = "http://127.0.0.1:8181"
+MOCK = fixture_url(kind="supervisor")
 
 
 def post(url: str) -> None:
@@ -36,7 +37,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--screens", type=Path, default=None)
     parser.add_argument("--expect-fallback", action="store_true", help="old frontend: expect top-level navigation")
-    parser.add_argument("--ha", default="http://127.0.0.1:8124", help="simulated HA frontend (ingress_proxy.py)")
+    parser.add_argument("--ha", default=fixture_url(), help="simulated HA frontend (ingress_proxy.py)")
     parser.add_argument("--dark", action="store_true")
     parser.add_argument("--mobile", action="store_true")
     parser.add_argument("--handoff", action="store_true", help="mock runs with scenario default_role: expect the native hand-off")
@@ -73,6 +74,7 @@ def main() -> int:
 
         # 2. Choose the outcome.
         frame.get_by_role("link", name="Music", exact=True).click()
+        frame.get_by_text("Music Assistant installation and HA connection", exact=True).click()
         status = frame.locator("#music-body .status h3")
         expect(status).to_have_text("Couldn't check Music Assistant compatibility" if args.handoff else "Music Assistant is ready to install", timeout=15000)
         snap(page, "02-music-available")

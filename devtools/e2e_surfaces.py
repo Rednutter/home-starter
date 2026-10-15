@@ -1,9 +1,11 @@
 """Desktop/mobile screen setup and native Core rendering/control acceptance."""
 
 import json
+import re
 from pathlib import Path
 from urllib.request import Request, urlopen
 
+from fixture_urls import fixture_url
 from playwright.sync_api import expect, sync_playwright
 
 
@@ -24,9 +26,9 @@ def main():
         page = context.new_page()
         errors = []
         page.on("pageerror", lambda error: errors.append(str(error)))
-        page.goto("http://127.0.0.1:8124/home_starter")
+        page.goto(fixture_url("/home_starter"))
         frame = page.frame_locator("#panel")
-        expect(frame.locator("#surfaces-status")).to_contain_text("Choose who uses")
+        expect(frame.locator("#surfaces-status")).to_contain_text("Saved household loaded")
         frame.get_by_role("link", name="Screens", exact=True).click()
         frame.get_by_label("Person name", exact=True).fill("Alex")
         frame.get_by_label("Person audience", exact=True).select_option("adult")
@@ -106,7 +108,8 @@ def main():
                 page.locator("hui-thermostat-card").get_by_role("button").nth(1).click()
                 expect(page.locator("hui-thermostat-card")).to_contain_text("22.1")
                 page.locator("hui-thermostat-card").get_by_role("button").nth(0).click()
-                expect(page.locator("hui-thermostat-card")).to_contain_text("22.0")
+                # HA renders the integer and decimal fraction in separate spans.
+                expect(page.locator("hui-thermostat-card")).to_contain_text(re.compile(r"22\s*\.0"))
         page.locator(f'a[href="/{paths["phone"]}"]').click()
         page.set_viewport_size({"width": 390, "height": 844})
         expect(page.locator("hui-sections-view")).to_be_visible()

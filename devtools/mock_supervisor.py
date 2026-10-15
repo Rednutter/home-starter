@@ -345,7 +345,7 @@ class MockSupervisor:
             return web.json_response(core_fix("api_states.json") + list(self.activity_states.values()))
         if tail.startswith("calendars/"):
             return web.json_response(self.calendar_events.get(tail.removeprefix("calendars/"), []))
-        if tail.startswith("states/sensor.home_starter_activity_") and request.method == "POST":
+        if tail.startswith(("states/sensor.home_starter_activity_", "states/sensor.home_starter_context_")) and request.method == "POST":
             entity_id = tail.removeprefix("states/")
             self.activity_states[entity_id] = {"entity_id": entity_id, **await request.json()}
             return web.json_response(self.activity_states[entity_id], status=201)
@@ -417,13 +417,13 @@ class MockSupervisor:
         await server.send_json({"type": "auth_ok", "ha_version": "2026.10.1"})
         upstream = None
         session = None
-        if self.core_url:
-            session = aiohttp.ClientSession()
-            upstream = await session.ws_connect(self.core_url.replace("http", "ws", 1) + "/api/websocket")
-            await upstream.receive_json()
-            await upstream.send_json({"type": "auth", "access_token": self.core_token})
-            await upstream.receive_json()
         try:
+            if self.core_url:
+                session = aiohttp.ClientSession()
+                upstream = await session.ws_connect(self.core_url.replace("http", "ws", 1) + "/api/websocket")
+                await upstream.receive_json()
+                await upstream.send_json({"type": "auth", "access_token": self.core_token})
+                await upstream.receive_json()
             async for raw in server:
                 if raw.type != aiohttp.WSMsgType.TEXT:
                     break
@@ -454,10 +454,12 @@ class MockSupervisor:
                     reply["result"] = list(reply["result"]) + self.flows
                 await server.send_json(reply)
         finally:
-            if upstream is not None:
-                await upstream.close()
-            if session is not None:
-                await session.close()
+            try:
+                if upstream is not None:
+                    await upstream.close()
+            finally:
+                if session is not None:
+                    await session.close()
         return server
 
     def ma_app(self) -> web.Application:

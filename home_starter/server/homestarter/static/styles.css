@@ -169,6 +169,11 @@ ul.plain li { margin: 2px 0; overflow-wrap: anywhere; }
 #readiness-body > details > summary { min-height: 44px; padding: 10px 0; overflow-wrap: anywhere; }
 #readiness-body fieldset { min-width: 0; margin: 12px 0; padding: 12px; border: 1px solid var(--line); }
 #readiness-body .screen-field { margin: 12px 0; }
+#context-body .screen-field { margin: 12px 0; max-width: 36rem; }
+#context-body fieldset { min-width: 0; margin: 12px 0; padding: 12px; border: 1px solid var(--line); }
+#context-body fieldset label { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-right: 16px; }
+#context-body summary { min-height: 44px; padding: 10px 0; overflow-wrap: anywhere; }
+#context-body .btn { margin: 8px 8px 0 0; }
 body[data-commissioning="loading"] #app > :not(.top):not(#commissioning),
 body[data-commissioning="active"] #app > :not(.top):not(#commissioning) { display: none; }
 body[data-commissioning="loading"] #rescan, body[data-commissioning="active"] #rescan { display: none; }

@@ -1,5 +1,15 @@
 # Household evidence and setup audit
 
+## 0.6.0 Household Context
+
+Readiness version 2 adds explicit dated morning rules and occurrence-bound event
+preferences. Version 1 is migrated in memory without rewriting on inspection;
+prior source decisions and proofs survive. Current source identity, the existing
+24-hour verification lifetime and per-display admission still gate calendar/waste
+context. A running background refresh is not renewed household verification.
+Only explicit wall publication enables its expiring native HA state projection.
+See [schema, privacy, migration and acceptance](HOUSEHOLD_CONTEXT.md).
+
 Audit baseline: 0.4.2, 14 October 2026. Product source, catalogue, generators,
 migrations, fixture provenance and all 49 local screenshot files were inspected
 (48 distinct images). Screenshot bytes, private names, entity IDs and calendar

@@ -1,5 +1,9 @@
 # Home Starter
 
+**Household Context** turns the chosen verified calendar and explicit household
+rules into a compact passive wall that shifts from today to upcoming weeks.
+See [behaviour, privacy and acceptance limits](HOUSEHOLD_CONTEXT.md).
+
 **This House** compares live HA people, floors, rooms and equipment with the
 physical home. Review discrepancies and confirm changes before writing them back.
 See [house commissioning and limits](THIS_HOUSE.md).
