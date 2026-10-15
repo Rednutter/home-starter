@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-15T12:48:16.097436Z",
+  "generatedAt": "2026-10-15T13:13:17.849280Z",
   "title": "Design System: Home Starter",
   "extensions": {
     "colorMeta": {
@@ -385,7 +385,7 @@
       },
       {
         "name": "panel-compact-landscape-height",
-        "value": "650px"
+        "value": "750px"
       }
     ],
     "scope": "Administrator primitives plus explicitly scoped panel-* tokens for the AirTouch specialist overview. Native Home Assistant controls and chrome remain theme-owned. Tonal ramps are synthesized panel previews, not implemented palette tokens.",
@@ -480,7 +480,13 @@
       "Native household controls with room-based compression.",
       "Quiet exceptions and a dedicated air-conditioning hierarchy."
     ],
-    "rules": [],
+    "rules": [
+      {
+        "name": "AirTouch content bounds",
+        "body": "In the specialist overview, the base bottom row uses minmax(150px,.7fr) to retain detail text. At container widths up to 720px, Call and Cameras share an auto-height row. Compact landscape applies through 750px viewport height at widths above 720px and uses its existing 112px bottom row.",
+        "section": "layout"
+      }
+    ],
     "dos": [
       "Do preserve the incumbent admin tokens and progressive disclosure.",
       "Do distinguish layout preview, verified publication and native control verification.",

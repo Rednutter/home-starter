@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.2
+
+- Apply compact landscape spacing at the actual 720px-high display size so
+  Media/Home detail text remains visible. Add that viewport and tile-copy bounds
+  to native acceptance.
+
 ## 0.8.1
 
 - Bound the selected weather icon inside the landscape header. This prevents

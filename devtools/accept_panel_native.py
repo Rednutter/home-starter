@@ -36,6 +36,11 @@ async def main():
                 await ws.command("lovelace/resources/create", url="/local/button-card.js?v=7.0.1", res_type="module")
             await ws.command("config/auth/update", user_id=display["user_id"], group_ids=["system-users"], local_only=False)
         inv, states = await collect_inventory(core), await core.states()
+        for _ in range(40):
+            if any(s["entity_id"] == "climate.kitchen_air_conditioning" for s in states):
+                break
+            await asyncio.sleep(0.5)
+            inv, states = await collect_inventory(core), await core.states()
         climate = next(s for s in states if s["entity_id"] == "climate.kitchen_air_conditioning")
         original_target = climate["attributes"]["temperature"]
         house = empty_household()
@@ -101,7 +106,14 @@ async def main():
             )
             assert style["image"] and 0 < style["backdrop"] < 1_000_000
             layout_issues = []
-            for name, width, height in [("landscape", 1280, 800), ("compact-landscape", 1024, 600), ("narrow", 390, 844)]:
+
+            async def copy_fits():
+                clipped = await page.locator(".hs-tile-copy").evaluate_all(
+                    "els=>els.filter(e=>e.getBoundingClientRect().bottom>e.closest('.hs-tile').getBoundingClientRect().bottom-4).map(e=>e.closest('.hs-tile').className)"
+                )
+                assert not clipped, f"Tile detail text must remain inside its panel: {clipped}"
+
+            for name, width, height in [("landscape", 1280, 800), ("panel-landscape", 1280, 720), ("compact-landscape", 1024, 600), ("narrow", 390, 844)]:
                 await page.set_viewport_size({"width": width, "height": height})
                 await page.evaluate("()=>document.fonts.ready")
                 await page.evaluate("()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))")
@@ -109,6 +121,7 @@ async def main():
                 header = await page.locator(".hs-header").bounding_box()
                 await expect(page.locator(".hs-weather")).to_contain_text("14°")
                 assert header and header["height"] < 70, "Weather icon must not expand the header"
+                await copy_fits()
                 assert await page.locator(".hs-panel").evaluate("el=>el.scrollWidth<=el.clientWidth+1")
                 if width > 720:
                     bounds = await page.locator(".hs-nav").evaluate("el=>({bottom:el.getBoundingClientRect().bottom,height:innerHeight})")
@@ -170,6 +183,8 @@ async def main():
                 assert response.status in (200, 201)
             await show_scene(generate(house, surface, offline_items, areas, policy={"landscape_panel": True}))
             await expect(page.get_by_text("Connection unavailable", exact=True)).to_be_visible()
+            await page.set_viewport_size({"width": 1280, "height": 720})
+            await copy_fits()
             await page.screenshot(path=str(SHOTS / "offline.png"))
             # Activity evidence uses a virtual fixture, never starts real cooling.
             idle_items = copy.deepcopy(offline_items)

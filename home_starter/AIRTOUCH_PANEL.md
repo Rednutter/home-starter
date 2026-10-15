@@ -43,7 +43,7 @@ login persistence or physical screen commissioning by implication.
 `devtools/accept_panel_native.py` targets disposable HA on loopback only. It checks
 HA 2026.10.0 with button-card 7.0.1 as a non-admin user: overview and native route
 navigation, thermostat target increase/restoration, reload, 1280×800 and 1024×600
-landscape, 390×844 narrow rendering, unavailable climate, idle activity, selected
+landscape, the actual 1280×720 viewport, 390×844 narrow rendering, unavailable climate, idle activity, selected
 bin attention and expired-source warning. Captures are private ignored artifacts.
 Focused Python/JS tests cover resource detection, dependency loss before writes,
 source admission, native subview preservation, offline state and HTML escaping.
