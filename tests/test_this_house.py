@@ -37,6 +37,20 @@ async def test_live_projection_is_not_a_people_or_location_database(env):
     assert all(d["entity_count"] > 0 for d in view["devices"])
 
 
+async def test_entity_only_services_keep_native_area_without_creating_devices(env):
+    before = copy.deepcopy(env.mock.devices)
+    env.mock.entity_registry += [
+        {"entity_id": "calendar.fixture_household", "name": "Example calendar", "area_id": "kitchen", "device_id": None},
+        {"entity_id": "sensor.fixture_diagnostic", "name": "Example diagnostic", "entity_category": "diagnostic", "device_id": None},
+        {"entity_id": "device_tracker.private_fixture", "name": "Private location source", "device_id": None},
+    ]
+    view = await house.inspect(env.core, env.store)
+    service = next(e for e in view["services"] if e["entity_id"] == "calendar.fixture_household")
+    assert service["area_id"] == "kitchen" and service["availability"] == "unknown"
+    assert not any(e["entity_id"] in {"sensor.fixture_diagnostic", "device_tracker.private_fixture"} for e in view["services"])
+    assert env.mock.devices == before and not writes(env)
+
+
 async def test_person_confirmation_uses_live_id_and_reopens_after_native_edit(env):
     view = await house.inspect(env.core, env.store)
     person = view["people"][0]

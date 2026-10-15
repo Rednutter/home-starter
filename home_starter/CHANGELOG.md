@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.5.4
+
+- Inspect live equipment and entity-only services by their native HA floor/area,
+  with the same reviewed device placement controls and no copied registry.
+- Surface HA integration setup reports and native repair handoffs, keeping
+  connection failures distinct from an unproven cause such as changed IP addresses.
+- Add read-only household readiness using existing Music playback, calendar event
+  and saved-dashboard readback evidence. Reporting climate/cameras remain partially
+  ready; installation alone never proves operation. Evidence failures do not block
+  house inspection or corrections.
+- Preserve existing private choices, confirmations, Music credentials/proof and
+  dashboard publications. No persisted schema or migration changes.
+
 ## 0.5.3
 
 - Record optional presence intent against an existing HA Person. Intentionally

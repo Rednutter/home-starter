@@ -167,6 +167,14 @@ The API connection uses a labeled password field; provider sign-in stays in Musi
 
 Evidence: `home_starter/server/homestarter/static/{music-runtime.js,commissioning.js,index.html,styles.css}` and `home_starter/MUSIC.md`; final synthetic captures in `screens/music-ui/`: `desktop.png`, `mobile.png`, `connection-desktop.png`, `connection-mobile.png`, `pending-desktop.png`, `pending-mobile.png`. Captures demonstrate the limited-progress UI, including explicit unverified automatic progress; the browser flow and (316) Python tests pass. Live acceptance on 0.4.8 confirmed the household API connection and audible sample; the scoped record survived a reload while automatic progress remained explicitly unverified. Existing dashboard fingerprints still matched their saved versions. Fixture names and simulated success are not design patterns or universal live verification.
 
+### This House inspection and readiness
+
+The optional Rooms and their equipment disclosure nests floors, rooms and equipment, reusing the same placement review controls as the exception list. Keep entity-only services distinct from hardware, with their HA reference behind a disclosure and a native entity-management handoff. Integration reports name HA's reported setup or repair evidence and offer a native review action; a connection failure does not identify a physical cause.
+
+Household readiness is an independent read-only section with its own refresh, timestamp, text statuses and per-capability verification limits. Configuration, usable reporting and functional proof remain distinct. Source-specific review opens the relevant local disclosure or native service; unavailable evidence retains a retry action and does not block house inspection or placement corrections. These additions reuse the incumbent tokens, wrapping controls and progressive disclosure without introducing a new visual system.
+
+Evidence: `home_starter/server/homestarter/static/this-house.js` and `home_starter/server/homestarter/house_readiness.py`; six synthetic local captures in `screens/this-house-ui/`: `desktop-house.png`, `mobile-house.png`, `desktop-rooms.png`, `mobile-rooms.png`, `desktop-readiness.png`, `mobile-readiness.png`. Desktop/mobile browser flows passed, including readiness-service failure and recovery and the native calendar handoff; (347) Python and (18) JavaScript tests passed. The changed-JavaScript detector reported no findings, and the scoped finish review returned ship. Synthetic reporting and scoped proof displays do not establish live household function.
+
 ## Do's and Don'ts
 
 - Do preserve the incumbent admin tokens and progressive disclosure.

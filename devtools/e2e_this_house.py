@@ -91,11 +91,65 @@ def exercise(url):
             device.locator("summary").filter(has_text="Physical connection or function").click()
             expect(device.get_by_label("Physical note for Kitchen temperature")).to_have_value("Measures the shared living space")
             page.screenshot(path=str(shots / f"{label}-return.png"))
+            room_browser = frame.locator("#house-room-view")
+            room_browser.locator(":scope > summary").click()
+            room_browser.locator(":scope > details").filter(has=frame.locator("summary").filter(has_text="Example floor " + label)).first.locator(
+                ":scope > summary"
+            ).click()
+            room_kitchen = room_browser.locator(".house-row").filter(has=frame.locator(":scope > summary").filter(has_text="Kitchen ·")).first
+            room_kitchen.locator(":scope > summary").click()
+            room_device = room_browser.locator("#room-device-fixture_kitchen")
+            if label == "mobile":
+                room_device.locator(":scope > summary").click()
+                expect(room_device.get_by_label("Room for Kitchen temperature")).to_have_value("kitchen")
+                room_device.get_by_label("Room for Kitchen temperature").select_option("garage")
+                room_device.get_by_role("button", name="Review placement", exact=True).click()
+                room_device.get_by_role("button", name="Confirm placement", exact=True).click()
+                expect(frame.locator("#this-house-body")).to_contain_text("Device placement confirmed and read back from HA.")
+                page.reload()
+                frame.get_by_role("button", name="All equipment", exact=True).click()
+                device.locator(":scope > summary").click()
+                expect(device.get_by_label("Room for Kitchen temperature")).to_have_value("garage")
+                room_browser.locator(":scope > summary").click()
+                garage = room_browser.locator(".house-row").filter(has=frame.locator(":scope > summary").filter(has_text="Garage ·")).first
+                floor = room_browser.locator(":scope > details").filter(has=frame.locator("#room-device-fixture_kitchen"))
+                floor.locator(":scope > summary").click()
+                garage.locator(":scope > summary").click()
+                room_device.locator(":scope > summary").click()
+                expect(room_device.get_by_label("Room for Kitchen temperature")).to_have_value("garage")
+            else:
+                expect(room_kitchen.locator(":scope > summary")).to_contain_text("0 equipment records · 2 services")
+                expect(room_kitchen).to_contain_text("Example family")
+            room_browser.scroll_into_view_if_needed()
+            page.screenshot(path=str(shots / f"{label}-rooms.png"))
+            readiness = frame.locator("#this-house-capabilities")
+            expect(readiness).to_contain_text("Evidence checked", timeout=20000)
+            climate = readiness.locator(".house-row").filter(has_text="Climate")
+            expect(climate.locator("summary")).to_contain_text("Partially ready")
+            climate.locator("summary").click()
+            expect(climate).to_contain_text("does not prove")
+            readiness.scroll_into_view_if_needed()
+            page.screenshot(path=str(shots / f"{label}-readiness.png"))
+            page.route(
+                "**/api/house/status",
+                lambda route: route.fulfill(status=503, content_type="application/json", body='{"error":"Evidence temporarily unavailable"}'),
+            )
+            readiness.get_by_role("button", name="Refresh readiness evidence", exact=True).click()
+            expect(readiness).to_contain_text("Readiness evidence unavailable")
+            frame.get_by_role("button", name="Refresh from HA", exact=True).click()
+            expect(frame.locator("#this-house-status")).to_contain_text("Live HA records")
+            page.unroute("**/api/house/status")
+            readiness.get_by_role("button", name="Refresh readiness evidence", exact=True).click()
+            expect(readiness).to_contain_text("Evidence checked", timeout=20000)
+            calendars = readiness.locator(".house-row").filter(has_text="Calendars")
+            calendars.locator("summary").click()
+            calendars.get_by_role("link", name="Review Calendars", exact=True).click()
+            expect(frame.locator("#home-readiness")).to_be_visible()
             assert frame.locator("body").evaluate("el => el.scrollWidth <= el.clientWidth"), "Horizontal overflow"
             assert "null" not in frame.locator("#this-house").inner_text().splitlines()
             assert not errors, errors
             page.close()
-            print(label, "people, floor create, area update, placement write, notes, reload: PASS")
+            print(label, "people, floors, rooms, placement, notes, readiness, evidence outage, native handoff, reload: PASS")
         browser.close()
 
 
@@ -117,6 +171,16 @@ async def main():
 
     with TemporaryDirectory(prefix="this-house-fixture-") as directory:
         mock = MockSupervisor("ready", ma_host="127.0.0.1")
+        mock.entity_registry.extend(
+            {"entity_id": entity_id, "name": name, "platform": "example", "device_id": None, "area_id": "kitchen", "disabled_by": None}
+            for entity_id, name in (("climate.example_zone", "Example zone"), ("calendar.example_family", "Example family"))
+        )
+        mock.activity_states.update(
+            {
+                entity_id: {"entity_id": entity_id, "state": "off", "attributes": {"friendly_name": name}}
+                for entity_id, name in (("climate.example_zone", "Example zone"), ("calendar.example_family", "Example family"))
+            }
+        )
         async with TestServer(mock.app()) as supervisor, TestServer(mock.ma_app()) as ma:
             mock.ma_port = ma.port
             settings = Settings.from_env(

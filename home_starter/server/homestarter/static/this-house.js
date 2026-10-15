@@ -17,6 +17,14 @@ export function pendingHouse(view) {
   return pending;
 }
 
+export function roomsByFloor(view) {
+  const floors = [...view.floors, {floor_id:null,name:"No floor assigned"}];
+  return floors.map(f => ({...f, areas:view.areas.filter(a => (a.floor_id || null) === f.floor_id ||
+    (!view.floors.some(known => known.floor_id === a.floor_id) && f.floor_id === null)).map(a => ({...a,
+      devices:view.devices.filter(d => d.area_id === a.area_id), services:(view.services || []).filter(e => e.area_id === a.area_id)
+    })).sort((a,b) => a.name.localeCompare(b.name))})).filter(f => f.areas.length);
+}
+
 export function initThisHouse({ h, api, navigateHA }) {
   const root = document.getElementById("this-house-body"), status = document.getElementById("this-house-status");
   const refreshButton = document.getElementById("this-house-refresh");
@@ -130,8 +138,8 @@ export function initThisHouse({ h, api, navigateHA }) {
     return section;
   }
 
-  function deviceView(device) {
-    const row = h("details", { class: "house-row", id: "placement-" + device.id }, h("summary", {}, h("strong", {}, device.name),
+  function deviceView(device, prefix = "placement-") {
+    const row = h("details", { class: "house-row", id: prefix + device.id }, h("summary", {}, h("strong", {}, device.name),
       h("span", { class: "small muted" }, `${device.shared ? "Shared media group" : device.multiroom ? "Serves several rooms · coverage recorded" : device.portable ? "Portable · no fixed room" : roomName(device.area_id)}${device.confirmed ? " · confirmed" : device.changed ? " · changed since confirmation" : ""}${device.attention ? " · needs attention" : ""}`)));
     row.addEventListener("toggle", () => {
       if (!row.open || row.dataset.built) return;
@@ -159,6 +167,32 @@ export function initThisHouse({ h, api, navigateHA }) {
     return row;
   }
 
+  const serviceList = services => h("ul", { class: "plain" }, services.map(e => h("li", {}, h("strong", {}, e.name),
+    ` · ${e.domain.replaceAll("_", " ")} · ${e.availability}`, h("details", {}, h("summary", {}, "HA reference"), h("code", {}, e.entity_id)))));
+
+  function roomView() {
+    const section = h("details", { class: "house-part", id: "house-room-view" }, h("summary", {}, "Rooms and their equipment"),
+      h("p", { class: "small muted" }, "Live HA assignments, grouped by floor. Room groups remain distinct from individual locations. Open only the rooms you need to review."));
+    for (const floor of roomsByFloor(data)) section.append(h("details", {}, h("summary", {}, `${floor.name} · ${floor.areas.length} areas`),
+      floor.areas.map(area => h("details", {class:"house-row"}, h("summary", {}, `${area.name}${area.kind === "group" ? " · group / whole level" : ""} · ${area.devices.length} equipment records · ${area.services.length} services`),
+        ...area.devices.map(d => deviceView(d, "room-device-")), serviceList(area.services),
+        ...(!area.devices.length && !area.services.length ? [h("p", {class:"muted"}, "HA has no equipment or services assigned here.")] : [])))));
+    if (!data.areas.length) section.append(h("p", {}, "No HA areas found. Add the real rooms above when known."));
+    const services = data.services || [];
+    section.append(h("details", {}, h("summary", {}, `Services without a device (${services.length})`),
+      h("p", {class:"small muted"}, "These existing HA entities have no device record. They are not missing hardware; no replacement device is created."),
+      serviceList(services), nativeButton("Manage entities in HA", "/config/entities")));
+    return section;
+  }
+
+  function integrationView() {
+    return h("details", {class:"house-part"}, h("summary", {}, `Integration reports (${(data.integration_issues || []).length})`),
+      h("p", {class:"small muted"}, "HA's setup errors and repairs. A connection failure does not establish whether equipment lost power, moved or changed address."),
+      ...(data.integration_issues || []).map(issue => h("div", {class:"house-row"}, h("strong", {}, issue.title), h("span", {class:"small muted"}, ` · ${issue.confidence}`),
+        h("ul", {}, issue.reasons.map(r => h("li", {}, r))), nativeButton("Review in HA", issue.path))),
+      ...(!(data.integration_issues || []).length ? [h("p", {}, data.complete ? "No integration setup failures or active repairs reported in this read." : "The house read is incomplete; no all-clear can be given.")] : []));
+  }
+
   function render() {
     const c = data.counts, pending = pendingHouse(data);
     root.replaceChildren(h("p", { class: "inventory-summary" }, `${c.members} confirmed household members${data.expectation ? ` / ${data.expectation.people} expected` : ""} · ${c.floors} floors · ${c.areas} rooms / areas`),
@@ -169,7 +203,7 @@ export function initThisHouse({ h, api, navigateHA }) {
     if (notice) root.append(h("p", { class: "notice", role: "status" }, notice));
     if (!data.complete) root.append(h("p", { class: "error" }, "The house view is incomplete. Changes are disabled until its HA sources can be read."));
     root.append(h("details", { open: pending.length > 0, class: "house-pending" }, h("summary", {}, pending.length ? "Still needs commissioning" : "House model reviewed"),
-      pending.length ? h("ul", {}, pending.map(p => h("li", {}, p))) : h("p", {}, "Physical function checks remain separate from the house model.")), peopleView(), structureView());
+      pending.length ? h("ul", {}, pending.map(p => h("li", {}, p))) : h("p", {}, "Physical function checks remain separate from the house model.")), peopleView(), structureView(), roomView());
     const devices = h("section", { class: "house-part", "aria-labelledby": "this-house-devices-h" }, h("h3", { id: "this-house-devices-h" }, "Physical equipment"));
     const filters = h("div", { class: "house-filters", "aria-label": "House equipment filters" },
       [["room", `Needs a room (${c.needs_room})`], ["attention", `Needs attention (${c.attention})`], ["placed", "Already placed / fine"], ["all", "All equipment"]].map(([key, label]) =>
@@ -185,8 +219,8 @@ export function initThisHouse({ h, api, navigateHA }) {
     const rows = devicesFor(data, filter, query);
     if (!rows.length) devices.append(h("p", {}, "No equipment matches this view."));
     if (filter === "placed") devices.append(h("p", { class: "small muted" }, "These records already have a room and no current inventory warnings. Review only discrepancies; an available entity is not proof of correct physical placement."));
-    devices.append(...rows.map(deviceView));
-    root.append(devices, h("details", {}, h("summary", {}, "Recent confirmed changes"), data.changes.length ?
+    devices.append(...rows.map(d => deviceView(d)));
+    root.append(devices, integrationView(), h("details", {}, h("summary", {}, "Recent confirmed changes"), data.changes.length ?
       h("ul", { class: "plain" }, data.changes.slice().reverse().map(change => h("li", {}, `${change.action} · ${new Date(change.at).toLocaleString()}`))) : h("p", {}, "No house confirmations saved yet.")),
     h("p", { class: "small muted" }, "Capability planning comes after the house model. Music and existing dashboards retain their own checks and saved settings."));
   }
@@ -202,7 +236,31 @@ export function initThisHouse({ h, api, navigateHA }) {
     finally { reading = false; refreshButton.disabled = false; }
   }
   refreshButton.addEventListener("click", () => refresh());
+  const capabilityStatus = h("p", {class:"small muted",role:"status"}, "Reading existing verification evidence…");
+  const capabilityBody = h("div", {});
+  let checkingCapabilities = false;
+  const labels = {ready:"Ready — scoped verification",partial:"Partially ready",needs_setup:"Needs setup / verification",problem:"Problem detected",not_configured:"Not configured here",not_applicable:"Not applicable / deferred",unknown:"Unknown"};
+  const checkButton = h("button", {type:"button",class:"btn ghost",onclick:checkCapabilities}, "Refresh readiness evidence");
+  root.parentElement.append(h("section", {class:"house-part",id:"this-house-capabilities","aria-labelledby":"house-capabilities-h"},
+    h("h3", {id:"house-capabilities-h"}, "Household readiness"), h("p", {class:"small muted"}, "Configuration, reporting and functional verification are different checks. This summary does not change the house."), checkButton, capabilityStatus, capabilityBody));
+  async function checkCapabilities() {
+    if (checkingCapabilities) return;
+    checkingCapabilities = true; checkButton.disabled = true;
+    capabilityStatus.textContent = "Reading existing verification evidence…";
+    try {
+      const checked = await api("api/house/status");
+      capabilityBody.replaceChildren(...checked.capabilities.map(row => h("details", {class:"house-row"},
+        h("summary", {}, h("strong", {}, row.title), ` · ${labels[row.state] || "Unknown"}`), h("p", {}, row.detail), h("p", {class:"small muted"}, `Evidence: ${row.confidence}`),
+        row.route.startsWith("#") ? h("a", {href:row.route,class:"btn ghost",onclick:() => {
+          const target = document.getElementById(row.route.slice(1));
+          for(let node=target;node;node=node.parentElement) if(node.tagName === "DETAILS") node.open=true;
+        }}, "Review " + row.title) : h("button", {type:"button",class:"btn ghost",onclick:() => navigateHA(row.route)}, "Review " + row.title))));
+      capabilityStatus.textContent = `Evidence checked ${new Date(checked.checked_at).toLocaleString()}. Open a row for its verification limits.`;
+    } catch (error) { capabilityBody.replaceChildren(); capabilityStatus.textContent = `Readiness evidence unavailable: ${error.message}. House inspection and saved settings are preserved.`; }
+    finally { checkingCapabilities = false; checkButton.disabled = false; }
+  }
   document.addEventListener("visibilitychange", () => { if (!document.hidden && !dirty) refresh(); });
   refresh();
+  checkCapabilities();
   return refresh;
 }

@@ -9,6 +9,7 @@ import os
 from datetime import UTC, datetime
 
 from .core import CoreError
+from .house_readiness import report as readiness_report
 from .household import text
 from .inventory import assign_area, collect_inventory
 
@@ -148,7 +149,7 @@ def equipment(device):
     )
 
 
-async def inspect(core, store):
+async def inspect(core, store, checks=None):
     inventory = await collect_inventory(core)
     saved = load(store)
     people_error = None
@@ -275,6 +276,29 @@ async def inspect(core, store):
         "floors": floors,
         "areas": areas,
         "devices": devices,
+        "services": [
+            {
+                "entity_id": e["entity_id"],
+                "name": e["name"],
+                "domain": e["entity_id"].split(".")[0],
+                "area_id": e.get("area_id"),
+                "availability": "disabled"
+                if e.get("disabled_by")
+                else "unknown"
+                if not e.get("observed") or e.get("state") in {None, "unknown"}
+                else "unavailable"
+                if e["state"] == "unavailable"
+                else "reporting",
+            }
+            for e in inventory["unattached_entities"]
+            if e["entity_id"].split(".")[0] in (EQUIPMENT | {"calendar"}) - {"device_tracker"} and e.get("entity_category") not in {"diagnostic", "config"}
+        ],
+        "integration_issues": [
+            {k: f.get(k) for k in ("title", "confidence", "reasons", "path")}
+            for f in inventory["findings"]
+            if (f.get("path") or "").startswith(("/config/integrations/", "/config/repairs"))
+        ],
+        "capabilities": readiness_report(inventory, people, checks) if checks is not None else [],
         "structure_signature": structure,
         "structure_confirmed": saved["structure"] == structure,
         "expectation": expectation,

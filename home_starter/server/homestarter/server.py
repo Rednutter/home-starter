@@ -17,6 +17,7 @@ import re
 import secrets
 import time
 from contextlib import suppress
+from datetime import UTC, datetime
 from importlib import resources
 from typing import Any
 
@@ -323,6 +324,33 @@ async def api_this_house(request: web.Request) -> web.Response:
             {"error": "House changes could not be verified. HA may have changed; refresh before retrying. Saved settings are preserved.", "verified": False},
             503,
         )
+
+
+async def api_house_readiness(request: web.Request) -> web.Response:
+    state = await household_admin(request)
+    checks = {"music": None, "screens": None, "readiness": None}
+    try:
+        house = state.household.load()
+        try:
+            checks["readiness"] = readiness.load(state.household, house)
+        except (ValueError, OSError, KeyError, TypeError):
+            pass
+        try:
+            checks["screens"] = await screen_status(state.core, house, state.household.read(state.household.publication_path, {}))
+        except (ValueError, OSError, KeyError, TypeError, CoreError):
+            pass
+    except (ValueError, OSError, KeyError, TypeError):
+        pass
+    try:
+        snapshot = await state.music_runtime.snapshot()
+        checks["music"] = {k: snapshot.get(k) for k in ("connected", "proof")}
+    except (MusicRuntimeError, CoreError, SupervisorError, OSError, ValueError, KeyError, TypeError):
+        pass
+    try:
+        view = await this_house.inspect(state.core, state.household, checks)
+        return _json({"capabilities": view["capabilities"], "checked_at": datetime.now(UTC).isoformat()})
+    except (ValueError, OSError, KeyError, TypeError, CoreError):
+        return _json({"error": "Household readiness could not be read. House records and saved checks are preserved."}, 503)
 
 
 async def api_assign_area(request: web.Request) -> web.Response:
@@ -835,6 +863,7 @@ def create_app(settings: Settings, session: aiohttp.ClientSession | None = None)
     app.router.add_get("/api/scan", api_scan)
     app.router.add_get("/api/inventory", api_inventory)
     app.router.add_get("/api/house", api_this_house)
+    app.router.add_get("/api/house/status", api_house_readiness)
     app.router.add_post("/api/house/{action}", api_this_house)
     app.router.add_get("/api/household", api_household)
     app.router.add_get("/api/commissioning", api_commissioning)
