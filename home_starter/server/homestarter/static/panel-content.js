@@ -48,8 +48,15 @@ const body = `<main class="hs-panel" style="--hs-chrome-height:${kioskActive ? 0
     ${tile("media","Media","mdi:music",media ? media.attributes.friendly_name : "No speaker selected",media ? media.attributes.media_title || ({playing:"Playing",paused:"Paused",idle:"Ready",off:"Off"}[media.state] || media.state) : "Choose a room speaker in setup",cfg.targets.music)}
     ${tile("home","Home","mdi:home-outline",homeText,lightStates.some(s=>!usable(s)) ? "Some lights are unavailable" : "Open rooms and controls",cfg.targets.rooms || cfg.targets.context)}
   </div>
-  <nav class="hs-nav" aria-label="Household">${cfg.people.map(p=>`<a href="${esc(p.path)}"${p.path === cfg.path ? ' aria-current="page"' : ""}>${icon(p.icon)}<span>${esc(p.name)}</span></a>`).join("")}<a class="hs-display" href="${esc(cfg.base)}/ambient">${icon("mdi:weather-night")}<span>Ambient</span></a>${cfg.kiosk_user_name ? `<a class="hs-display" href="${esc(cfg.base)}/home${displayViewer && escapedKiosk ? "" : "?disable_km"}">${icon(displayViewer && escapedKiosk ? "mdi:fullscreen" : "mdi:cog-outline")}<span>${displayViewer && escapedKiosk ? "Panel mode" : "Settings"}</span></a>` : ""}</nav>
+  <nav class="hs-nav" aria-label="Household">${cfg.people.map(p=>`<a href="${esc(p.path)}"${p.path === cfg.path ? ' aria-current="page"' : ""}>${icon(p.icon)}<span>${esc(p.name)}</span></a>`).join("")}<a class="hs-display" href="${esc(cfg.base)}/ambient">${icon("mdi:weather-night")}<span>Ambient</span></a>${cfg.kiosk_user_name ? `<a class="hs-display" href="${esc(cfg.base)}/${displayViewer && escapedKiosk ? "home" : "settings"}">${icon(displayViewer && escapedKiosk ? "mdi:fullscreen" : "mdi:cog-outline")}<span>${displayViewer && escapedKiosk ? "Panel mode" : "Settings"}</span></a>` : ""}</nav>
 </main>`;
-// Keep standard links inside this text field independent of the outer card action.
+// Use HA navigation: ordinary anchor loads can leave the Android companion app.
 const stop = event => event.stopPropagation();
-return html`<div class="hs-wrapper" @click=${stop} @mousedown=${stop} @touchstart=${stop} @touchend=${stop} .innerHTML=${body}></div>`;
+const navigate = event => {
+  stop(event);
+  const path = event.target.closest?.("a[href]")?.getAttribute("href");
+  if (!path?.startsWith(cfg.base + "/") || event.button > 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+  event.preventDefault();
+  helpers.runAction({action:"navigate", navigation_path:path});
+};
+return html`<div class="hs-wrapper" @click=${navigate} @mousedown=${stop} @touchstart=${stop} @touchend=${stop} .innerHTML=${body}></div>`;

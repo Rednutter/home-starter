@@ -38,7 +38,7 @@ def apply(generated, house, climate, policy):
     if kiosk_name:
         viewer = "!user_is_admin && user_name === " + json.dumps(kiosk_name)
         config["kiosk_mode"] = {
-            "hide_sidebar": "[[[ " + viewer + " ]]]",
+            "hide_sidebar": "[[[ " + viewer + " && panel_url !== " + json.dumps(base + "/settings") + " ]]]",
             "hide_header": "[[[ " + viewer + " && " + json.dumps([base, base + "/home"]) + ".includes(panel_url) ]]]",
         }
     people = [{"name": "House", "path": base + "/home", "icon": "mdi:home-outline"}] + [
@@ -116,6 +116,36 @@ def apply(generated, house, climate, policy):
         }
         view.clear()
         view.update(type="panel", title="House", path=path, cards=[root])
+    if kiosk_name:
+        config["views"].append(
+            {
+                "type": "sections",
+                "title": "Settings",
+                "path": "settings",
+                "subview": True,
+                "back_path": base + "/home",
+                "max_columns": 1,
+                "sections": [
+                    section(
+                        "Display settings",
+                        [
+                            {
+                                "type": "button",
+                                "name": "Profile and app settings",
+                                "icon": "mdi:account-cog-outline",
+                                "tap_action": {"action": "navigate", "navigation_path": "/profile"},
+                            },
+                            {
+                                "type": "button",
+                                "name": "Panel mode",
+                                "icon": "mdi:fullscreen",
+                                "tap_action": {"action": "navigate", "navigation_path": base + "/home"},
+                            },
+                        ],
+                    )
+                ],
+            }
+        )
     generated["fingerprint"] = fingerprint(config)
     generated["warnings"].append(
         "Landscape panel requires the installed HACS button-card module. Climate controls remain native HA subviews; uncommissioned services are labelled."

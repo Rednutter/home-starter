@@ -86,6 +86,11 @@ async def main():
             page = await context.new_page()
             errors = []
             page.on("pageerror", lambda err: errors.append(str(err)))
+            document_requests = []
+            page.on(
+                "request",
+                lambda request: document_requests.append(request.url) if request.is_navigation_request() and request.frame == page.main_frame else None,
+            )
             await page.goto(BASE + "/" + result["url_path"] + "/home")
             await page.get_by_label("Username", exact=True).fill(display["username"])
             await page.get_by_label("Password", exact=True).fill(display["password"])
@@ -145,13 +150,16 @@ async def main():
                 bounds = await page.locator(".hs-panel").bounding_box()
                 assert bounds and bounds["y"] < 2 and bounds["height"] == 800
                 await page.screenshot(path=str(SHOTS / "kiosk.png"))
+                requests_before = len(document_requests)
                 await page.get_by_role("link", name="Settings", exact=True).click()
                 await expect(menu).to_be_visible()
-                await expect(page.get_by_role("link", name="Panel mode", exact=True)).to_be_visible()
+                await expect(page.get_by_role("button", name="Panel mode", exact=True)).to_be_visible()
+                assert len(document_requests) == requests_before, "Settings must stay inside the companion app"
                 await page.wait_for_load_state("networkidle")
                 await page.screenshot(path=str(SHOTS / "kiosk-settings.png"))
-                await page.get_by_role("link", name="Panel mode", exact=True).click()
+                await page.get_by_role("button", name="Panel mode", exact=True).click()
                 await expect(menu).not_to_be_visible()
+                assert len(document_requests) == requests_before, "Panel mode must use native HA navigation"
                 await page.reload()
                 await expect(page.get_by_role("main", name=surface["name"])).to_be_visible()
                 await expect(menu).not_to_be_visible()
@@ -164,8 +172,10 @@ async def main():
                 await expect(owner_page.get_by_role("main", name=surface["name"])).to_be_visible(timeout=30000)
                 await expect(owner_page.get_by_role("button", name="Sidebar toggle", exact=True)).to_be_visible()
                 await owner_context.close()
+            requests_before = len(document_requests)
             await page.get_by_role("link", name="Open climate controls", exact=True).click()
             await expect(page.locator("hui-thermostat-card")).to_be_visible()
+            assert len(document_requests) == requests_before, "Climate tap must not load an external browser document"
             if KIOSK:
                 await expect(page.get_by_role("link", name="Back", exact=True)).to_be_visible()
             thermostat = page.locator("hui-thermostat-card").first

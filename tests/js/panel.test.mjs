@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 
-const render=new Function("hass","variables","html","window",readFileSync("home_starter/server/homestarter/static/panel-content.js","utf8"));
+const render=new Function("hass","variables","html","window","helpers",readFileSync("home_starter/server/homestarter/static/panel-content.js","utf8"));
 const html=(strings,...values)=>strings.map((s,i)=>s+(typeof values[i]==="string"?values[i]:"")).join("");
 function scene(states={},changes={},user={},search="") {
   return render({states,user,config:{time_zone:"Australia/Sydney"},locale:{language:"en"}}, {panel:{title:"Example panel",base:"/example-panel",path:"/example-panel/home",targets:{climate:"/example-panel/climate"},people:[{name:"House",path:"/example-panel/home",icon:"mdi:home-outline"}],climate:"climate.example",zones:[],calendars:[],media:[],lights:[],alerts:[],bins:false,...changes}},html,{location:{search}});
@@ -11,11 +11,26 @@ function scene(states={},changes={},user={},search="") {
 test("kiosk fills its dedicated viewer and has a reversible settings escape",()=>{
   const config={kiosk_user_name:"Fixture panel"},user={name:"Fixture panel",is_admin:false};
   const kiosk=scene({},config,user);
-  assert.match(kiosk,/--hs-chrome-height:0px/);assert.match(kiosk,/home\?disable_km/);assert.match(kiosk,/>Settings</);
+  assert.match(kiosk,/--hs-chrome-height:0px/);assert.match(kiosk,/href="\/example-panel\/settings"/);assert.match(kiosk,/>Settings</);
   const escaped=scene({},config,user,"?disable_km");
   assert.match(escaped,/--hs-chrome-height:56px/);assert.match(escaped,/>Panel mode</);
   assert.match(scene({},config,{...user,is_admin:true}),/--hs-chrome-height:56px/);
   assert.match(scene({},config,{name:"Another viewer",is_admin:false}),/--hs-chrome-height:56px/);
+});
+test("panel taps use native HA navigation without loading a browser document",()=>{
+  const actions=[];
+  const template=render({states:{},config:{time_zone:"Australia/Sydney"}}, {panel:{base:"/example-panel",targets:{},people:[],zones:[],calendars:[],media:[],lights:[],alerts:[]}}, (strings,...values)=>values, {location:{search:""}}, {runAction:action=>actions.push(action)});
+  const click=template.find(value=>typeof value==="function");
+  for(const path of ["/example-panel/climate","/example-panel/person-fixture","/example-panel/home?disable_km","/example-panel/home"]) {
+    let prevented=false,stopped=false;
+    click({target:{closest:()=>({getAttribute:()=>path})},button:0,preventDefault(){prevented=true;},stopPropagation(){stopped=true;}});
+    assert.equal(prevented,true);assert.equal(stopped,true);
+    assert.deepEqual(actions.at(-1),{action:"navigate",navigation_path:path});
+  }
+  for(const path of ["https://example.invalid/","//example.invalid/","/example-panel-other/home"]) {
+    click({target:{closest:()=>({getAttribute:()=>path})},button:0,preventDefault(){assert.fail("Unrelated link intercepted");},stopPropagation(){}});
+  }
+  assert.equal(actions.length,4);
 });
 test("panel renders reported climate, not example temperatures",()=>{
   const html=scene({"climate.example":{state:"cool",attributes:{temperature:23,current_temperature:21.5}}});

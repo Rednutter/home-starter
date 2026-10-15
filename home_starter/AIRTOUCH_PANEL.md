@@ -62,8 +62,9 @@ account display names stop the preview; publication rechecks the modules.
 
 Kiosk applies only to that non-admin account on this dashboard. The overview fills
 the viewport; control/person subviews retain HA's header and Back navigation.
-The footer **Settings** link opens the overview with `?disable_km`, restoring HA
-navigation. **Panel mode** returns without the bypass. No cached global kiosk
+The footer **Settings** link opens a native Settings view, restoring HA navigation.
+It offers Profile/app settings and a **Panel mode** return. Tile/footer taps use
+button-card's supported HA navigation action to stay in the Companion app. No cached global kiosk
 settings or permission changes are applied. Administrator navigation stays visible.
 Android's status/navigation bars remain a separate Companion app Fullscreen choice.
 
@@ -71,4 +72,5 @@ Old household files remain valid without the optional `kiosk` field and are not
 rewritten merely by loading. Save/publication changes invalidate old physical
 proof honestly. `devtools/accept_panel_native.py --kiosk` checks account scope,
 settings exit/reentry, reload, full-height overview, native Back and climate control
-restoration, plus readable footer labels at all four viewport sizes.
+restoration, plus readable footer labels at all four viewport sizes. Climate,
+Settings and Panel mode taps must not issue browser document loads.

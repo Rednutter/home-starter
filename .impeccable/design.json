@@ -410,7 +410,7 @@
         "cssProperty": "--hs-chrome-height"
       },
       "nativeIntegration": "Kiosk Mode 15.0.0; sidebar hidden only on the selected generated dashboard for the validated unique-name nonadministrator account. Header hidden only on the overview; native control subviews retain header and Back.",
-      "escape": "Settings opens the overview with ?disable_km; Panel mode removes the query. No cache locking.",
+      "escape": "Settings opens a native Settings subview with HA chrome, Profile/app settings and Panel mode return. Native HA navigation keeps taps in the Companion app. No cache locking.",
       "narrowFooter": "At container widths up to 720px, whole items wrap with a 76px minimum width and flex basis; minimum target height remains 56px.",
       "verification": "Disposable native --kiosk acceptance passed four sizes, footer labels, administrator chrome, nonadministrator climate increase/restore, Settings escape, re-entry, reload and Back. Fresh finish review returned ship after the narrow Settings wrap fix; no regression was found.",
       "captures": [
@@ -493,7 +493,7 @@
       "kind": "nav",
       "refersTo": "panel-nav-active",
       "description": "Scoped specialist household navigation, with Settings escape for explicit kiosk presentation; retained HA control subviews keep Back.",
-      "html": "<nav class=\"ds-panel-nav\" aria-label=\"Household\"><a href=\"#house\" aria-current=\"page\"><span>House</span></a><a href=\"#ambient\"><span>Ambient</span></a><a href=\"?disable_km\"><span>Settings</span></a></nav>",
+      "html": "<nav class=\"ds-panel-nav\" aria-label=\"Household\"><a href=\"#house\" aria-current=\"page\"><span>House</span></a><a href=\"#ambient\"><span>Ambient</span></a><a href=\"#settings\"><span>Settings</span></a></nav>",
       "css": ".ds-panel-nav{display:flex;flex-wrap:wrap;gap:8px;padding:6px;border:1px solid #2b3b48;border-radius:22px;background:#081017;font-family:Roboto,Arial,sans-serif}.ds-panel-nav a{min-width:56px;min-height:56px;flex:1;display:flex;align-items:center;justify-content:center;border-radius:16px;color:#e3e8ed;text-decoration:none;padding:4px 6px;font-size:16px;text-align:center}.ds-panel-nav a[aria-current]{background:#103e59;color:#70c7ff;font-weight:600}.ds-panel-nav a:hover{background-color:#203342}.ds-panel-nav a:focus-visible{outline:3px solid #82d2ff;outline-offset:-5px}.ds-panel-nav a:active{background-color:#203342}@media(max-width:720px){.ds-panel-nav a{flex:1 1 76px;min-width:76px;font-size:14px}}"
     }
   ],
@@ -514,7 +514,7 @@
       },
       {
         "name": "AirTouch kiosk escape",
-        "body": "The explicit specialist-only `surface.kiosk` option uses installed Kiosk Mode for the validated dedicated nonadministrator account with a unique display name. It hides the sidebar only on that generated dashboard and hides the header only on its overview; native control subviews retain their header and Back target. The footer adds Settings, which opens the overview with `?disable_km` to restore HA chrome. Its Panel mode return removes that query. Administrator chrome and other dashboards retain their existing presentation. This changes presentation only, with no permissions change or cache locking.",
+        "body": "The explicit specialist-only `surface.kiosk` option uses installed Kiosk Mode for the validated dedicated nonadministrator account with a unique display name. It hides the sidebar only on that generated dashboard and hides the header only on its overview; native control subviews retain their header and Back target. The footer adds Settings, which uses native HA navigation to open a Settings subview with HA chrome, Profile/app settings and a Panel mode return. Tile and footer taps use button-card's supported navigation helper so they remain in the Companion app. Administrator chrome and other dashboards retain their existing presentation. This changes presentation only, with no permissions change or cache locking.",
         "section": "components"
       }
     ],

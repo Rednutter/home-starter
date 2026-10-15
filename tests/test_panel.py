@@ -130,6 +130,10 @@ def test_kiosk_is_explicit_and_preserves_legacy_state_and_native_back_paths():
     panel = generate(house, surface, items, areas, policy={"landscape_panel": True, "kiosk_user_name": "Fixture panel"})
     assert "!user_is_admin" in panel["config"]["kiosk_mode"]["hide_header"]
     assert "panel_url" in panel["config"]["kiosk_mode"]["hide_header"]
+    assert "/settings" in panel["config"]["kiosk_mode"]["hide_sidebar"]
+    settings = next(v for v in panel["config"]["views"] if v["path"] == "settings")
+    assert settings["subview"] and settings["back_path"].endswith("/home")
+    assert settings["sections"][0]["cards"][1]["tap_action"]["action"] == "navigate"
     assert panel["config"]["views"][1]["subview"]
     assert all(v.get("back_path") for v in panel["config"]["views"] if v.get("subview"))
     surface["kiosk"] = "yes"

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.4
+
+- Keep panel tile and footer taps inside the HA Companion app using button-card's supported native navigation action.
+- Restore HA navigation through a native Settings view, with Profile/app settings and Panel mode return. No page reload or external browser is needed.
+- Verify kiosk exit, reentry and climate taps without browser document loads in disposable HA. Preserve live climate entities and saved household state.
+
 ## 0.8.3
 
 - Add explicit kiosk presentation for specialist panels with a suitable dedicated
