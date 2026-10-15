@@ -4,6 +4,7 @@ import { initThisHouse } from "./this-house.js";
 import { initSurfaces } from "./surfaces.js";
 import { initContext } from "./context.js";
 import { initScreenIdentity } from "./screen-identity.js";
+import { initWaste } from "./waste.js";
 import { initInstallation } from "./installation.js";
 import { initReadiness } from "./readiness.js";
 import { initCommissioning } from "./commissioning.js";
@@ -353,6 +354,7 @@ async function init() {
   initThisHouse({ h, api, navigateHA });
   initSurfaces({ h, api, navigateHA });
   initContext({ h, api });
+  initWaste({ h, api });
   initScreenIdentity({ h, api, navigateHA });
   initReadiness({ h, api, navigateHA });
   renderOutcomes();

@@ -427,7 +427,7 @@ def generate(house: dict, surface: dict, items: list[dict], areas: list[dict], a
     eligible.sort(key=lambda i: (i["level"], i["id"] not in pref["pin"], rank.get(i["id"], 9999), i["name"].casefold(), i["id"]))
     profile = surface["profile"]
     if profile in ("phone", "tablet", "specialist"):
-        return touch_dashboard(house, surface, items, eligible, areas, activity or [])
+        return touch_dashboard(house, surface, items, eligible, areas, activity or [], policy)
     path = "home-starter-" + surface["id"].replace("_", "-")
     base = "/" + path
     sections, details, other_access = [], [], []
@@ -442,6 +442,11 @@ def generate(house: dict, surface: dict, items: list[dict], areas: list[dict], a
         near, ahead = wall_cards(surface["id"])
         sections[0]["cards"].append(near)
         sections.append(section("Coming up", [ahead]))
+    if profile != "wall" and surface["id"] in (policy or {}).get("bin_context_screens", []):
+        from .waste import card
+
+        bins = card()
+        sections.append({**section("", [bins]), "visibility": bins["conditions"]})
     active = [exception_card(i, surface) for i in eligible if i["level"] != 0 and i["domain"] != "alarm_control_panel"]
     climate = [i for i in eligible if i["function"] == "climate" and i["level"] == 2]
     if profile == "specialist":
@@ -564,7 +569,9 @@ def navigation(name: str, target: str, icon: str = "mdi:arrow-expand") -> dict:
     return {"type": "button", "name": name, "icon": icon, "tap_action": {"action": "navigate", "navigation_path": target}, "hold_action": {"action": "none"}}
 
 
-def touch_dashboard(house: dict, surface: dict, items: list[dict], eligible: list[dict], areas: list[dict], activity: list[dict]) -> dict:
+def touch_dashboard(
+    house: dict, surface: dict, items: list[dict], eligible: list[dict], areas: list[dict], activity: list[dict], policy: dict | None = None
+) -> dict:
     """Native people + House shell. All expansion paths stay inside the owned dashboard."""
     path = "home-starter-" + surface["id"].replace("_", "-")
     base = "/" + path
@@ -608,6 +615,11 @@ def touch_dashboard(house: dict, surface: dict, items: list[dict], eligible: lis
             if i["level"] != 0 and i["domain"] not in ("climate", "media_player", "alarm_control_panel")
             if (c := exception_card(i, person_surface))
         ]
+        if page_path == "home" and surface["id"] in (policy or {}).get("bin_context_screens", []):
+            from .waste import card
+
+            bins = card()
+            sections.append({**section("", [bins]), "visibility": bins["conditions"]})
         if active:
             sections.append(section("Happening now", active))
         calendars = [i for i in selected if i["domain"] == "calendar"]

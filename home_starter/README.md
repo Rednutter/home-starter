@@ -1,5 +1,10 @@
 # Home Starter
 
+**Waste collection** uses Council collection areas and the dated annual calendar
+for concise bin reminders and native HA entities. Confirm the proposed service;
+expired schedules require checking. No synthetic calendar events are created.
+See [sources, privacy and confirmation boundaries](WASTE_COLLECTION.md).
+
 **Physical screen commissioning** separates dashboard publication from a verified
 dedicated HA login, restart and actual display use. Native HA owns credentials;
 existing screen choices and publications remain intact.

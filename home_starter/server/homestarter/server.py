@@ -24,7 +24,7 @@ from typing import Any
 import aiohttp
 from aiohttp import web
 
-from . import __version__, commissioning, context, context_runtime, readiness, screen_identity, this_house
+from . import __version__, commissioning, context, context_runtime, readiness, screen_identity, this_house, waste, waste_runtime
 from .activity import update_activity
 from .core import CoreClient, CoreError
 from .household import PROFILES, HouseholdStore, validate_household
@@ -37,6 +37,7 @@ from .scan import ha_version_from_scan, run_scan
 from .settings import Settings
 from .supervisor import SupervisorClient, SupervisorError
 from .surfaces import classify, fingerprint, generate, publish
+from .wodonga import WodongaProvider
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -48,6 +49,7 @@ STATIC_FILES = {
     "this-house.js": "text/javascript",
     "context.js": "text/javascript",
     "screen-identity.js": "text/javascript",
+    "waste.js": "text/javascript",
     "surfaces.js": "text/javascript",
     "installation.js": "text/javascript",
     "readiness.js": "text/javascript",
@@ -87,6 +89,18 @@ class State:
         self.activity_task: asyncio.Task | None = None
         self.commissioning_task: asyncio.Task | None = None
         self.context_task: asyncio.Task | None = None
+        self.waste_task: asyncio.Task | None = None
+        self.waste_provider = WodongaProvider(session)
+        self.waste_previews: dict[str, dict] = {}
+
+    async def monitor_waste(self) -> None:
+        while True:
+            try:
+                async with asyncio.timeout(55), self.household_lock:
+                    await waste_runtime.tick(self.waste_provider, self.core, self.household)
+            except (CoreError, OSError, ValueError, KeyError, TypeError, TimeoutError):
+                _LOGGER.warning("Waste context unavailable; native bin entities expire safely. Saved schedule preserved.")
+            await asyncio.sleep(60)
 
     async def monitor_context(self) -> None:
         while True:
@@ -350,6 +364,10 @@ async def api_house_readiness(request: web.Request) -> web.Response:
         except (ValueError, OSError, KeyError, TypeError):
             pass
         try:
+            checks["waste"] = await waste_runtime.inspect(state.core, state.household)
+        except (ValueError, OSError, KeyError, TypeError, CoreError):
+            checks["waste"] = None
+        try:
             checks["screens"] = await screen_status(state.core, house, state.household.read(state.household.publication_path, {}))
             identities = await screen_identity.inspect(state.core, state.household, house, checks["screens"])
             for screen in checks["screens"]:
@@ -524,6 +542,68 @@ async def api_screen_identity(request: web.Request) -> web.Response:
             },
             503,
         )
+
+
+async def api_waste(request: web.Request) -> web.Response:
+    state = await household_admin(request)
+    try:
+        if request.method == "GET":
+            return _json(await waste_runtime.inspect(state.core, state.household))
+        body = await household_body(request)
+        if body.get("action") == "preview":
+            if set(body) != {"action", "day"}:
+                raise ValueError("Choose automatic location matching or one known collection weekday.")
+            house = state.household.load()
+            async with asyncio.timeout(55):
+                candidate = await waste.candidate(state.waste_provider, state.core, body["day"])
+            token = secrets.token_urlsafe(24)
+            prepared = {
+                "token": token,
+                "at": datetime.now(UTC).isoformat(),
+                "candidate": candidate,
+                "house_revision": house["revision"],
+                "epoch": house["epoch"],
+            }
+            state.waste_previews[_user(request)] = prepared
+            value = waste.load(state.household, house)
+            value.update(candidate)
+            return _json({"preview_token": token, "proposal": waste.view(value, (await state.core.config())["time_zone"])})
+        async with state.household_lock:
+            commissioning.gate(state.household)
+            house = state.household.load()
+            value = waste.load(state.household, house)
+            action = body.get("action")
+            if action == "confirm":
+                prepared = state.waste_previews.get(_user(request))
+                if not prepared or prepared["house_revision"] != house["revision"] or prepared["epoch"] != house["epoch"]:
+                    raise ValueError("Household screens changed; check the waste service again.")
+                waste.confirm(state.household, house, body, prepared)
+                state.waste_previews.pop(_user(request), None)
+                await waste_runtime.prepare(state.core, state.household, house)
+                await waste_runtime.project(state.core, state.household, house)
+            elif action in {"refresh", "prepare"}:
+                if (
+                    set(body) != {"action", "revision", "epoch", "confirm"}
+                    or body["confirm"] is not True
+                    or type(body["revision"]) is not int
+                    or body["revision"] != value["revision"]
+                    or type(body["epoch"]) is not int
+                    or body["epoch"] != house["epoch"]
+                ):
+                    raise ValueError("Refresh and confirm the current waste action.")
+                if action == "refresh":
+                    async with asyncio.timeout(55):
+                        await waste.refresh(state.waste_provider, state.core, state.household, house)
+                else:
+                    await waste_runtime.prepare(state.core, state.household, house)
+                await waste_runtime.project(state.core, state.household, house)
+            else:
+                raise ValueError("Choose a supported waste setup action.")
+        return _json(await waste_runtime.inspect(state.core, state.household))
+    except ValueError as error:
+        return _json({"error": str(error)}, 409)
+    except (CoreError, OSError, KeyError, TypeError, TimeoutError):
+        return _json({"error": "Waste setup could not be verified. Saved schedule and existing household choices are preserved; refresh before retrying."}, 503)
 
 
 async def commissioning_payload(state, value, discovery=False):
@@ -704,7 +784,20 @@ async def api_readiness(request: web.Request) -> web.Response:
             music = await state.music()
         except (CoreError, SupervisorError, ValueError):
             music = {"state": "unavailable"}
-        return _json(readiness.report(house, value, inventory, states, music))
+        result = readiness.report(house, value, inventory, states, music)
+        row = next(r for r in result["rows"] if r["id"] == "waste")
+        row["route"] = "#waste-collection"
+        row["questions"] = ["Check the Council service and confirm your collection day in Waste collection."]
+        row["provider_service"] = True
+        try:
+            bins = await waste_runtime.inspect(state.core, state.household)
+            row["provider_configured"] = bins["configured"]
+            if bins["configured"]:
+                row["status"] = bins["message"] + (" " + bins["entity_issue"] if bins["entity_issue"] else "")
+                row["guide"] = [bins["day"] + " · Green weekly · Recycling/General alternating"]
+        except (ValueError, OSError, KeyError, TypeError, CoreError):
+            row["status"] = "Bin schedule needs checking; saved data preserved."
+        return _json(result)
     except (OSError, ValueError, KeyError, TypeError, CoreError):
         return _json({"error": "Readiness could not be read safely. Saved setup is preserved."}, 503)
 
@@ -811,7 +904,14 @@ async def api_surface_preview(request: web.Request) -> web.Response:
             async with state.activity_lock:
                 activities = await update_activity(state.core, state.household, house["activities"])
             policy = readiness.policy_for(readiness.load(state.household, house), house, inventory, await state.core.states())
+            waste_issue = False
+            try:
+                policy = waste.screen_policy(policy, waste.load(state.household, house)["confirmed"])
+            except (ValueError, OSError, KeyError, TypeError):
+                waste_issue = True
             generated = generate(house, surface, items, inventory["areas"], activities, policy)
+            if waste_issue:
+                generated["warnings"].append("Bin schedule unavailable; existing screen choices preserved.")
             if surface["profile"] == "wall":
                 generated["context_preview"] = await context_runtime.inspect(state.core, state.household, surface)
             records = state.household.read(state.household.publication_path, {})
@@ -929,8 +1029,13 @@ def create_app(settings: Settings, session: aiohttp.ClientSession | None = None)
         app[K_OWN_SESSION] = own
         app[K_STATE].activity_task = asyncio.create_task(app[K_STATE].monitor_activity())
         app[K_STATE].context_task = asyncio.create_task(app[K_STATE].monitor_context())
+        app[K_STATE].waste_task = asyncio.create_task(app[K_STATE].monitor_waste())
 
     async def on_cleanup(app: web.Application) -> None:
+        if task := app[K_STATE].waste_task:
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
         if task := app[K_STATE].context_task:
             task.cancel()
             with suppress(asyncio.CancelledError):
@@ -956,6 +1061,8 @@ def create_app(settings: Settings, session: aiohttp.ClientSession | None = None)
     app.router.add_get("/api/house", api_this_house)
     app.router.add_get("/api/context", api_context)
     app.router.add_post("/api/context", api_context)
+    app.router.add_get("/api/waste", api_waste)
+    app.router.add_post("/api/waste", api_waste)
     app.router.add_get("/api/screens/identity", api_screen_identity)
     app.router.add_post("/api/screens/identity", api_screen_identity)
     app.router.add_get("/api/house/status", api_house_readiness)

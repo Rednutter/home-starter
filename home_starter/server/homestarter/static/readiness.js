@@ -34,11 +34,12 @@ export function initReadiness({ h, api, navigateHA }) {
     });
   }
   function capabilityForm(row) {
+    if(row.provider_service && row.provider_configured)return h("p",{},"The Council waste service is confirmed. Manage it in Waste collection. Previous calendar-source decisions remain saved separately.");
     const choice = draft.choices[row.id] || blankChoice();
     const update = (key, value) => { choice[key] = value; draft.choices[row.id] = choice; };
     return h("div", {},
       field("Your decision", select("Decision for " + row.title, [["", "Choose when relevant"], ["wanted", "Wanted — set up and verify"], ["later", "Not now"], ["not_wanted", "Not wanted"]], choice.intent, v => { if (v) update("intent", v); else delete draft.choices[row.id]; render(); })),
-      choice.intent === "wanted" && h("div", {},
+      row.provider_service ? h("p",{},"Check and confirm the Council service in Waste collection. Previous calendar-source choices are preserved; no synthetic calendar events are created.") : choice.intent === "wanted" && h("div", {},
         h("p", { class: "small muted" }, "Sources and displays are choices, not proof of working configuration. Existing dashboards change only after a reviewed publication."),
         checks("Sources for " + row.title, row.sources.map(s => [s.id, s.name + (s.available ? "" : " · unavailable")]), choice.sources, v => update("sources", v)),
         ["calendars", "waste"].includes(row.id) && h("p", {}, "Choose one source. Waste collection requires a collection event from that source; a calendar name alone is insufficient."),

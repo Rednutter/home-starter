@@ -193,6 +193,14 @@ The wall remains native HA Sections and Markdown with a small time/date/current-
 
 Evidence: `home_starter/server/homestarter/static/{context.js,styles.css}`, `home_starter/server/homestarter/{context.py,context_runtime.py,surfaces.py}`; desktop/mobile editor captures in `screens/context-ui/`. Eight fictional states were rendered on an actual disposable HA (2026.10.0) in `screens/context-native/`: `busy-morning.png`, `quiet-morning.png`, `daytime.png`, `afternoon.png`, `evening-finished.png`, `weekend.png`, `no-calendar.png` and `calendar-unavailable.png`, with additional (1280px) busy/quiet variants. Finish review covered all eight states; after a form-spacing fix and four recaptures, the scoped editor recheck returned ship. These captures establish disposable-environment visual evidence only. The household Green subsequently updated to (0.6.0) after the owner restored public repository access; real calendar/wall visual acceptance is still outstanding. Captures contain fictional data; private household screenshots and event payloads stay outside Git.
 
+### Waste collection
+
+Waste collection extends the existing administration disclosure beside Household Context, using the same typography, neutral borders, native controls, wrapping fields and spaced actions. Lead with Wodonga Council, collection day, next bins, service pattern and textual currentness. Keep schedule provenance in an optional disclosure. The local service preview precedes screen selection and explicit confirmation explaining the six native bin/status helpers and expiring data source. Busy actions disable controls; failures preserve the existing schedule. There is no address form or synthetic calendar content.
+
+Selected household screens use native conditional bin context from (18:00) the prior evening until (06:00) on collection day. Quiet screens reserve no bin section; expiry does not claim collection occurred. Retained, expired or conflicting evidence keeps an honest textual status, and native helper availability expires when its source stops. Wall content remains passive. Screen selection does not replace explicit generation, review and publication of a dashboard.
+
+Evidence: `home_starter/server/homestarter/static/{waste.js,readiness.js}`, `home_starter/server/homestarter/{waste.py,context_runtime.py,surfaces.py}` and `.impeccable/surfaces/waste-collection.md`. Fourteen fictional desktop/mobile captures in `screens/waste-ui/` cover initial, confirmed, evening, morning, stale and native HA states. The scoped finish review returned ship after an action-spacing correction; native rendering checks used disposable HA (2026.10.0). These establish implementation and visual evidence only. The household Green remains on (0.6.2); its read-only provider match did not configure or commission a household waste service.
+
 ## Do's and Don'ts
 
 - Do preserve the incumbent admin tokens and progressive disclosure.

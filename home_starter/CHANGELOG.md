@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.7.0
+
+- Add Council-backed waste collection as household context, with Wodonga's
+  locally matched collection areas and dated official annual calendar.
+- Confirm service, selected screens and six native bin/status helpers explicitly.
+  Keep address coordinates out of saved waste state and Council requests.
+- Show bins only from the prior evening until the Council's morning deadline;
+  retain labelled last-valid evidence during outages and stop expired patterns.
+- Preserve existing settings, publications and legacy calendar choices. No
+  synthetic events, automations or automatic dashboard republication.
+- Add focused source, migration, privacy, context and native HA/browser checks.
+  See [Waste Collection](WASTE_COLLECTION.md) for evidence and boundaries.
+
 ## 0.6.2
 
 - Reuse an existing dedicated display account linked to a currently reviewed

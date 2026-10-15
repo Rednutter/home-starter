@@ -25,6 +25,8 @@ RUNTIME = {
     "house-confirmations.json",
     "house-confirmations.tmp",
     "screen-commissioning.json",
+    "waste-collection.json",
+    "waste-collection.tmp",
     "screen-commissioning.tmp",
     "music-connection.json",
     "music-connection.tmp",

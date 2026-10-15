@@ -85,10 +85,10 @@ class CoreClient:
         return list(await self.rest_get("/states") or [])
 
     async def context_state(self, entity_id: str, payload: dict) -> None:
-        """Only owned, explicitly published wall context; never hardware service calls."""
+        """Only owned household context projections; never hardware service calls."""
         import re
 
-        if not re.fullmatch(r"sensor\.home_starter_context_[a-f0-9]{12}", entity_id):
+        if not re.fullmatch(r"sensor\.home_starter_context_[a-f0-9]{12}", entity_id) and entity_id != "sensor.home_starter_bin_source":
             raise ValueError("Context sensor namespace required.")
         try:
             async with self._session.post(
@@ -104,6 +104,25 @@ class CoreClient:
                     raise CoreError("api", "Context state readback did not match.")
         except (TimeoutError, aiohttp.ClientError, OSError, ValueError) as err:
             raise CoreError("unreachable", f"Context state write failed ({type(err).__name__}).") from None
+
+    async def template_flow(self, body: dict, flow_id: str | None = None) -> dict:
+        """Supported config flow endpoint, bounded to native Template helper setup."""
+        import re
+
+        if flow_id is not None and not re.fullmatch(r"[a-zA-Z0-9_-]{1,100}", flow_id):
+            raise ValueError("Invalid native flow identity.")
+        if flow_id is None and body != {"handler": "template", "show_advanced_options": True}:
+            raise ValueError("Native Template helper flow required.")
+        path = "/config/config_entries/flow" + ("/" + flow_id if flow_id else "")
+        try:
+            async with self._session.post(
+                self._api + path, json=body, headers={"Authorization": "Bearer " + self._token.reveal()}, timeout=REST_TIMEOUT
+            ) as response:
+                if response.status != 200:
+                    raise CoreError("api", "Native Template helper configuration failed.")
+                return await response.json()
+        except (aiohttp.ClientError, TimeoutError, ValueError, OSError):
+            raise CoreError("unreachable", "Native Template helper result is uncertain; inspect helpers before retrying.") from None
 
     def websocket(self) -> CoreWebSocket:
         return CoreWebSocket(self._session, self._ws_url, self._token)

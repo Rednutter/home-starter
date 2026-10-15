@@ -3,7 +3,7 @@
 from datetime import UTC, datetime, timedelta
 from urllib.parse import urlencode
 
-from . import context, readiness, this_house
+from . import context, readiness, this_house, waste
 from .core import CoreError
 from .inventory import collect_inventory
 from .surfaces import admitted, classify, fingerprint, preferences
@@ -35,7 +35,14 @@ async def inspect(core, store, surface=None, now=None):
     local = now.astimezone(ZoneInfo(zone))
     start = local.replace(hour=0, minute=0, second=0, microsecond=0)
     query = urlencode({"start": start.isoformat(), "end": (start + timedelta(days=22)).isoformat()})
+    try:
+        provider = waste.load(store, house)["confirmed"]
+        provider_confirmed = bool(provider and (not surface or surface["id"] in provider["screens"]))
+    except (ValueError, OSError, KeyError, TypeError):
+        provider_confirmed = False
     for key in ("calendars", "waste"):
+        if key == "waste" and provider_confirmed:
+            continue  # Retain legacy choices, but never duplicate provider context as an event.
         choice = saved["choices"].get(key, {})
         if choice.get("intent") != "wanted" or not choice.get("sources"):
             if key == "calendars":
@@ -76,6 +83,14 @@ async def inspect(core, store, surface=None, now=None):
                 else "Choose and verify one consolidated calendar in Home Readiness"
             )
     result.update(content, issues=issues, checked_at=now.isoformat(), valid_until=min([now + timedelta(seconds=150), *expiries]).isoformat())
+    try:
+        bins = waste.view(waste.load(store, house), zone, now)
+        if bins["configured"] and (not surface or surface["id"] in bins["screens"]):
+            result["waste"] = bins
+            if bins["summary"]:
+                result["near"] = bins["summary"] + "\n\n" + result["near"]
+    except (ValueError, OSError, KeyError, TypeError):
+        result["issues"].append("Bin schedule needs checking")
     result["events"] = [
         {"key": e["key"], "title": e["title"], "start": e["start"].isoformat(), "all_day": e["all_day"], "proximity": context.proximity(e, now)}
         for e in events

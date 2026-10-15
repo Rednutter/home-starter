@@ -37,8 +37,14 @@ communications, calendar, display, climate, camera, presence, voice or appliance
 choices. Questions follow discovery and explicit interest. Installed or available
 never means end-to-end verified. Credentials stay in Home Assistant/Music Assistant.
 
-New previews require a selected and verified calendar/waste source and selected
-displays. No waste source means no Bins; no member link means no presence card.
+Waste collection is a household service: Wodonga's official collection areas and
+annual calendar supply dated, verified bin context without calendar events.
+Service confirmation prepares native HA entities; selected displays receive
+conditional reminders through reviewed publication. Expired or conflicting
+evidence requires checking. See [Waste Collection](home_starter/WASTE_COLLECTION.md).
+
+Calendar previews require a selected, verified source and selected displays.
+No verified waste service means no confident Bins; no member link means no presence card.
 Existing dashboards stay intact until reviewed publication. See the
 [household evidence and setup audit](home_starter/READINESS_AUDIT.md) for rules,
 scenario evidence and deliberately incomplete integrations/tests.
