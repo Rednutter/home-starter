@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.1
+
+- Bound the selected weather icon inside the landscape header. This prevents
+  button-card's inherited icon sizing from compressing the household panels.
+- Include selected weather and header bounds in disposable native acceptance.
+
 ## 0.8.0
 
 - Restore a reference-led specialist landscape overview with prominent Climate,

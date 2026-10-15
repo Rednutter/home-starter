@@ -6,6 +6,7 @@
 .hs-time { font-size: 23px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .hs-date { margin-left: 24px; font-size: 18px; }
 .hs-weather { display: flex; gap: 9px; align-items: center; font-size: 18px; }
+.hs-weather ha-icon { --mdc-icon-size: 26px; width: 26px; height: 26px; flex: 0 0 26px; margin: 0; }
 .hs-board { display: grid; grid-template-columns: 2fr 1fr 1fr; grid-template-rows: minmax(0,1fr) minmax(0,1fr) minmax(0,.7fr); grid-template-areas: "climate today today" "climate call cameras" "media home home"; gap: 14px; flex: 1; min-height: 0; }
 .hs-tile { position: relative; min-width: 0; overflow: hidden; padding: 22px 24px; border: 1px solid #52606b; border-radius: 24px; background: linear-gradient(100deg,rgba(24,36,47,.94),rgba(17,26,34,.82)),var(--hs-backdrop); background-size: cover; background-position: center; color: inherit; text-decoration: none; display: flex; flex-direction: column; gap: 15px; }
 .hs-tile h2 { display: flex; justify-content: flex-start; text-align: left; gap: 14px; align-items: center; margin: 0; font-size: 26px; line-height: 1.2; font-weight: 600; }

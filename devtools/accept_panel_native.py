@@ -53,11 +53,16 @@ async def main():
         assert len(items) == 1 and items[0]["usable"], "Disposable thermostat must report normally"
         items[0]["area_id"] = "fixture_kitchen"
         items[0]["platform"] = "airtouch5"  # Fictional adapter label; native services remain real.
+        weather = {"entity_id": "weather.fixture_panel", "state": "partlycloudy", "attributes": {"temperature": 14, "temperature_unit": "°C"}}
+        async with session.post(BASE + "/api/states/" + weather["entity_id"], headers=headers, json=weather) as response:
+            assert response.status in (200, 201)
+        items += classify({"devices": [], "unattached_entities": [{**weather, "name": "Fixture weather", "observed": True}]}, [weather], {})
         areas = [{"area_id": "fixture_kitchen", "name": "Fixture kitchen"}]
         before = copy.deepcopy(house)
         records_path = ROOT / "publications.json"
         records = json.loads(records_path.read_text()) if records_path.exists() else {}
         generated = generate(house, surface, items, areas, policy={"landscape_panel": True})
+        assert generated["config"]["views"][0]["cards"][0]["variables"]["panel"]["weather"] == weather["entity_id"]
         result = await publish(core, generated, records.get(generated["url_path"], {}).get("fingerprint"), records)
         records[result["url_path"]] = result
         records_path.write_text(json.dumps(records))
@@ -101,6 +106,9 @@ async def main():
                 await page.evaluate("()=>document.fonts.ready")
                 await page.evaluate("()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))")
                 await page.screenshot(path=str(SHOTS / (name + ".png")), full_page=True)
+                header = await page.locator(".hs-header").bounding_box()
+                await expect(page.locator(".hs-weather")).to_contain_text("14°")
+                assert header and header["height"] < 70, "Weather icon must not expand the header"
                 assert await page.locator(".hs-panel").evaluate("el=>el.scrollWidth<=el.clientWidth+1")
                 if width > 720:
                     bounds = await page.locator(".hs-nav").evaluate("el=>({bottom:el.getBoundingClientRect().bottom,height:innerHeight})")
