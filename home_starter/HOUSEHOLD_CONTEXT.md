@@ -3,8 +3,8 @@
 ## Baseline and scope
 
 Started from actual `main` at `07fe46a0dd14433920b20483fb33cbaf3cbff833`
-(0.5.4), already ahead of the brief's expected 0.5.3. The household Green is
-still running 0.5.3. This release adds a deterministic context projection and its
+(0.5.4), already ahead of the brief's expected 0.5.3. The household Green was
+running 0.5.3 at implementation start and subsequently updated to 0.6.0. This release adds a deterministic context projection and its
 first consumer, a passive native HA wall. It does not redesign the AirTouch/shared
 tablet, install calendar providers, infer occupancy or change physical display power.
 
@@ -146,17 +146,41 @@ confirmations, exact saved screen choices, three published dashboard statuses an
 the original private Music connection/playback proof. No house registry, hardware,
 dashboard or playback mutation was needed for this release's inspection.
 
-The repository is private. Its established Supervisor update path cannot authenticate
-Git access, so 0.5.4 and 0.6.0 have not been deployed to the Green. Do not claim
-real calendar rendering, native wall operation, reload persistence, weather,
-physical kiosk/power or household usefulness acceptance for 0.6.0 there.
-No credentials or repository visibility were changed to bypass that blocker.
+The owner subsequently made the repository public and anonymous Git access passed.
+The established Supervisor update path then installed 0.6.0 with rollback backup
+enabled. Management and application readback both confirmed 0.6.0. Exact saved
+screen settings, house review revision/people, Music connection/original proof and
+all three published-dashboard readbacks survived the update. No credentials were
+added. The new context endpoint returned empty preferences and honestly reported
+that the household calendar is not selected.
 
-The next bounded step is resolving the private deployment path, then explicitly
-selecting/verifying the actual consolidated calendar and publishing one chosen
+Do not claim real calendar rendering, native wall operation, weather, physical
+kiosk/power or household usefulness acceptance for 0.6.0 there.
+
+The next bounded step is explicitly selecting/verifying the actual consolidated calendar and publishing one chosen
 wall privately. Verify real temporal behaviour, reload and source failure before
 moving to the separately selected AirTouch/shared-tablet consumer. Do not expand
 into broad health/features while this acceptance remains outstanding.
+
+## Public repository privacy review
+
+The owner approved public access and a historical identifier scrub. The review
+covered all published refs: 33 commits and 496 distinct file blobs before the
+follow-up acceptance commit. No runtime exports or household screenshots were
+tracked; the only binary files were the application icon and logo. Commit
+identities were already neutral. Historical fixture/maintainer identifiers and
+private-network example addresses were selected for replacement with neutral
+identities and documentation-network addresses. Third-party public maintainer
+contacts were distinguished from household data.
+
+An old issue containing household names was privately archived and replaced with
+sanitized issue #2 with the owner's explicit approval, because editing its current
+body alone retained the old revision. Recovery material and detailed audit findings
+remain in ignored local storage. The current ingress test identity is synthetic.
+History rewriting removes identifiers from published branch history; it cannot
+erase copies already downloaded or guarantee removal of GitHub's cached old objects.
+Only sanitized source/fixtures belong in future commits, never runtime credentials,
+calendar content, household exports or live screenshots.
 
 Native mechanisms: [HA Markdown card](https://www.home-assistant.io/dashboards/markdown/)
 and [HA REST API](https://developers.home-assistant.io/docs/api/rest/).
