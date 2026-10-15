@@ -31,6 +31,15 @@ def rows(inv, **checks):
     return {row["id"]: row for row in report(inv, [], checks)}
 
 
+@pytest.mark.parametrize("status,expected", [("current", "ready"), ("last_known_valid", "partial"), ("stale", "problem"), ("needs_checking", "problem")])
+async def test_confirmed_waste_provider_takes_precedence_over_legacy_calendar_discovery(inventory, status, expected):
+    source(inventory, "calendar", name="Example bin collection")
+    bins = {"configured": True, "status": status, "entities_ready": True, "message": "Provider evidence result", "entity_issue": None}
+    row = rows(inventory, waste=bins)["waste"]
+    assert row["state"] == expected and row["route"] == "#waste-collection"
+    assert row["detail"] == bins["message"]
+
+
 async def test_music_needs_current_scoped_playback_proof(inventory):
     proof = {"at": datetime.now(UTC).isoformat(), "provider_id": "example_provider", "player_id": "example_speaker"}
     assert rows(inventory, music={"connected": True, "proof": proof})["music"]["state"] == "ready"

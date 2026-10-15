@@ -34,11 +34,6 @@ def report(inventory, people, checks):
             state, detail = "needs_setup", "Wanted, but no usable source has been selected and verified."
         if not readable and choice.get("intent") not in {"later", "not_wanted"}:
             state, confidence, detail = "unknown", "Unknown", "HA source discovery is incomplete. Missing data does not establish missing configuration."
-        if key == "waste" and (bins := checks.get("waste")) and bins["configured"]:
-            state = "ready" if bins["status"] == "current" and bins["entities_ready"] else "partial" if bins["status"] == "last_known_valid" else "problem"
-            confidence = "Verified" if bins["status"] == "current" else "Last verified"
-            detail = bins["message"] + (" " + bins["entity_issue"] if bins["entity_issue"] else "")
-            route = "#waste-collection"
         if key == "music" and choice.get("intent") not in {"later", "not_wanted"}:
             music = checks.get("music")
             if music is None:
@@ -96,6 +91,11 @@ def report(inventory, people, checks):
             detail += " Temperature/mode reporting does not prove that the equipment responds to commands."
         if key in {"calendars", "waste"}:
             route = "#home-readiness"
+        if key == "waste" and (bins := checks.get("waste")) and bins["configured"]:
+            state = "ready" if bins["status"] == "current" and bins["entities_ready"] else "partial" if bins["status"] == "last_known_valid" else "problem"
+            confidence = "Verified" if bins["status"] == "current" else "Last verified"
+            detail = bins["message"] + (" " + bins["entity_issue"] if bins["entity_issue"] else "")
+            route = "#waste-collection"
         rows.append({"id": key, "title": title, "state": state, "confidence": confidence, "detail": detail, "route": route})
     screens = checks.get("screens")
     if screens is None:

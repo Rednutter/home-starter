@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.1
+
+- Keep verified Council-service readiness authoritative over legacy calendar
+  discovery and preserve the direct Waste collection setup link. This fixes a
+  summary mismatch found during confirmed live-household commissioning.
+
 ## 0.7.0
 
 - Add Council-backed waste collection as household context, with Wodonga's
