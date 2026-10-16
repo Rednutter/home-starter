@@ -31,9 +31,10 @@ def room_panel(zone, damper):
     # Two enclosing button-cards (page and room grid) each consume one bracket pair.
     current = (
         "const s=hass.states[variables.zone]; const t=s?.attributes.current_temperature; "
-        "return s && !['unknown','unavailable'].includes(s.state) && typeof t==='number' && Number.isFinite(t) "
+        "const reading=s && !['unknown','unavailable'].includes(s.state) && typeof t==='number' && Number.isFinite(t) "
         "? `<span class='hs-room-now' aria-label='Room temperature ${t} degrees'>"
         "<ha-icon icon='mdi:thermometer' aria-hidden='true'></ha-icon>${t}°</span>` : '';"
+        "return `<div class='hs-room-heading'><span class='hs-room-name'>${variables.label}</span>${reading}</div>`;"
     )
     airflow = (
         "const s=hass.states[variables.damper]; const p=s?.attributes.current_position; "
@@ -47,23 +48,29 @@ def room_panel(zone, damper):
         "entity": zone["entity"],
         "name": escape(zone.get("name", zone["entity"])),
         "show_icon": False,
+        "show_name": False,
         "tap_action": {"action": "none"},
         "hold_action": {"action": "none"},
-        "variables": {"zone": zone["entity"], "damper": damper["entity"]},
+        "variables": {"zone": zone["entity"], "damper": damper["entity"], "label": escape(zone.get("name", zone["entity"])).replace("[", "&#91;")},
         "triggers_update": [zone["entity"], damper["entity"]],
         "styles": {
             "card": [
                 {"padding": "12px"},
                 {"border": "0"},
                 {"box-shadow": "none"},
-                {"background": "#142632"},
+                {"background": "linear-gradient(105deg,rgba(15,38,55,.96),rgba(23,31,41,.86)),var(--hs-backdrop)"},
+                {"background-size": "cover"},
+                {"background-position": "center"},
+                {"--ha-font-size-m": "22px"},
+                {"--feature-height": "48px"},
+                {"--state-climate-fan-only-color": "#3b8cbb"},
                 {"--ha-card-background": "transparent"},
                 {"--ha-card-border-width": "0"},
             ],
             "grid": [
-                {"grid-template-areas": '"n current" "controls controls" "airflow airflow"'},
-                {"grid-template-columns": "minmax(0,1fr) auto"},
-                {"gap": "6px"},
+                {"grid-template-areas": '"current controls" "airflow airflow"'},
+                {"grid-template-columns": "minmax(0,.35fr) minmax(0,.65fr)"},
+                {"gap": "8px"},
             ],
             "name": [
                 {"justify-self": "start"},
@@ -73,10 +80,16 @@ def room_panel(zone, damper):
                 {"line-height": "1.25"},
                 {"font-weight": "600"},
             ],
-            "custom_fields": {"controls": [{"width": "100%"}, {"min-width": "0"}], "airflow": [{"width": "100%"}]},
+            "custom_fields": {
+                "current": [{"min-width": "0"}, {"white-space": "normal"}, {"text-align": "left"}],
+                "controls": [{"width": "100%"}, {"min-width": "0"}],
+                "airflow": [{"width": "100%"}],
+            },
         },
         "custom_fields": {"current": "[[[[[ " + current + " ]]]]]", "controls": {"card": controls}, "airflow": "[[[[[ " + airflow + " ]]]]]"},
         "extra_styles": (
+            ".hs-room-heading{display:flex;flex-direction:column;gap:10px;text-align:left;font-family:Roboto,Arial,sans-serif}"
+            ".hs-room-name{font-size:20px;font-weight:600;line-height:1.25;overflow-wrap:normal}"
             ".hs-room-now{display:flex;align-items:center;gap:4px;font-size:24px;font-variant-numeric:tabular-nums}"
             ".hs-room-now ha-icon{--mdc-icon-size:16px;width:16px;height:16px;flex:0 0 16px;color:#cad3db}"
             ".hs-room-airflow{display:flex;align-items:center;gap:10px;color:#cad3db;font:14px Roboto,Arial,sans-serif;text-align:left}"

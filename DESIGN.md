@@ -324,3 +324,6 @@ Disposable acceptance covers live airflow changes (including 0%, unavailable and
 Damper copy explicitly reports percentage **open**, rather than implying measured airflow while the system is off. The readonly position remains inside its room.
 
 Final visual variant follows the user’s preference for fewer words on displays: repeated Target/Room/Fan-only/Damper labels are removed from ordinary states. Native mode icons and full-width +/- controls remain; the thermometer identifies reported temperature, and the damper icon/bar reports position with accessible percentage-open text. Fresh finish verdict: **ship**, with no material fixes after landscape, narrow and tall-tablet review. Native actions and all fixture checks passed.
+
+
+Room material/density refinement: rounded room panels reuse the existing generic photographic backdrop under quiet navy overlays. Room names and optional thermometer readings sit beside native mode/setpoint controls; the damper remains across the bottom. No new raster assets or provenance changes. Five viewport acceptance checks passed, including all six room groups at 1280×720, long names, absent temperatures and live damper changes. Fresh finish verdict: **ship**, no material fixes. Existing actions, device evidence and responsive stacking are preserved.

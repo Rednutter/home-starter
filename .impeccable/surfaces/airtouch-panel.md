@@ -19,3 +19,5 @@ FORM: User-pinned composition, no seed tournament. Mature button-card supplies l
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
 
 CLIMATE CONTINUITY: The Climate route uses the same scoped navy/cyan palette and photographic main-system panel; native thermostat and zone actions remain unchanged. Main system beside rooms; each uniquely device-linked zone includes its own readonly airflow. Thermometer readings, full-width +/- setpoints, compact native mode icons and damper bars have distinct hierarchy. Keep ordinary display states visual, with explanatory wording in accessible labels/tooltips. Stack system above rooms at 1100px and below; rooms become a single column at 720px. Preserve native Back and all other subviews.
+
+ROOM MATERIAL: Reuse the generic backdrop under quiet navy overlays. Place name/reported temperature beside native controls to reduce dead space; retain the full-width damper bar. Finish verdict: ship after landscape, narrow and tall-tablet review.

@@ -81,3 +81,5 @@ Settings and Panel mode taps must not issue browser document loads.
 ## Room climate and airflow
 
 For AirTouch, exactly one admitted climate zone and damper on the same registry device are presented together. Names and entity suffixes are not pairing evidence. Each room separates its thermometer reading from a full-width native temperature adjuster, uses compact native mode icons, and shows its own readonly damper icon/bar/percentage. Accessible labels and tooltips retain explanatory wording. Missing temperature is omitted; unavailable airflow is explicit. Unmatched or ambiguous records retain their native fallback. Automatic damper control is unchanged. Six room blocks fit at 1280×720; intermediate tablets stack the system above the rooms to preserve control width.
+
+Room panels reuse the overview photographic navy material. Names and optional thermometer readings sit beside native controls, with the damper across the bottom. No extra image assets or climate actions are introduced.

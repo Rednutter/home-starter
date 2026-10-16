@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.9
+
+- Carry the dashboard photographic navy theme into room controls. Place room names and reported temperatures beside native controls, removing the separate heading row and reducing empty space.
+- Preserve native climate actions, integrated readonly damper readings, device pairing and responsive stacking.
+
 ## 0.8.8
 
 - Use visual room controls: compact native mode icons, a full-width temperature adjuster, and an integrated damper icon/bar/percentage.

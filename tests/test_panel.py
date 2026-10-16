@@ -134,7 +134,8 @@ def test_room_airflow_uses_unique_device_evidence_not_names_or_entity_suffixes(a
         assert room == zone and "airflow" in fields
     else:
         assert "airflow" not in fields
-        assert room["variables"] == {"zone": zone["entity"], "damper": damper["entity"]}
+        assert room["variables"]["zone"] == zone["entity"]
+        assert room["variables"]["damper"] == damper["entity"]
         controls = room["custom_fields"]["controls"]["card"]
         assert controls["entity"] == zone["entity"] and controls["name"] == ""
         assert controls["features"][1] == zone["features"][0]
