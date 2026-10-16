@@ -20,6 +20,7 @@ from .settings import Secret
 from .supervisor import SupervisorError
 
 READ_COMMANDS = {
+    "player_queues/items",
     "providers",
     "config/providers",
     "players/all",

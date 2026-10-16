@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.17
+
+- Require the current listening identity for transport controls, including House. A House page cannot resume another person’s queue.
+- Preserve non-book session ownership across confirmed playlist queue items and bind sleep timers to the listening session. External replacement still ends ownership.
+
 ## 0.8.16
 
 - Preserve the native search field and keyboard focus while typing on listening pages, including periodic dashboard updates. Show the saved listening destination on the person’s overview.

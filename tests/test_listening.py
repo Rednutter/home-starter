@@ -35,6 +35,8 @@ class Music:
     async def command(self, endpoint, connection, command, **args):
         if command == "music/browse":
             return [self.book]
+        if command == "player_queues/items":
+            return [deepcopy(self.queues[args["queue_id"]]["current_item"]), {"queue_item_id": "next-fixture"}]
         p = args["player_id"]
         return deepcopy(self.raw[p] if command == "players/get" else self.queues[p])
 
@@ -225,3 +227,29 @@ async def test_provider_resume_feedback_is_not_imported_into_listener_progress(s
     assert not (await runtime.view("admin", "panel", "one"))["books"]
     music.raw["a"].update(elapsed_time=1, elapsed_time_last_updated=time.time())
     assert (await runtime.view("admin", "panel", "one"))["books"][0]["position"] == 1
+
+
+async def test_house_cannot_resume_personal_queue(setup):
+    item = await book(setup)
+    await act(setup, "one", "play_item", item=item)
+    await act(setup, "one", "pause")
+    count = len(setup[1].calls)
+    with pytest.raises(ValueError, match="another listening"):
+        await act(setup, None, "play")
+    assert len(setup[1].calls) == count
+
+
+async def test_playlist_advancement_keeps_owned_transport_and_sleep_timer(setup):
+    runtime, music, house, _ = setup
+    music.book["media_type"] = "playlist"
+    item = await book(setup)
+    await act(setup, "one", "play_item", item=item)
+    await act(setup, "one", "sleep", value=900)
+    music.queues["a"]["current_item"]["queue_item_id"] = "next-fixture"
+    music.raw["a"]["current_media"]["queue_item_id"] = "next-fixture"
+    assert (await runtime.view("admin", "panel", "one"))["session"]
+    data = runtime.load(house, music.conn)
+    data["profiles"]["person:one"]["sleep"]["at"] = 0
+    runtime.save(data)
+    await runtime.tick()
+    assert music.calls[-1] == ("player_queues/pause", {"queue_id": "a"})

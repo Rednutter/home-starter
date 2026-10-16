@@ -32,11 +32,11 @@ The House board preserves its (720px) narrow-container and (750px) compact-lands
 
 Today consumes the existing context engine: one actionable lead and up to six later rows, with chronology beneath its headline and honest source expiry. Personal Today needs an explicit selected native Person source uniquely linked to the confirmed member; absent linkage yields an empty personal briefing, never a House clone. Projection scope includes surface, epoch and person. People tabs select shared-wall context, not authentication or confidentiality from other display users or HA state readers.
 
-Call shows commissioned destinations or simplifies to incoming/active controls. Cameras shows one selected source with only explicit supported Talk/Open actions; entry actions require association, current event and actual-user permission. Media separates listener identity/progress from speaker destinations, feature-gates transport/grouping/volume and labels native volume as the speaker's scale. Destination selection alone never starts playback or advances a book. Children default to explicitly assigned room speakers and may choose expressly permitted alternatives. Provider services own durable scheduling/progress.
+Call shows commissioned destinations or simplifies to incoming/active controls. Cameras shows one selected source with only explicit supported Talk/Open actions; entry actions require association, current event and actual-user permission. Media separates listener identity/progress from speaker destinations, feature-gates transport/grouping/volume and labels native volume as the speaker's scale. Destination selection alone never starts playback or advances a book. Children default to explicitly assigned room speakers and may choose expressly permitted alternatives. Home Starter’s authenticated Music Assistant listening runtime owns durable listener scheduling and progress; provider-side account records remain governed by the provider.
 
 Rooms represent actual admitted physical areas with useful supported light, fan, climate and normal-blind controls. Security/entry devices remain status-only here. Climate distinguishes operation from selected mode and enabled zones; Off overrides stale activity. Zone/damper pairing requires unique registry-device evidence. Missing temperature is omitted; unavailable damper position is explicit and the percentage describes opening, not measured airflow.
 
-Home Starter owns commissioning. Current readiness does not produce new call, camera-entry or personal-listening bindings: ordinary generated pages therefore show setup states. Internal opt-in revisioned owned projections and explicit registered service descriptors are future commissioner contracts, not a parallel setup UI or live integration proof. Raw discovery, a source name or person tab cannot establish readiness. No credentials are stored in page metadata.
+Home Starter owns commissioning. Readiness-selected Music Assistant sources and screens now produce the authenticated listening backend binding. Calling and camera-entry contracts still require commissioned producers and otherwise show setup states. Internal opt-in revisioned owned projections and explicit registered service descriptors are future commissioner contracts, not a parallel setup UI or live integration proof. Raw discovery, a source name or person tab cannot establish readiness. No credentials are stored in page metadata.
 
 ## Architecture and kiosk
 
@@ -55,3 +55,18 @@ Final disposable HA acceptance (`.runtime/panel-pages-native/result.json`) passe
 The first finish review's five issues were addressed: icon geometry, person hierarchy, personal identity, kiosk ground/escape and Today heading hierarchy. Final icon margins were explicitly reset and fictional room assignments corrected before final captures. The reviewer scored the listed visual fixes resolved at disposable HA fixture/browser scope; earlier native-detail ship records are historical evidence only. The detector ran once: ten advisory type/color findings plus the pinned-Roboto warning, no errors. Scoped token documentation reconciles the intentional roles without changing approved House values.
 
 Browser fixture evidence does not establish live commissioning, audible playback, actual call/camera services, household loudness calibration, physical AirTouch operation or automatic lifecycle behavior. Technical source of truth and adapter/privacy limits: `home_starter/{AIRTOUCH_PANEL.md,HOUSEHOLD_CONTEXT.md,MUSIC.md}`.
+
+
+## Listening integration (0.8.15–0.8.17)
+
+`panel-music.js` extends the existing Media body with real MA browse/search,
+listener-owned favourites/history/books, speaker selection and server-side timers.
+It reuses the House theme and footer; no new artwork or provider sign-in flow.
+HA ingress supplies the actual user. Dedicated screen-account and current household
+permissions are rechecked server-side; a person tab selects context. House and every
+configured person keep separate records. Transport requires that listener’s owned
+session. Raw matching speaker/queue feedback records progress after an explicit
+listener-owned seek; provider global resume positions are never imported. Permitted
+playlist items retain session ownership, while external queue replacement revokes it.
+Real audiobook verification requires a connected audiobook provider; fixtures cannot
+establish a live provider or audible playback. Search retains focus across refreshes.

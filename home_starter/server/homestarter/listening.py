@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import secrets
 import time
 from pathlib import Path
 
@@ -150,6 +151,9 @@ class ListeningRuntime:
         queue = await self.runtime.command(endpoint, connection, "player_queues/get_active_queue", player_id=player_id)
         item = (queue or {}).get("current_item") or {}
         media = player.get("current_media") or {}
+        current_id = item.get("queue_item_id")
+        if lease.get("kind") not in {"audiobook", "podcast_episode"} and current_id in lease.get("queue_items", []):
+            lease["queue_item_id"] = current_id
         if (
             not queue
             or queue.get("queue_id") != player_id
@@ -293,13 +297,14 @@ class ListeningRuntime:
                     raise ValueError("Choose a supported sleep timer.")
                 if not lease or lease["scope"] != scope:
                     raise ValueError("Start your listening session before setting its timer.")
-                profile["sleep"] = {"at": time.time() + body["value"], "player_id": pid, "queue_item_id": lease["queue_item_id"]} if body["value"] else None
+                lease.setdefault("session", secrets.token_hex(12))
+                profile["sleep"] = {"at": time.time() + body["value"], "player_id": pid, "session": lease["session"]} if body["value"] else None
             else:
-                if person and (not lease or lease["scope"] != scope):
+                if action != "volume" and (not lease or lease["scope"] != scope):
                     raise ValueError("This speaker is playing another listening session. Choose your content first.")
                 if lease:
                     await self.sample(endpoint, connection, data, pid, lease)
-                    if person and pid not in data["leases"]:
+                    if action != "volume" and pid not in data["leases"]:
                         self.save(data)
                         raise ValueError("The speaker session changed. Choose your content again.")
                 if action == "volume":
@@ -363,7 +368,13 @@ class ListeningRuntime:
             "last_sample": time.time(),
             "user": user,
             "surface": surface_id,
+            "session": secrets.token_hex(12),
         }
+        if item["kind"] not in {"audiobook", "podcast_episode"}:
+            queued = await self.runtime.command(endpoint, connection, "player_queues/items", queue_id=pid, limit=500)
+            if not isinstance(queued, list):
+                raise MusicRuntimeError("Playback queue could not be confirmed.")
+            data["leases"][pid]["queue_items"] = [q["queue_item_id"] for q in queued if isinstance(q, dict) and q.get("queue_item_id")]
         if item["kind"] in {"audiobook", "podcast_episode"}:
             data["leases"][pid]["awaiting_position"] = position
         profile["recent"] = [item, *[r for r in profile["recent"] if r["id"] != item["id"]]][:30]
@@ -397,7 +408,7 @@ class ListeningRuntime:
                 timer = profile.get("sleep")
                 if timer and timer["at"] <= time.time():
                     lease = data["leases"].get(timer["player_id"])
-                    if lease and lease["scope"] == scope and lease["queue_item_id"] == timer["queue_item_id"]:
+                    if lease and lease["scope"] == scope and lease.get("session") == timer.get("session") and timer.get("session"):
                         await self.runtime.control(endpoint, connection, "player_queues/pause", queue_id=timer["player_id"])
                     profile.pop("sleep", None)
             self.save(data)
