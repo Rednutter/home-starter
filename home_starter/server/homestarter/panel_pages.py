@@ -100,6 +100,7 @@ def apply_pages(generated, house, items, areas, policy):
         "tap_action": {"action": "none"},
         "hold_action": {"action": "none"},
         "update_timer": "2s",
+        "disable_kbd": True,
         "variables": {"common": common},
         "styles": {
             "card": [{"padding": "18px 22px 16px"}, {"border": "0"}, {"border-radius": "0"}, {"box-shadow": "none"}],

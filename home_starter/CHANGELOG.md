@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.19
+
+- Disable button-card’s outer keyboard action handling on focused pages so native form inputs and buttons retain Enter/Space behavior. Verify search submission in live Home Assistant.
+
 ## 0.8.18
 
 - Retain Lit template identity across button-card timer renders and hold listening content steady while editing search. Verify the draft and keyboard focus survive repeated updates in native Home Assistant.
