@@ -56,8 +56,9 @@ House favourites. A House favourite is a deliberate household approval.
 
 The radio region is installation configuration, never a hard-coded UI location.
 ABC and Radio Browser supply maintainable station identities rather than scattered
-stream URLs. The present change connects catalogues; automatic regional ranking,
-complete ambient category curation and personalized Assist intents remain pending.
+stream URLs. Configured region search terms supply a cached local-radio shelf through native
+MA radio search; exact home coordinates are never sent. Complete ambient category
+curation and personalized Assist intents remain pending.
 The existing ambient provider supplies its actual available items only.
 
 Listener-local books/episodes, recent items, favourites, destination, delayed starts

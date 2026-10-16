@@ -183,6 +183,44 @@ def test_catalog_records_expose_no_stream_or_credentials():
     }
 
 
+async def test_podcast_show_opens_native_episodes_and_does_not_become_progress_item(setup, monkeypatch):
+    runtime, music, _, _ = setup
+    show = {"uri": "fixture://podcast/show", "media_type": "podcast", "name": "Example podcast", "item_id": "show", "provider": "fixture-podcasts"}
+    episode = {"uri": "fixture://podcast_episode/one", "media_type": "podcast_episode", "name": "Example episode"}
+    calls = []
+
+    async def command(endpoint, connection, name, **args):
+        calls.append((name, args))
+        return show if name == "music/item_by_uri" else [episode] if name == "music/podcasts/podcast_episodes" else {"podcasts": [show]}
+
+    monkeypatch.setattr(music, "command", command)
+    rows = await runtime.catalog_items({}, {}, query="Example")
+    assert rows[0]["folder"] and rows[0]["kind"] == "podcast"
+    with pytest.raises(ValueError, match="Choose an item"):
+        await runtime.item(rows[0]["id"], {"favorites": [], "recent": [], "books": {}})
+    episodes = await runtime.catalog_items({}, {}, folder=rows[0]["id"])
+    assert not episodes[0]["folder"] and episodes[0]["kind"] == "podcast_episode"
+    assert calls[-1] == ("music/podcasts/podcast_episodes", {"item_id": "show", "provider_instance_id_or_domain": "fixture-podcasts"})
+
+
+async def test_regional_radio_uses_configured_terms_and_cached_native_items(setup, monkeypatch):
+    runtime, music, _, _ = setup
+    calls = []
+
+    async def command(endpoint, connection, name, **args):
+        calls.append((name, args))
+        return {"radio": [{"uri": "fixture://radio/one", "media_type": "radio", "name": "Example local station", "stream_url": "fixture://private"}]}
+
+    monkeypatch.setattr(music, "command", command)
+    region = {"name": "Example region", "country_code": "AU", "search_terms": ["Example town", "Example valley"]}
+    rows = await runtime.regional_radio({}, music.conn, region)
+    assert len(rows) == 1 and rows[0]["id"] in runtime.catalog and "stream_url" not in rows[0]
+    assert [args["search_query"] for _, args in calls] == region["search_terms"]
+    assert all(args["media_types"] == ["radio"] for _, args in calls)
+    await runtime.regional_radio({}, music.conn, region)
+    assert len(calls) == 2
+
+
 async def test_child_can_play_shared_favourites_without_search_or_mutating_house(setup):
     item = await book(setup)
     await act(setup, None, "favorite", item=item)

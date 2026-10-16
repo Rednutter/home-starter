@@ -7,7 +7,7 @@ import secrets
 import time
 from pathlib import Path
 
-from . import readiness, screen_identity
+from . import household_services, readiness, screen_identity
 from .music_runtime import MusicRuntimeError, digest, number, private_write
 
 
@@ -19,8 +19,9 @@ def media_record(value):
     if not isinstance(value, dict):
         return None
     uri = value.get("uri")
-    folder = value.get("media_type") == "folder"
-    path = value.get("path") if folder else uri
+    kind = value.get("media_type")
+    folder = kind in {"folder", "podcast"}
+    path = value.get("path") if kind == "folder" else uri
     if not isinstance(path, str) or not path or len(path) > 2048:
         return None
     return {"id": digest(path)[:24], "title": str(value.get("name") or "Untitled")[:240], "kind": value.get("media_type"), "uri": path, "folder": folder}
@@ -33,6 +34,27 @@ class ListeningRuntime:
         self.lock = asyncio.Lock()
         self.catalog = {}
         self.mapping_cache = None
+        self.regional_cache = None
+
+    async def regional_radio(self, endpoint, connection, region):
+        if not region:
+            return []
+        key = digest([connection["server_id"], connection["generation"], region])
+        if self.regional_cache and self.regional_cache[0] == key and time.monotonic() - self.regional_cache[1] < 600:
+            rows = self.regional_cache[2]
+        else:
+            unique = {}
+            for term in region["search_terms"][:2]:
+                raw = await self.runtime.command(endpoint, connection, "music/search", search_query=term, media_types=["radio"], limit=12)
+                for value in raw.get("radio", []) if isinstance(raw, dict) else []:
+                    record = media_record(value)
+                    if record and record["kind"] == "radio":
+                        unique.setdefault(" ".join(record["title"].casefold().split()), record)
+            rows = list(unique.values())[:24]
+            self.regional_cache = key, time.monotonic(), rows
+        for row in rows:
+            self.catalog[row["id"]] = row
+        return rows
 
     def load(self, house, connection):
         identity = digest([connection["server_id"], connection["app"]])
@@ -121,10 +143,23 @@ class ListeningRuntime:
             raw = await self.runtime.command(endpoint, connection, "music/search", search_query=query, limit=12)
             values = [v for rows in raw.values() if isinstance(rows, list) for v in rows] if isinstance(raw, dict) else []
         else:
-            path = self.catalog.get(folder, {}).get("uri") if folder else None
+            collection = self.catalog.get(folder, {}) if folder else {}
+            path = collection.get("uri") if folder else None
             if folder and path is None:
                 raise ValueError("This library selection expired. Open the library again.")
-            values = await self.runtime.command(endpoint, connection, "music/browse", path=path)
+            if collection.get("kind") == "podcast":
+                show = await self.runtime.command(endpoint, connection, "music/item_by_uri", uri=path)
+                if (
+                    not isinstance(show, dict)
+                    or show.get("media_type") != "podcast"
+                    or not all(isinstance(show.get(k), str) and show[k] for k in ("item_id", "provider"))
+                ):
+                    raise MusicRuntimeError("This podcast could not be confirmed. Search again before opening episodes.")
+                values = await self.runtime.command(
+                    endpoint, connection, "music/podcasts/podcast_episodes", item_id=show["item_id"], provider_instance_id_or_domain=show["provider"]
+                )
+            else:
+                values = await self.runtime.command(endpoint, connection, "music/browse", path=path)
         if not isinstance(values, list):
             raise MusicRuntimeError("Music Assistant library could not be read.")
         result = []
@@ -203,6 +238,13 @@ class ListeningRuntime:
             if child and (folder or query):
                 raise PermissionError("This view uses its permitted listening choices.")
             library = [] if child else await self.catalog_items(endpoint, connection, folder, query)
+            region = household_services.load(self.store, house)["region"]
+            local_radio, radio_issue = [], None
+            if not child and not folder and not query and region:
+                try:
+                    local_radio = await self.regional_radio(endpoint, connection, region)
+                except MusicRuntimeError:
+                    radio_issue = "Local radio discovery is unavailable. Your saved stations are still available."
             for player_id, lease in list(data["leases"].items()):
                 if lease["scope"] == profile_key(person):
                     if any(p["player_id"] == player_id and p["available"] and p["single"] for p in players):
@@ -226,6 +268,7 @@ class ListeningRuntime:
                 "default_destination": default,
                 "browse": not child,
                 "library": [public(r) for r in library],
+                "regional_radio": {"name": region["name"], "items": [public(r) for r in local_radio], "issue": radio_issue} if region and not child else None,
                 "favorites": [public(r) for r in profile["favorites"]],
                 "shared": [public(r) for r in self.profile(data, None)["favorites"]] if person else [],
                 "recent": [public(r) for r in profile["recent"]],

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.21
+
+- Discover local radio from configured region terms through MA, with a cached station shelf and shared favourites using existing speaker routing.
+
+- Open podcast shows as episode collections using the native MA podcast API, so playback and private resume belong to the chosen episode. Keep child access limited to approved listening choices.
+
 ## 0.8.20
 
 - Add private household service relationships and actionable setup checks, keeping people, provider identities, endpoints and extensions separate.

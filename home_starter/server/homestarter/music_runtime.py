@@ -21,6 +21,7 @@ from .settings import Secret
 from .supervisor import SupervisorError
 
 READ_COMMANDS = {
+    "music/podcasts/podcast_episodes",
     "player_queues/items",
     "providers",
     "config/providers",
