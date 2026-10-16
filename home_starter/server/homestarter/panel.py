@@ -56,6 +56,7 @@ def room_panel(zone, damper):
         "styles": {
             "card": [
                 {"padding": "12px"},
+                {"height": "100%"},
                 {"border": "0"},
                 {"box-shadow": "none"},
                 {"background": "linear-gradient(105deg,rgba(15,38,55,.96),rgba(23,31,41,.86)),var(--hs-backdrop)"},
@@ -88,6 +89,7 @@ def room_panel(zone, damper):
         },
         "custom_fields": {"current": "[[[[[ " + current + " ]]]]]", "controls": {"card": controls}, "airflow": "[[[[[ " + airflow + " ]]]]]"},
         "extra_styles": (
+            ":host{height:100%;display:block}"
             ".hs-room-heading{display:flex;flex-direction:column;gap:10px;text-align:left;font-family:Roboto,Arial,sans-serif}"
             ".hs-room-name{font-size:20px;font-weight:600;line-height:1.25;overflow-wrap:normal}"
             ".hs-room-now{display:flex;align-items:center;gap:4px;font-size:24px;font-variant-numeric:tabular-nums}"
@@ -139,8 +141,8 @@ def climate_panel(view, css, items=()):
             "tap_action": {"action": "none"},
             "hold_action": {"action": "none"},
             "styles": {
-                "card": [{"padding": "0"}, {"background": "none"}, {"border": "0"}, {"box-shadow": "none"}],
-                "grid": [{"grid-template-areas": areas}, {"grid-template-columns": f"repeat({columns},minmax(0,1fr))"}, {"gap": "12px"}],
+                "card": [{"padding": "0"}, {"background": "none"}, {"border": "0"}, {"box-shadow": "none"}, {"height": "100%"}],
+                "grid": [{"grid-template-areas": areas}, {"grid-template-columns": f"repeat({columns},minmax(0,1fr))"}, {"gap": "12px"}, {"height": "100%"}],
                 "custom_fields": {
                     name: [
                         {"min-width": "0"},
@@ -149,12 +151,14 @@ def climate_panel(view, css, items=()):
                         {"border": "1px solid #52606b"},
                         {"border-radius": "20px"},
                         {"overflow": "hidden"},
+                        {"align-self": "stretch"},
                     ]
                     for name in names
                 },
             },
             "custom_fields": {f"control{i}": {"card": card} for i, card in enumerate(children)},
-            "extra_styles": "@media (max-width:720px) { #container { grid-template-columns: minmax(0,1fr) !important; grid-template-areas: "
+            "extra_styles": ":host{height:100%;display:block}@media (max-width:720px) { #container { "
+            "grid-template-columns: minmax(0,1fr) !important; grid-template-areas: "
             + (" ".join('"' + name + '"' for name in names) or "none")
             + " !important; } }",
         }
@@ -182,11 +186,13 @@ def climate_panel(view, css, items=()):
             + ('"airflow airflow"' if airflow else "")
         },
         {"grid-template-columns": "minmax(0, .75fr) minmax(0, 1.25fr)"},
+        {"grid-template-rows": ("auto " if notices else "") + "minmax(min-content,1fr)" + (" auto" if airflow else "")},
+        {"height": "auto"},
         {"gap": "20px"},
         {"align-items": "start"},
-        {"align-content": "start"},
+        {"align-content": "stretch"},
     ]
-    root["styles"]["custom_fields"] = {key: [{"min-width": "0"}, {"width": "100%"}, {"align-self": "start"}] for key in fields}
+    root["styles"]["custom_fields"] = {key: [{"min-width": "0"}, {"width": "100%"}, {"align-self": "stretch"}] for key in fields}
     root["custom_fields"] = fields
     root["extra_styles"] = css.replace(
         '"system" "rooms" "airflow"', " ".join('"' + key + '"' for key in ["notices", "system", "rooms", "airflow"] if key in fields)

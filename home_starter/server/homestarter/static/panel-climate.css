@@ -24,6 +24,7 @@
 }
 #card.disabled { pointer-events: auto; cursor: default; }
 #card { min-height: calc(100dvh - 56px); box-sizing: border-box; }
+#container { min-height: calc(100dvh - 100px); align-items: stretch !important; }
 #system {
   --ha-card-background: transparent;
   --ha-card-border-width: 0;

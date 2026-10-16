@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.10
+
+- Fill the available climate display height with the main thermostat and grouped room panels, retaining responsive stacking and collapsed inactive notices.
+- Verify room readouts reach the lower landscape margin while all six remain visible. Existing household names and screen ordering continue to control presentation.
+
 ## 0.8.9
 
 - Carry the dashboard photographic navy theme into room controls. Place room names and reported temperatures beside native controls, removing the separate heading row and reducing empty space.

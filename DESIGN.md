@@ -327,3 +327,6 @@ Final visual variant follows the user’s preference for fewer words on displays
 
 
 Room material/density refinement: rounded room panels reuse the existing generic photographic backdrop under quiet navy overlays. Room names and optional thermometer readings sit beside native mode/setpoint controls; the damper remains across the bottom. No new raster assets or provenance changes. Five viewport acceptance checks passed, including all six room groups at 1280×720, long names, absent temperatures and live damper changes. Fresh finish verdict: **ship**, no material fixes. Existing actions, device evidence and responsive stacking are preserved.
+
+
+Viewport-fill refinement: the main Climate row stretches through available viewport height. Nested room hosts and cards inherit that height; inactive notices retain an auto row. Responsive stacking and native controls remain. Five native viewports passed, with a new assertion that the final room readout reaches the landscape lower margin. Household labels and grouping use existing persisted overrides/order, without house-specific source logic. Fresh finish verdict: **ship**; no material fixes. No new raster assets.

@@ -251,6 +251,9 @@ async def main():
                     "Native +/- and target value need separate usable space"
                 )
                 if width >= 1280 and height >= 720:
+                    assert await page.locator(".hs-room-airflow").evaluate_all(
+                        "els=>Math.max(...els.map(e=>e.getBoundingClientRect().bottom))>=innerHeight-45"
+                    ), "Room controls should fill the landscape display rather than leave unused lower space"
                     assert await page.locator(".hs-room-airflow").evaluate_all("els=>els.every(e=>e.getBoundingClientRect().bottom<=innerHeight)"), (
                         "Every room's airflow must be visible without scrolling at AirTouch size"
                     )
