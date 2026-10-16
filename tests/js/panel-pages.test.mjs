@@ -139,6 +139,9 @@ test('Music Assistant library uses listener-owned state and exact permitted spea
  assert.doesNotMatch(output.markup,/data-command="group"/);
  host._hsPage.music.editing=true;host._hsPage.music.draft='Typing a new query';
  assert.equal(scene('media',{owner:'example',players:[player]}, {[player.entity_id]:livePlayer,'media_player.offline':livePlayer},host,{}, {music_backend:'fixture_addon'}).markup,output.markup,'typing must not replace the native search DOM on periodic updates');
+ const personalHost={...host,_hsPage:{...host._hsPage,path:'person',music:{...host._hsPage.music,view:{...view,default_destination:player.entity_id}}}};
+ const personal=scene('person',{owner:'example',destinations:{media:base+'/music',today:base+'/today',rooms:base+'/rooms',call:base+'/call'},supervision:[]}, {[player.entity_id]:livePlayer},personalHost,{}, {music_backend:'fixture_addon'});
+ assert.match(personal.markup,/Example room speaker/);
  view.person_id='other';host._hsPage.music.at=Date.now();
  assert.doesNotMatch(scene('media',{owner:'example'}, {},host,{}, {music_backend:'fixture_addon'}).markup,/Example book|Example radio/);
 });

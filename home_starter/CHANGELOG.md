@@ -2,7 +2,7 @@
 
 ## 0.8.16
 
-- Preserve the native search field and keyboard focus while typing on listening pages, including periodic dashboard updates.
+- Preserve the native search field and keyboard focus while typing on listening pages, including periodic dashboard updates. Show the saved listening destination on the person’s overview.
 
 ## 0.8.15
 
