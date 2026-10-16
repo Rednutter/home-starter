@@ -253,3 +253,17 @@ async def test_playlist_advancement_keeps_owned_transport_and_sleep_timer(setup)
     runtime.save(data)
     await runtime.tick()
     assert music.calls[-1] == ("player_queues/pause", {"queue_id": "a"})
+
+
+async def test_stopped_player_cannot_reset_saved_book_progress(setup):
+    runtime, music, house, _ = setup
+    item = await book(setup)
+    await act(setup, "one", "play_item", item=item)
+    data = runtime.load(house, music.conn)
+    profile = data["profiles"]["person:one"]
+    profile["books"][item] = {**data["leases"]["a"]["item"], "position": 600, "duration": 3600, "updated_at": time.time()}
+    runtime.save(data)
+    music.raw["a"].update(playback_state="idle", elapsed_time=0, elapsed_time_last_updated=time.time())
+    view = await runtime.view("admin", "panel", "one")
+    assert view["books"][0]["position"] == 600
+    assert view["session"] is None

@@ -156,6 +156,8 @@ class ListeningRuntime:
             lease["queue_item_id"] = current_id
         if (
             not queue
+            or not queue.get("active")
+            or player.get("playback_state", player.get("state")) not in {"playing", "paused"}
             or queue.get("queue_id") != player_id
             or player.get("active_source") != player_id
             or item.get("queue_item_id") != lease.get("queue_item_id")
