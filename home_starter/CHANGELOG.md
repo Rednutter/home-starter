@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.15
+
+- Connect Media and configured-person listening pages to the existing Music Assistant server through authenticated HA ingress. Browse/search real sources, save favourites, select permitted speakers and control playback without exposing provider credentials.
+- Keep House and each saved person separate: destination, favourites, history, delayed starts, sleep timers and durable audiobook/episode progress. Resume only that listener’s saved position; accept progress only from fresh matching speaker/queue feedback after the requested seek.
+- Recheck display-account, Music opt-in, child and speaker permissions before controls and background timers. Preserve the approved House layout and persistent household navigation.
+- Real audiobook verification requires a connected audiobook provider; synthetic regression fixtures do not commission a provider or prove audible playback.
+
 ## 0.8.14
 
 - Keep House/configured-person navigation visible on every AirTouch page, including Dark. Page content scrolls above the persistent footer, including narrow House layouts and long Climate/room views.

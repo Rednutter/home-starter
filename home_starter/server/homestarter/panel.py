@@ -427,7 +427,7 @@ def apply(generated, house, climate, policy, *, items=(), areas=()):
                     "zones": [i["entity_id"] for i in climate if i is not main],
                     "weather": next((i["entity_id"] for i in admitted if i["domain"] == "weather"), None),
                     "calendars": [i["entity_id"] for i in admitted if i["domain"] == "calendar"],
-                    "media": [i["entity_id"] for i in admitted if i["domain"] == "media_player"],
+                    "media": policy.get("music_players", [i["entity_id"] for i in admitted if i["domain"] == "media_player"]),
                     "lights": [i["entity_id"] for i in admitted if i["domain"] == "light"],
                     "alerts": [i["entity_id"] for i in admitted if i["level"] == 0],
                     "bins": generated["surface"]["id"] in policy.get("bin_context_screens", []),

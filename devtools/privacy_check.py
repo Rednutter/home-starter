@@ -30,6 +30,8 @@ RUNTIME = {
     "screen-commissioning.tmp",
     "music-connection.json",
     "music-connection.tmp",
+    "music-listeners.json",
+    "music-listeners.tmp",
     "music-playback.json",
     "music-playback.tmp",
 }

@@ -74,3 +74,10 @@
 
 .hs-dark { min-height: calc(100dvh - 180px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; }
 .hs-page-content input[type=time] { min-height: 56px; color: inherit; background: #252a2e; border: 1px solid var(--hs-edge); border-radius: 14px; padding: 8px 16px; font: inherit; }
+
+.hs-library-list { display: flex; flex-direction: column; gap: 16px; }
+.hs-library-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--hs-edge); }
+.hs-library-row:last-child { border-bottom: 0; }
+.hs-library-row > div:first-child { flex: 1; min-width: min(100%,200px); }
+.hs-page-content input[type=search] { min-height: 56px; min-width: 0; width: 100%; background: #252a2e; color: inherit; border: 1px solid var(--hs-edge); border-radius: 14px; padding: 10px 16px; font: inherit; }
+.hs-page-content form label { flex: 1; min-width: min(100%,220px); }

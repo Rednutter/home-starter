@@ -1,4 +1,4 @@
-const controls = focus.controls || [], players = focus.players || [];
+const controls = focus.controls || [], players = music?.players || focus.players || [];
 
 const attr = s => s?.attributes || {};
 
@@ -126,6 +126,7 @@ const supportedAction = (feature,name) => {
 const adapterButton = (feature,name,label,value="") => supportedAction(feature,name) ? `<button type="button" data-adapter="${feature}" data-provider-action="${name}" data-value="${esc(value)}"${(state.pending || feature === "listening" && ["resume","play"].includes(name) && !players.some(p=>p.entity_id === state.destination && usable(get(p.entity_id)))) ? " disabled" : ""}>${esc(label)}</button>` : "";
 
 const listeningHTML = () => {
+ if(musicBackend) return musicLibrary();
 
  const listening=adapter("listening");
 
@@ -174,14 +175,15 @@ const cameraHTML = () => {
 };
 
 const mediaHTML = () => {
+ if(musicBackend && !music) return musicLibrary();
 
- if(!players.length) return empty("No speaker selected","Choose a listening destination in Home Starter. Speakers remain shared house devices.","media")+(focus.owner ? listeningHTML() : "");
+ if(!players.length) return empty("No speaker selected","Choose a listening destination in Home Starter. Speakers remain shared house devices.","media")+(musicBackend || focus.owner ? listeningHTML() : "");
 
- if(!players.some(p=>p.entity_id === state.destination)) state.destination=focus.default_destination;
+ if(!players.some(p=>p.entity_id === state.destination)) state.destination=music?.default_destination || focus.default_destination;
 
- if(!state.destination) return empty("Where would you like to listen?","Choose a permitted speaker for this listening view.","media")+`<section class="hs-feature"><div class="hs-feature-grid">${players.map(p=>action(p.name,"destination",p.entity_id,"",!usable(get(p.entity_id)),"mdi:speaker")).join("")}</div></section>`;
+ if(!state.destination) return empty("Where would you like to listen?","Choose a permitted speaker for this listening view.","media")+`<section class="hs-feature"><div class="hs-feature-grid">${players.map(p=>action(p.name,"destination",p.entity_id,"",(!usable(get(p.entity_id)) || musicBackend && (!p.available || !p.single)),"mdi:speaker")).join("")}</div></section>`;
 
- const player=players.find(p=>p.entity_id === state.destination) || players[0],s=get(player.entity_id),a=attr(s),ready=usable(s),f=features(s);
+ const player=players.find(p=>p.entity_id === state.destination) || players[0],s=get(player.entity_id),a=attr(s),ready=usable(s) && (!musicBackend || player.available && player.single),f=features(s);
 
  const picture=typeof a.entity_picture === "string" && /^\/api\/media_player_proxy\//.test(a.entity_picture) ? a.entity_picture : null;
 
@@ -189,7 +191,7 @@ const mediaHTML = () => {
 
  const transport=(f&16 ? action("Previous","previous",player.entity_id,"",!ready,"mdi:skip-previous") : "")+(s?.state === "playing" && f&1 ? action("Pause","pause",player.entity_id,"",!ready,"mdi:pause") : s?.state !== "playing" && f&16384 ? action("Play","play",player.entity_id,"",!ready,"mdi:play") : "")+(f&32 ? action("Next","next",player.entity_id,"",!ready,"mdi:skip-next") : "");
 
- return `${focus.owner ? '<p class="hs-quiet">Your listening view · destinations are shared.</p>' : ""}<section class="hs-feature"><div class="hs-media-layout">${picture ? `<img class="hs-artwork" src="${esc(picture)}" alt="Current media artwork">` : `<div class="hs-artwork-fallback">${icon("mdi:music")}</div>`}<div><p class="hs-secondary">${esc(stateLabel(s))} · ${esc(player.name)}</p><h2>${esc(title)}</h2>${a.media_artist || a.media_album_name ? `<p class="hs-secondary">${esc(a.media_artist || a.media_album_name)}</p>` : ""}<div class="hs-control-actions">${transport}</div></div></div></section><section class="hs-feature"><h2>Where to listen</h2><div class="hs-feature-grid">${players.map(p=>action(p.name,"destination",p.entity_id,`aria-pressed="${p.entity_id === state.destination}"`,!usable(get(p.entity_id)),"mdi:speaker")).join("")}</div>${f&524288 && hass.services?.media_player?.join ? `<div class="hs-control-actions">${players.filter(p=>p.entity_id !== player.entity_id && usable(get(p.entity_id)) && features(get(p.entity_id))&524288).map(p=>action("Group with "+p.name,"group",player.entity_id,`data-value="${esc(p.entity_id)}"`)).join("")}${a.group_members?.length>1 && hass.services?.media_player?.unjoin ? action("Separate speaker","ungroup",player.entity_id) : ""}</div>` : ""}${f&4 ? `<label>Speaker volume<input type="range" min="0" max="100" value="${num(a.volume_level) ? Math.round(a.volume_level*100) : 0}" data-command="volume" data-entity="${esc(player.entity_id)}"${!ready ? " disabled" : ""}></label><p class="hs-quiet">Speaker’s own scale · household volume calibration is not set up.</p>` : ""}</section>${focus.owner ? listeningHTML() : ""}`;
+ return `${focus.owner ? '<p class="hs-quiet">Your listening view · destinations are shared.</p>' : ""}<section class="hs-feature"><div class="hs-media-layout">${picture ? `<img class="hs-artwork" src="${esc(picture)}" alt="Current media artwork">` : `<div class="hs-artwork-fallback">${icon("mdi:music")}</div>`}<div><p class="hs-secondary">${esc(stateLabel(s))} · ${esc(player.name)}</p><h2>${esc(title)}</h2>${a.media_artist || a.media_album_name ? `<p class="hs-secondary">${esc(a.media_artist || a.media_album_name)}</p>` : ""}<div class="hs-control-actions">${transport}</div></div></div></section><section class="hs-feature"><h2>Where to listen</h2><div class="hs-feature-grid">${players.map(p=>action(p.name,"destination",p.entity_id,`aria-pressed="${p.entity_id === state.destination}"`,(!usable(get(p.entity_id)) || musicBackend && (!p.available || !p.single)),"mdi:speaker")).join("")}</div>${!musicBackend && f&524288 && hass.services?.media_player?.join ? `<div class="hs-control-actions">${players.filter(p=>p.entity_id !== player.entity_id && usable(get(p.entity_id)) && features(get(p.entity_id))&524288).map(p=>action("Group with "+p.name,"group",player.entity_id,`data-value="${esc(p.entity_id)}"`)).join("")}${a.group_members?.length>1 && hass.services?.media_player?.unjoin ? action("Separate speaker","ungroup",player.entity_id) : ""}</div>` : ""}${f&4 ? `<label>Speaker volume<input type="range" min="0" max="100" value="${num(a.volume_level) ? Math.round(a.volume_level*100) : 0}" data-command="volume" data-entity="${esc(player.entity_id)}"${!ready ? " disabled" : ""}></label><p class="hs-quiet">Speaker’s own scale · household volume calibration is not set up.</p>` : ""}</section>${musicBackend || focus.owner ? listeningHTML() : ""}`;
 
 };
 
@@ -225,6 +227,12 @@ const command = async event => {
  event.stopPropagation();event.preventDefault();
 
  const kind=el.dataset.command,id=el.dataset.entity,item=controls.find(i=>i.entity_id === id),player=players.find(i=>i.entity_id === id),s=get(id),a=attr(s),f=features(s);
+
+ if(musicBackend && player && ["destination","play","pause","next","previous","volume"].includes(kind)) {
+  if(kind === "destination") {state.destination=id;await musicAction("destination");}
+  else await musicAction(kind,{player:id,...(kind === "volume" ? {value:+el.value}:{})});
+  return;
+ }
 
  if(kind === "destination" && player && usable(s)) {state.destination=id;state.error="";this.requestUpdate();return;}
 
@@ -306,9 +314,11 @@ const providerCommand = async event => {
 
 };
 
-const change = event => {event.stopPropagation();if(event.target.closest?.('[data-adapter]')) void providerCommand(event);else void command(event);};
+const change = event => {event.stopPropagation();if(event.target.closest?.("[data-music]")) {musicEvent(event);return;}if(event.target.closest?.('[data-adapter]')) void providerCommand(event);else void command(event);};
 
 const click = event => {
+ if(event.target.closest?.("[data-music]")) {if(!["SELECT","INPUT"].includes(event.target.tagName))musicEvent(event);return;}
+
 
  const camera=event.target.closest?.('[data-camera]'),dismiss=event.target.closest?.('[data-dismiss]');
 
@@ -320,4 +330,4 @@ const click = event => {
 
  if(event.target.closest?.('[data-command]')) {if(event.target.type !== "range") void command(event);} else navigate(event);};
 
-return html`<div class="hs-page-content" @click=${click} @change=${change} @mousedown=${stop} @touchstart=${stop} @touchend=${stop} .innerHTML=${(state.error ? `<p class="hs-feedback" role="alert">${esc(state.error)}</p>` : "")+body}></div>`;
+return html`<div class="hs-page-content" @click=${click} @change=${change} @submit=${musicSearch} @input=${musicInput} @mousedown=${stop} @touchstart=${stop} @touchend=${stop} .innerHTML=${(state.error ? `<p class="hs-feedback" role="alert">${esc(state.error)}</p>` : "")+body}></div>`;

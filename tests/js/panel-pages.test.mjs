@@ -3,15 +3,15 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 const shell=readFileSync('home_starter/server/homestarter/static/panel-shell.js','utf8');
 const content=readFileSync('home_starter/server/homestarter/static/panel-pages.js','utf8');
-const render=new Function('hass','variables','html','window','helpers',shell+'\n'+content);
+const render=new Function('hass','variables','html','window','helpers',shell+'\n'+readFileSync('home_starter/server/homestarter/static/panel-music.js','utf8')+'\n'+content);
 const base='/example-panel';
 const player={entity_id:'media_player.example',name:'Example room speaker',domain:'media_player',interaction:'both',attributes:{}};
-function scene(kind='today',changes={},states={},host=null,services={}) {
+function scene(kind='today',changes={},states={},host=null,services={},backend={}) {
  const calls=[],nav=[];
  host ||= {style:{setProperty(){}},requestUpdate(){}};
  const focus={kind,path:kind,title:'Example page',back:base+'/home',owner:null,controls:[],players:[],rooms:[],listener:{id:null,scope:'house'},bindings:{},context_entity:'sensor.example_context',...changes};
  const hass={states,services,user:{id:'fixture-user',name:'Fixture display',is_admin:false},config:{time_zone:'Australia/Sydney'},locale:{language:'en'},callService:async(...args)=>calls.push(args)};
- const common={base,surface_id:'example_panel',epoch:0,kiosk_user_name:'Fixture display',weather:null,people:[{name:'House',path:base+'/home',icon:'mdi:home-outline'}]};
+ const common={base,surface_id:'example_panel',epoch:0,kiosk_user_name:'Fixture display',weather:null,people:[{name:'House',path:base+'/home',icon:'mdi:home-outline'}],...backend};
  const output=render.call(host,hass,{focus_json:JSON.stringify(focus),common_json:JSON.stringify(common)},(strings,...values)=>({markup:values.findLast(v=>typeof v==='string'),functions:values.filter(v=>typeof v==='function')}),{location:{search:''}},{runAction:a=>nav.push(a)});
  return {...output,calls,nav,host,hass,focus};
 }
@@ -127,4 +127,16 @@ test('household footer stays available on every focused page including Dark',()=
   const output=footer.call({style:{setProperty(){}}},{states:{},user:{},config:{time_zone:'Australia/Sydney'}},{common_json:JSON.stringify(common),focus_json:JSON.stringify({kind,path:kind,owner:'example'})},(strings,...values)=>values.find(v=>typeof v==='string'),{location:{search:''}},{});
   assert.match(output,/aria-label="Household"/);assert.match(output,/>House</);assert.match(output,/>Example person</);assert.match(output,/aria-current="page"/);
  }
+});
+
+
+test('Music Assistant library uses listener-owned state and exact permitted speaker choices',()=>{
+ const view={epoch:0,person_id:'example',players:[{...player,available:true,single:true},{...player,entity_id:'media_player.offline',name:'Offline speaker',available:false,single:true}],default_destination:player.entity_id,browse:true,library:[{id:'fixture-item',title:'Example radio',kind:'radio'}],favorites:[],recent:[],books:[{id:'fixture-book',title:'Example book',kind:'audiobook',position:600,duration:3600}],session:null,delayed:null,sleep:null};
+ const host={style:{setProperty(){}},requestUpdate(){},_hsPage:{path:'media',destination:player.entity_id,music:{view,at:Date.now(),loading:false,query:'',delay:0}}};
+ const output=scene('media',{owner:'example',players:[player]}, {[player.entity_id]:livePlayer,'media_player.offline':livePlayer},host,{}, {music_backend:'fixture_addon'});
+ assert.match(output.markup,/Music Assistant library/);assert.match(output.markup,/10 of 60 minutes/);assert.match(output.markup,/Example radio/);
+ assert.match(output.markup,/data-entity="media_player.offline"[^>]*disabled/);
+ assert.doesNotMatch(output.markup,/data-command="group"/);
+ view.person_id='other';host._hsPage.music.at=Date.now();
+ assert.doesNotMatch(scene('media',{owner:'example'}, {},host,{}, {music_backend:'fixture_addon'}).markup,/Example book|Example radio/);
 });

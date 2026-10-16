@@ -86,12 +86,13 @@ def apply_pages(generated, house, items, areas, policy):
     views = {v["path"]: v for v in config["views"]}
     overview = views["home"]["cards"][0]
     common = {k: overview["variables"]["panel"][k] for k in ("base", "people", "weather", "kiosk_user_name")}
+    common["music_backend"] = policy.get("music_backend")
     common["surface_id"] = generated["surface"]["id"]
     common["epoch"] = house["epoch"]
     common["scopes"] = {}
     common["alerts"] = [control(i) for i in generated["admitted"] if i["level"] == 0]
     shell = (static / "panel-shell.js").read_text(encoding="utf-8")
-    body = (static / "panel-pages.js").read_text(encoding="utf-8")
+    body = (static / "panel-music.js").read_text(encoding="utf-8") + "\n" + (static / "panel-pages.js").read_text(encoding="utf-8")
     css = overview["extra_styles"].replace(".hs-panel {", ".hs-panel, #card {", 1) + "\n" + (static / "panel-pages.css").read_text(encoding="utf-8")
     config.setdefault("button_card_templates", {})["home_starter_page"] = {
         "show_icon": False,

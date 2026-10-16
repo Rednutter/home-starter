@@ -19,7 +19,26 @@ from .music import find_installed
 from .settings import Secret
 from .supervisor import SupervisorError
 
-READ_COMMANDS = {"providers", "config/providers", "players/all", "players/get", "player_queues/get_active_queue"}
+READ_COMMANDS = {
+    "providers",
+    "config/providers",
+    "players/all",
+    "players/get",
+    "player_queues/get_active_queue",
+    "music/browse",
+    "music/search",
+    "music/item_by_uri",
+}
+CONTROL_COMMANDS = {
+    "player_queues/play_media",
+    "player_queues/play",
+    "player_queues/pause",
+    "player_queues/stop",
+    "player_queues/next",
+    "player_queues/previous",
+    "player_queues/seek",
+    "players/cmd/volume_set",
+}
 TIMEOUT = aiohttp.ClientTimeout(total=6)
 
 
@@ -105,6 +124,14 @@ class MusicRuntime:
     async def command(self, endpoint, connection, command, **args):
         if command not in READ_COMMANDS:
             raise ValueError("Music runtime only permits read commands.")
+        return await self._request(endpoint, connection, command, **args)
+
+    async def control(self, endpoint, connection, command, **args):
+        if command not in CONTROL_COMMANDS:
+            raise ValueError("Unsupported Music control.")
+        return await self._request(endpoint, connection, command, **args)
+
+    async def _request(self, endpoint, connection, command, **args):
         if any(endpoint[k] != connection[k] for k in ("server_id", "app")):
             raise MusicRuntimeError("Music Assistant identity changed. Reconnect before sending credentials.")
         try:

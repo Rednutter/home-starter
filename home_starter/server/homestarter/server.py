@@ -29,6 +29,7 @@ from .activity import update_activity
 from .core import CoreClient, CoreError
 from .household import PROFILES, HouseholdStore, validate_household
 from .inventory import assign_area, collect_inventory
+from .listening import ListeningRuntime
 from .music import MusicSetup, evaluate, gather_facts
 from .music_runtime import MusicRuntime, MusicRuntimeError
 from .music_runtime import digest as music_digest
@@ -85,6 +86,8 @@ class State:
         self.household_lock = asyncio.Lock()
         self.activity_lock = asyncio.Lock()
         self.household = HouseholdStore(settings.data_dir)
+        self.listening = ListeningRuntime(self.music_runtime, self.core, self.household)
+        self.listening_task: asyncio.Task | None = None
         self.previews: dict[str, dict] = {}
         self.activity_task: asyncio.Task | None = None
         self.commissioning_task: asyncio.Task | None = None
@@ -92,6 +95,14 @@ class State:
         self.waste_task: asyncio.Task | None = None
         self.waste_provider = WodongaProvider(session)
         self.waste_previews: dict[str, dict] = {}
+
+    async def monitor_listening(self) -> None:
+        while True:
+            try:
+                await self.listening.tick()
+            except (MusicRuntimeError, CoreError, SupervisorError, OSError, ValueError, KeyError, TypeError):
+                _LOGGER.warning("Listening feedback unavailable; saved listener progress is preserved.")
+            await asyncio.sleep(5)
 
     async def monitor_waste(self) -> None:
         while True:
@@ -217,6 +228,7 @@ async def harden(request: web.Request, handler):
             and not request.path.startswith("/api/commissioning/")
             and request.path != "/api/installation/reset"
             and not request.path.startswith("/api/music/runtime")
+            and not request.path.startswith("/api/listening/")
         ):
             await household_admin(request)
             try:
@@ -327,6 +339,29 @@ async def api_music_runtime(request):
         return _json({"error": "Music could not be checked. Existing settings are preserved; retry."}, 503)
     except ValueError as error:
         return _json({"error": str(error)}, 400)
+
+
+async def api_listening(request):
+    state = request.app[K_STATE]
+    person = request.query.get("person") or None
+    if len(request.query.get("query", "")) > 100 or len(request.query.get("folder", "")) > 64:
+        return _json({"error": "Choose a supported library selection."}, 400)
+    try:
+        surface = request.match_info["surface"]
+        if request.method == "POST":
+            if request.content_type != "application/json":
+                raise ValueError("Use a JSON listening action.")
+            body = await request.json()
+            if not isinstance(body, dict):
+                raise ValueError("Choose a supported listening action.")
+            await state.listening.action(_user(request), surface, person, body)
+        return _json(await state.listening.view(_user(request), surface, person, request.query.get("folder"), request.query.get("query")))
+    except PermissionError:
+        return _json({"error": "This account cannot control this listening view."}, 403)
+    except (ValueError, MusicRuntimeError) as error:
+        return _json({"error": str(error)}, 409)
+    except (CoreError, SupervisorError, OSError, KeyError, TypeError):
+        return _json({"error": "Listening is unavailable. Saved progress is preserved; check Music Assistant and retry."}, 503)
 
 
 async def api_inventory(request: web.Request) -> web.Response:
@@ -923,6 +958,11 @@ async def api_surface_preview(request: web.Request) -> web.Response:
                     if not user or sum(u["name"] == user["name"] for u in users) != 1:
                         raise ValueError("Confirm a suitable dedicated panel account with a unique display name under Physical screen commissioning first.")
                     policy["kiosk_user_name"] = user["name"]
+            choice = policy.get("features", {}).get("music", {})
+            if choice.get("intent") == "wanted" and surface["id"] in choice.get("screens", []) and state.music_runtime.connection():
+                own_info = await state.supervisor.self_info()
+                policy["music_backend"] = own_info.get("slug")
+                policy["music_players"] = [i["entity_id"] for i in items if i["platform"] == "music_assistant" and i["entity_id"] in choice["sources"]]
             waste_issue = False
             try:
                 policy = waste.screen_policy(policy, waste.load(state.household, house)["confirmed"])
@@ -1053,11 +1093,16 @@ def create_app(settings: Settings, session: aiohttp.ClientSession | None = None)
         sess = session or aiohttp.ClientSession()
         app[K_STATE] = State(settings, sess)
         app[K_OWN_SESSION] = own
+        app[K_STATE].listening_task = asyncio.create_task(app[K_STATE].monitor_listening())
         app[K_STATE].activity_task = asyncio.create_task(app[K_STATE].monitor_activity())
         app[K_STATE].context_task = asyncio.create_task(app[K_STATE].monitor_context())
         app[K_STATE].waste_task = asyncio.create_task(app[K_STATE].monitor_waste())
 
     async def on_cleanup(app: web.Application) -> None:
+        if task := app[K_STATE].listening_task:
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
         if task := app[K_STATE].waste_task:
             task.cancel()
             with suppress(asyncio.CancelledError):
@@ -1104,6 +1149,8 @@ def create_app(settings: Settings, session: aiohttp.ClientSession | None = None)
     app.router.add_get("/api/surfaces/{surface}/preview", api_surface_preview)
     app.router.add_post("/api/surfaces/{surface}/publish", api_surface_publish)
     app.router.add_post("/api/inventory/area", api_assign_area)
+    app.router.add_get("/api/listening/{surface}", api_listening)
+    app.router.add_post("/api/listening/{surface}", api_listening)
     app.router.add_get("/api/music", api_music)
     app.router.add_get("/api/music/runtime", api_music_runtime)
     app.router.add_post("/api/music/runtime/{action}", api_music_runtime)

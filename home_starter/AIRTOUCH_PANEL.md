@@ -157,3 +157,32 @@ content scrolls; the footer never requires scrolling the page to find it. Narrow
 House boards follow the same rule, retaining whole wrapped household targets and
 secondary display utilities. The existing native Climate controls remain scrollable
 above the menu. This is a navigation correction, not a new display lifecycle.
+
+
+## Music Assistant listening (0.8.15)
+
+Enable Music for the intended screens and select native Music Assistant speakers in
+Home Readiness. Existing provider sign-ins and the private Home Starter MA connection
+are reused. The signed-in HA owner or the screen’s current configured control account
+can use the listening API through HA ingress; selecting a person is a household view,
+not a sign-in. The service credential never enters the dashboard configuration.
+
+House and each configured person have independent favourites, recent choices, saved
+speaker destination and audiobook/episode positions. Selecting a speaker does not play.
+A personal view without a configured room or previous selection asks for a destination.
+Busy speakers belonging to another session are not replaced. Grouped/unavailable or
+excluded speakers cannot be selected; children remain limited to permitted rooms/devices
+and saved content. Existing footer navigation remains available on every page.
+
+Progress is privately persisted in `music-listeners.json`, scoped to the household epoch
+and MA server identity. A confirmed new queue item and fresh raw speaker feedback must
+match the listener’s session. Global provider resume positions are not imported. Resume
+explicitly seeks to the listener’s saved position (or zero), and progress is accepted
+only after feedback reaches that position. Provider-side accounts/progress remain under
+the provider’s own rules; this separates Home Starter listening records. An audiobook
+provider must be connected before real book playback can be verified.
+
+Delayed starts and sleep timers run server-side, survive page closure, and recheck
+permissions and queue ownership. Another app replacing the queue ends ownership, so an
+old sleep timer cannot pause unrelated playback. Library browsing and search come from
+MA; no fictional people, speakers or library entries are created in the household.
