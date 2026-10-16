@@ -172,7 +172,7 @@ async def test_busy_speaker_and_child_permissions_fail_closed(setup):
 
 
 def test_catalog_records_expose_no_stream_or_credentials():
-    assert media_record({"uri": "fixture://one", "name": "Example", "media_type": "track", "streamdetails": {"secret": "example"}}) == {
+    assert media_record({"uri": "fixture://one", "name": "Example", "media_type": "track", "streamdetails": {"url": "fixture://stream"}}) == {
         "id": listening.digest("fixture://one")[:24],
         "title": "Example",
         "kind": "track",
