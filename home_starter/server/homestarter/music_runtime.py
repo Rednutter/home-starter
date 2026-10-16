@@ -127,12 +127,14 @@ class MusicRuntime:
     async def command(self, endpoint, connection, command, **args):
         if command not in READ_COMMANDS:
             raise ValueError("Music runtime only permits read commands.")
-        return await self._request(endpoint, connection, command, **args)
+        timeout = aiohttp.ClientTimeout(total=30) if command == "music/podcasts/podcast_episodes" else TIMEOUT
+        return await self._request(endpoint, connection, command, request_timeout=timeout, **args)
 
     async def control(self, endpoint, connection, command, **args):
         if command not in CONTROL_COMMANDS:
             raise ValueError("Unsupported Music control.")
-        return await self._request(endpoint, connection, command, **args)
+        timeout = aiohttp.ClientTimeout(total=90) if command == "player_queues/play_media" else TIMEOUT
+        return await self._request(endpoint, connection, command, request_timeout=timeout, **args)
 
     async def add_catalogue(self, domain, country="AU"):
         """Only zero-login household catalogue sources; never Spotify/OAuth credentials."""
@@ -329,7 +331,7 @@ class MusicRuntime:
         failed = [label for label, passed in checks.items() if not passed]
         if failed:
             raise MusicRuntimeError(
-                "Playback check incomplete — missing: " + ", ".join(failed) + ". Keep the selected source playing on this speaker in MA, then retry."
+                "Playback check incomplete â€” missing: " + ", ".join(failed) + ". Keep the selected source playing on this speaker in MA, then retry."
             )
         return {"item": digest(item["queue_item_id"]), "position": position, "timestamp": timestamp}
 

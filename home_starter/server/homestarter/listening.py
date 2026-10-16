@@ -44,8 +44,16 @@ class ListeningRuntime:
             rows = self.regional_cache[2]
         else:
             unique = {}
-            for term in region["search_terms"][:2]:
-                raw = await self.runtime.command(endpoint, connection, "music/search", search_query=term, media_types=["radio"], limit=12)
+            results = await asyncio.gather(
+                *(
+                    self.runtime.command(endpoint, connection, "music/search", search_query=term, media_types=["radio"], providers=["radiobrowser"], limit=12)
+                    for term in region["search_terms"][:4]
+                ),
+                return_exceptions=True,
+            )
+            if results and all(isinstance(raw, Exception) for raw in results):
+                raise MusicRuntimeError("Local radio discovery is unavailable.")
+            for raw in results:
                 for value in raw.get("radio", []) if isinstance(raw, dict) else []:
                     record = media_record(value)
                     if record and record["kind"] == "radio":
@@ -192,7 +200,7 @@ class ListeningRuntime:
         if (
             not queue
             or not queue.get("active")
-            or player.get("playback_state", player.get("state")) not in {"playing", "paused"}
+            or player.get("playback_state", player.get("state")) not in {"playing", "paused", "buffering"}
             or queue.get("queue_id") != player_id
             or player.get("active_source") != player_id
             or item.get("queue_item_id") != lease.get("queue_item_id")
@@ -203,8 +211,23 @@ class ListeningRuntime:
             return False
         # Only raw fresh feedback, never an extrapolated queue clock, owns progress.
         position, stamp = player.get("elapsed_time"), player.get("elapsed_time_last_updated")
+        paused_queue = (
+            player.get("playback_state", player.get("state")) == "paused"
+            and queue.get("state") == "paused"
+            and number(lease.get("pause_requested_at"))
+            and 0 <= time.time() - lease["pause_requested_at"] <= 15
+            and number(queue.get("elapsed_time_last_updated"))
+            and queue["elapsed_time_last_updated"] >= lease["pause_requested_at"]
+        )
+        if paused_queue:
+            # Cast may report only its initial anchor. After an explicit pause
+            # acknowledged by this device, MA's frozen owned queue is canonical.
+            position, stamp = queue.get("elapsed_time"), queue["elapsed_time_last_updated"]
+        elif number(position):
+            position += lease.get("position_offset", 0)
         if (
-            lease.get("kind") not in {"audiobook", "podcast_episode"}
+            player.get("playback_state", player.get("state")) == "buffering"
+            or lease.get("kind") not in {"audiobook", "podcast_episode"}
             or not number(position)
             or not number(stamp)
             or not 0 <= time.time() - stamp <= 20
@@ -214,16 +237,37 @@ class ListeningRuntime:
         duration = item.get("duration")
         if not number(duration) or not 0 <= position <= duration:
             return False
-        if "awaiting_position" in lease:
+        if "awaiting_position" in lease and not paused_queue:
             if abs(position - lease["awaiting_position"]) > 20:
                 return False
             lease.pop("awaiting_position")
         profile = data["profiles"].get(lease["scope"])
         if profile is None:
             return False
-        profile["books"][lease["item"]["id"]] = {**lease["item"], "position": position, "duration": duration, "updated_at": stamp}
+        profile["books"][lease["item"]["id"]] = {
+            **lease["item"],
+            "position": position,
+            "duration": duration,
+            "updated_at": stamp,
+            "position_source": "ma_paused_queue" if paused_queue else "device_position",
+        }
+        if paused_queue:
+            lease.pop("pause_requested_at", None)
+            lease.pop("awaiting_position", None)
         lease["last_sample"] = stamp
         return True
+
+    async def pause_owned(self, endpoint, connection, data, pid, lease):
+        long_form = lease.get("kind") in {"audiobook", "podcast_episode"}
+        if long_form:
+            lease["pause_requested_at"] = time.time()
+        await self.runtime.control(endpoint, connection, "player_queues/pause", queue_id=pid)
+        if long_form:
+            for _ in range(10):
+                await self.sample(endpoint, connection, data, pid, lease)
+                if pid not in data["leases"] or "pause_requested_at" not in lease:
+                    break
+                await asyncio.sleep(0.25)
 
     async def view(self, user, surface_id, person=None, folder=None, query=None):
         async with self.lock:
@@ -268,7 +312,9 @@ class ListeningRuntime:
                 "default_destination": default,
                 "browse": not child,
                 "library": [public(r) for r in library],
-                "regional_radio": {"name": region["name"], "items": [public(r) for r in local_radio], "issue": radio_issue} if region and not child else None,
+                "regional_radio": {"name": region["name"], "items": [public(r) for r in local_radio], "issue": radio_issue}
+                if region and not child and not folder and not query
+                else None,
                 "favorites": [public(r) for r in profile["favorites"]],
                 "shared": [public(r) for r in self.profile(data, None)["favorites"]] if person else [],
                 "recent": [public(r) for r in profile["recent"]],
@@ -359,7 +405,15 @@ class ListeningRuntime:
                         raise ValueError("Choose a speaker volume from 0 to 100.")
                     await self.runtime.control(endpoint, connection, "players/cmd/volume_set", player_id=pid, volume_level=round(body["value"]))
                 elif action in {"pause", "play", "stop", "next", "previous"}:
-                    await self.runtime.control(endpoint, connection, "player_queues/" + action, queue_id=pid)
+                    if action == "pause" or action == "stop" and lease.get("kind") in {"audiobook", "podcast_episode"}:
+                        await self.pause_owned(endpoint, connection, data, pid, lease)
+                        if action == "stop":
+                            if pid not in data["leases"]:
+                                self.save(data)
+                                raise ValueError("The speaker session changed while pausing. Saved progress was preserved; check the speaker before stopping.")
+                            await self.runtime.control(endpoint, connection, "player_queues/stop", queue_id=pid)
+                    else:
+                        await self.runtime.control(endpoint, connection, "player_queues/" + action, queue_id=pid)
                 else:
                     raise ValueError("Unsupported listening action.")
             profile["destination"] = player["entity_id"]
@@ -389,12 +443,20 @@ class ListeningRuntime:
         queue = None
         for _ in range(15):
             queue = await self.runtime.command(endpoint, connection, "player_queues/get_active_queue", player_id=pid)
+            feedback = await self.runtime.command(endpoint, connection, "players/get", player_id=pid)
             if (
                 queue
                 and queue.get("active")
                 and queue.get("state") == "playing"
                 and queue.get("current_item", {}).get("queue_item_id")
-                and queue["current_item"]["queue_item_id"] != previous_item
+                and (
+                    queue["current_item"]["queue_item_id"] != previous_item
+                    or item["kind"] in {"audiobook", "podcast_episode"}
+                    and (queue["current_item"].get("media_item") or {}).get("uri") == item["uri"]
+                )
+                and feedback.get("playback_state", feedback.get("state")) == "playing"
+                and feedback.get("active_source") == pid
+                and (feedback.get("current_media") or {}).get("queue_item_id") == queue["current_item"]["queue_item_id"]
             ):
                 break
             await asyncio.sleep(0.5)
@@ -405,7 +467,36 @@ class ListeningRuntime:
             if confirmed.get("uri") != item["uri"]:
                 raise MusicRuntimeError("The speaker queue changed. Listening progress was not assigned.")
             position = profile["books"].get(item["id"], {}).get("position", 0)
-            await self.runtime.control(endpoint, connection, "player_queues/seek", queue_id=pid, position=int(position))
+            # MA's start_from_beginning already owns zero. A redundant zero seek
+            # restarts Cast playback and can report idle between loads.
+            if position or queue["current_item"]["queue_item_id"] == previous_item or not number(feedback.get("elapsed_time")) or feedback["elapsed_time"] > 20:
+                expected_item = queue["current_item"]["queue_item_id"]
+                seek_started = time.time()
+                await self.runtime.control(endpoint, connection, "player_queues/seek", queue_id=pid, position=int(position))
+                for _ in range(15):
+                    feedback = await self.runtime.command(endpoint, connection, "players/get", player_id=pid)
+                    checked = await self.runtime.command(endpoint, connection, "player_queues/get_active_queue", player_id=pid)
+                    if (
+                        checked
+                        and checked.get("active")
+                        and checked.get("queue_id") == pid
+                        and (checked.get("current_item") or {}).get("queue_item_id") == expected_item
+                        and feedback.get("playback_state", feedback.get("state")) == "playing"
+                        and feedback.get("active_source") == pid
+                        and (feedback.get("current_media") or {}).get("queue_item_id") == expected_item
+                        and number(feedback.get("elapsed_time"))
+                        and number(feedback.get("elapsed_time_last_updated"))
+                        and feedback["elapsed_time_last_updated"] >= seek_started
+                        and number(checked.get("elapsed_time"))
+                        and number(checked.get("elapsed_time_last_updated"))
+                        and checked["elapsed_time_last_updated"] >= seek_started
+                        and abs(checked["elapsed_time"] - position) <= 3
+                    ):
+                        break
+                    await asyncio.sleep(0.5)
+                else:
+                    raise MusicRuntimeError("Your saved position was requested but not confirmed. Progress was preserved; check the speaker before retrying.")
+                queue = checked
         data["leases"][pid] = {
             "scope": scope,
             "item": item,
@@ -424,6 +515,9 @@ class ListeningRuntime:
             data["leases"][pid]["queue_items"] = [q["queue_item_id"] for q in queued if isinstance(q, dict) and q.get("queue_item_id")]
         if item["kind"] in {"audiobook", "podcast_episode"}:
             data["leases"][pid]["awaiting_position"] = position
+            if number(queue.get("elapsed_time")) and number(feedback.get("elapsed_time")):
+                difference = queue["elapsed_time"] - feedback["elapsed_time"]
+                data["leases"][pid]["position_offset"] = position if abs(difference - position) < abs(difference) else 0
         profile["recent"] = [item, *[r for r in profile["recent"] if r["id"] != item["id"]]][:30]
         profile.pop("delayed", None)
         self.save(data)
@@ -456,7 +550,7 @@ class ListeningRuntime:
                 if timer and timer["at"] <= time.time():
                     lease = data["leases"].get(timer["player_id"])
                     if lease and lease["scope"] == scope and lease.get("session") == timer.get("session") and timer.get("session"):
-                        await self.runtime.control(endpoint, connection, "player_queues/pause", queue_id=timer["player_id"])
+                        await self.pause_owned(endpoint, connection, data, timer["player_id"], lease)
                     profile.pop("sleep", None)
             self.save(data)
             due = [(scope, p["delayed"]) for scope, p in data["profiles"].items() if p.get("delayed", {}).get("at", float("inf")) <= time.time()]

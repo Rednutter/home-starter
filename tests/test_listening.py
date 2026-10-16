@@ -46,9 +46,13 @@ class Music:
         if command == "player_queues/play_media":
             item = "item-" + str(len(self.calls))
             self.queues[p].update(state="playing", current_item={"queue_item_id": item, "duration": 3600, "media_item": self.book})
-            self.raw[p].update(playback_state="playing", current_media={"queue_item_id": item})
+            self.raw[p].update(playback_state="playing", current_media={"queue_item_id": item}, elapsed_time=0, elapsed_time_last_updated=time.time())
+        if command == "player_queues/seek":
+            self.raw[p].update(elapsed_time=args["position"], elapsed_time_last_updated=time.time())
+            self.queues[p].update(elapsed_time=args["position"], elapsed_time_last_updated=time.time())
         if command in {"player_queues/pause", "player_queues/stop"}:
             self.raw[p]["playback_state"] = "paused"
+            self.queues[p].update(state="paused", elapsed_time=self.raw[p]["elapsed_time"], elapsed_time_last_updated=time.time())
 
 
 @pytest.fixture
@@ -96,7 +100,7 @@ async def test_listener_progress_survives_restart_and_does_not_follow_speaker(se
     await runtime.view("admin", "panel", "one")
     await act(setup, "one", "pause")
     await act(setup, "two", "play_item", item=item)
-    assert music.calls[-1] == ("player_queues/seek", {"queue_id": "a", "position": 0})
+    assert music.calls[-1][0] == "player_queues/play_media" and music.calls[-1][1]["start_from_beginning"] is True
     assert runtime.load(house, music.conn)["profiles"]["person:one"]["books"][item]["position"] == 615
     assert not runtime.load(house, music.conn)["profiles"]["person:two"]["books"]
     await act(setup, "two", "pause")
@@ -141,6 +145,70 @@ async def test_external_queue_replacement_cannot_update_progress_or_pause(setup)
     assert not runtime.load(house, music.conn)["profiles"]["person:one"]["books"]
     with pytest.raises(ValueError, match="another listening"):
         await act(setup, "one", "pause")
+
+
+async def test_play_waits_for_physical_feedback_and_buffering_does_not_lose_owned_session(setup, monkeypatch):
+    item = await book(setup)
+    runtime, music, house, _ = setup
+    original, samples = music.command, []
+
+    async def command(endpoint, connection, name, **args):
+        value = await original(endpoint, connection, name, **args)
+        if name == "players/get" and music.calls and music.calls[0][0] == "player_queues/play_media":
+            samples.append(name)
+            if len(samples) == 1:
+                value["playback_state"] = "buffering"
+        return value
+
+    monkeypatch.setattr(music, "command", command)
+    monkeypatch.setattr(listening.asyncio, "sleep", AsyncMock())
+    await act(setup, "one", "play_item", item=item)
+    assert len(samples) >= 2
+    data = runtime.load(house, music.conn)
+    music.raw["a"].update(playback_state="buffering", elapsed_time=999, elapsed_time_last_updated=time.time())
+    assert not await runtime.sample({}, music.conn, data, "a", data["leases"]["a"])
+    assert data["leases"]["a"]["scope"] == "person:one"
+    assert not data["profiles"]["person:one"]["books"]
+
+
+async def test_only_explicit_device_acknowledged_pause_can_capture_frozen_queue_position(setup):
+    item = await book(setup)
+    await act(setup, "one", "play_item", item=item)
+    runtime, music, house, _ = setup
+    data = runtime.load(house, music.conn)
+    lease = data["leases"]["a"]
+    lease["last_sample"] = time.time() - 2
+    music.raw["a"].update(elapsed_time=0, elapsed_time_last_updated=time.time() - 300)
+    music.queues["a"].update(elapsed_time=120, elapsed_time_last_updated=time.time() - 0.1)
+    assert not await runtime.sample({}, music.conn, data, "a", lease)
+    music.raw["a"]["playback_state"] = "paused"
+    music.queues["a"]["state"] = "paused"
+    assert not await runtime.sample({}, music.conn, data, "a", lease)
+    lease["pause_requested_at"] = time.time() - 0.2
+    assert await runtime.sample({}, music.conn, data, "a", lease)
+    record = data["profiles"]["person:one"]["books"][item]
+    assert record["position"] == 120 and record["position_source"] == "ma_paused_queue"
+    music.queues["a"].update(elapsed_time=900, elapsed_time_last_updated=time.time())
+    assert not await runtime.sample({}, music.conn, data, "a", lease)
+    assert record["position"] == 120
+
+
+async def test_reused_native_episode_queue_is_explicitly_reset_for_a_different_listener(setup, monkeypatch):
+    item = await book(setup)
+    music = setup[1]
+    original = music.control
+
+    async def control(endpoint, connection, command, **args):
+        await original(endpoint, connection, command, **args)
+        if command == "player_queues/play_media":
+            music.queues["a"]["current_item"]["queue_item_id"] = "reused-item"
+            music.raw["a"]["current_media"]["queue_item_id"] = "reused-item"
+
+    monkeypatch.setattr(music, "control", control)
+    await act(setup, "one", "play_item", item=item)
+    await act(setup, "one", "pause")
+    await act(setup, "two", "play_item", item=item)
+    assert music.calls[-1] == ("player_queues/seek", {"queue_id": "a", "position": 0})
 
 
 async def test_revoked_music_opt_in_disarms_timer_and_commands(setup):
@@ -233,7 +301,7 @@ async def test_child_can_play_shared_favourites_without_search_or_mutating_house
     assert (await setup[0].view("admin", "panel", None))["favorites"][0]["id"] == item
     await act(setup, "two", "play_item", item=item)
     assert setup[1].calls[0][1]["queue_id"] == "a"
-    assert setup[1].calls[-1] == ("player_queues/seek", {"queue_id": "a", "position": 0})
+    assert setup[1].calls[-1][0] == "player_queues/play_media" and setup[1].calls[-1][1]["start_from_beginning"] is True
 
 
 async def test_only_current_bound_control_account_can_use_ingress(setup, monkeypatch):

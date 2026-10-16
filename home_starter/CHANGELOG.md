@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.22
+
+- Wait for real player acknowledgement and allow native stream resolution time before confirming playback.
+- Avoid duplicate Cast zero seeks; safely reset reused episode queues for a new listener and confirm saved-position seeks before assigning ownership.
+- Capture long-form progress from fresh device feedback or an explicitly requested, device-acknowledged paused MA queue. Pause before Stop or a sleep timer ends long-form playback; never import provider-global resume.
+- Discover regional radio directly from the native directory without mixing stale saved station copies.
+
 ## 0.8.21
 
 - Discover local radio from configured region terms through MA, with a cached station shelf and shared favourites using existing speaker routing.

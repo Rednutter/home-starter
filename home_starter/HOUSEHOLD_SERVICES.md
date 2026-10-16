@@ -64,8 +64,14 @@ The existing ambient provider supplies its actual available items only.
 Listener-local books/episodes, recent items, favourites, destination, delayed starts
 and session sleep timers persist separately in `/data/music-listeners.json`.
 Provider-global resume feedback is never imported as a person's position. Fresh
-owned queue feedback updates that listener only. House cannot resume a personal
-session. An audiobook provider's external progress synchronization needs separately
+device feedback updates that listener only. Cast devices may report only a start
+anchor: an explicitly requested pause, acknowledged by the same physical player
+and owned queue, can capture MA's fresh frozen queue position. Stop and sleep
+timers use that pause path before ending long-form playback. Each saved position
+records its provenance. Ordinary running queue clocks are not imported. Native
+seek offsets are confirmed before session ownership is assigned. House cannot resume a personal
+session. Shared-screen person selection separates saved state; it is not
+authentication of the named person. An audiobook provider's external progress synchronization needs separately
 authenticated per-user libraries before it can claim provider-level isolation;
 `provider_user` is deliberately rejected by the current service schema.
 
