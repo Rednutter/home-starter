@@ -77,3 +77,7 @@ proof honestly. `devtools/accept_panel_native.py --kiosk` checks account scope,
 settings exit/reentry, reload, full-height overview, native Back and climate control
 restoration, plus readable footer labels at all four viewport sizes. Climate,
 Settings and Panel mode taps must not issue browser document loads.
+
+## Room climate and airflow
+
+For AirTouch, exactly one admitted climate zone and damper on the same registry device are presented together. Names and entity suffixes are not pairing evidence. Each room separates reported temperature from its labelled native Target control, uses native mode selection, and shows its own readonly airflow percentage. Missing temperature is omitted; unavailable airflow is explicit. Unmatched or ambiguous records retain their native fallback. Automatic damper control is unchanged. Six room blocks fit at 1280×720; intermediate tablets stack the system above the rooms to preserve control width.

@@ -2,6 +2,7 @@
 
 import base64
 import json
+from html import escape
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -20,7 +21,67 @@ def resource_ready(resources, component="button-card"):
     return False
 
 
-def climate_panel(view, css):
+def room_panel(zone, damper):
+    """Keep native temperature/mode features; group the same-device airflow."""
+    controls = {**zone, "name": "Target", "hide_state": True, "features_position": "inline"}
+    controls["features"] = [{**feature, **({"style": "dropdown"} if feature["type"] == "climate-hvac-modes" else {})} for feature in zone.get("features", [])]
+    # Two enclosing button-cards (page and room grid) each consume one bracket pair.
+    current = (
+        "const s=hass.states[variables.zone]; const t=s?.attributes.current_temperature; "
+        "return s && !['unknown','unavailable'].includes(s.state) && typeof t==='number' && Number.isFinite(t) "
+        "? `<span class='hs-room-now'><small>Room</small> ${t}°</span>` : '';"
+    )
+    airflow = (
+        "const s=hass.states[variables.damper]; const p=s?.attributes.current_position; "
+        "const valid=s && !['unknown','unavailable'].includes(s.state) && typeof p==='number' && Number.isFinite(p) && p>=0 && p<=100; "
+        "return `<div class='hs-room-airflow'><span>Airflow</span><span class='hs-airflow-track' aria-hidden='true'>"
+        "<span style='width:${valid?p:0}%'></span></span><strong>${valid?p+'%':'Unavailable'}</strong></div>`;"
+    )
+    return {
+        "type": "custom:button-card",
+        "entity": zone["entity"],
+        "name": escape(zone.get("name", zone["entity"])),
+        "show_icon": False,
+        "tap_action": {"action": "none"},
+        "hold_action": {"action": "none"},
+        "variables": {"zone": zone["entity"], "damper": damper["entity"]},
+        "triggers_update": [zone["entity"], damper["entity"]],
+        "styles": {
+            "card": [
+                {"padding": "12px"},
+                {"border": "0"},
+                {"box-shadow": "none"},
+                {"background": "#142632"},
+                {"--ha-card-background": "transparent"},
+                {"--ha-card-border-width": "0"},
+            ],
+            "grid": [
+                {"grid-template-areas": '"n current" "controls controls" "airflow airflow"'},
+                {"grid-template-columns": "minmax(0,1fr) auto"},
+                {"gap": "6px"},
+            ],
+            "name": [
+                {"justify-self": "start"},
+                {"text-align": "left"},
+                {"white-space": "normal"},
+                {"font-size": "20px"},
+                {"line-height": "1.25"},
+                {"font-weight": "600"},
+            ],
+            "custom_fields": {"controls": [{"width": "100%"}, {"min-width": "0"}], "airflow": [{"width": "100%"}]},
+        },
+        "custom_fields": {"current": "[[[[[ " + current + " ]]]]]", "controls": {"card": controls}, "airflow": "[[[[[ " + airflow + " ]]]]]"},
+        "extra_styles": (
+            ".hs-room-now{font-size:24px;font-variant-numeric:tabular-nums}.hs-room-now small{font-size:13px;color:#cad3db}"
+            ".hs-room-airflow{display:flex;align-items:center;gap:10px;color:#cad3db;font:14px Roboto,Arial,sans-serif;text-align:left}"
+            ".hs-room-airflow strong{font-weight:500;min-width:40px;text-align:right}"
+            ".hs-airflow-track{flex:1;height:4px;background:#2b4353;border-radius:2px;overflow:hidden}"
+            ".hs-airflow-track>span{display:block;height:100%;background:#79bedf}#card.disabled{pointer-events:auto;cursor:default}"
+        ),
+    }
+
+
+def climate_panel(view, css, items=()):
     """Theme the existing native controls without changing their actions or IDs."""
     cards = [card for group in view.get("sections", []) for card in group.get("cards", []) if card.get("type") != "heading"]
     if not cards:
@@ -29,6 +90,23 @@ def climate_panel(view, css):
     rooms = [card for card in cards if card is not system and card.get("entity", "").startswith("climate.")]
     notices = [card for card in cards if card.get("type") == "conditional"]
     airflow = [card for card in cards if card is not system and card not in rooms and card not in notices]
+    sources = {item["entity_id"]: item for item in items}
+    paired_rooms = []
+    for zone in rooms:
+        source = sources.get(zone["entity"], {})
+        device = source.get("evidence", {}).get("device_id")
+        candidates = [
+            card
+            for card in airflow
+            if (item := sources.get(card.get("entity"), {})).get("device_class") == "damper" and device and item.get("evidence", {}).get("device_id") == device
+        ]
+        siblings = [card for card in rooms if device and sources.get(card["entity"], {}).get("evidence", {}).get("device_id") == device]
+        if source.get("platform") == "airtouch5" and len(candidates) == 1 and len(siblings) == 1:
+            paired_rooms.append(room_panel(zone, candidates[0]))
+            airflow.remove(candidates[0])
+        else:
+            paired_rooms.append(zone)
+    rooms = paired_rooms
 
     def group(children, columns=2):
         names = [f"control{i}" for i in range(len(children))]
@@ -83,7 +161,7 @@ def climate_panel(view, css):
             + ('"system rooms" ' if rooms else '"system system" ')
             + ('"airflow airflow"' if airflow else "")
         },
-        {"grid-template-columns": "minmax(0, .85fr) minmax(0, 1.15fr)"},
+        {"grid-template-columns": "minmax(0, .75fr) minmax(0, 1.25fr)"},
         {"gap": "20px"},
         {"align-items": "start"},
         {"align-content": "start"},
@@ -227,7 +305,7 @@ def apply(generated, house, climate, policy):
     climate_css = ":host { --hs-backdrop: " + image + "; }\n" + (static / "panel-climate.css").read_text(encoding="utf-8")
     for view in config["views"]:
         if view["path"] == "climate":
-            climate_panel(view, climate_css)
+            climate_panel(view, climate_css, generated["admitted"])
     generated["fingerprint"] = fingerprint(config)
     generated["warnings"].append(
         "Landscape panel requires the installed HACS button-card module. Climate controls remain native HA subviews; uncommissioned services are labelled."

@@ -75,7 +75,7 @@ async def main():
                     {
                         "friendly_name": name,
                         "temperature": 25,
-                        "current_temperature": 21.5,
+                        "current_temperature": None if index == 1 else 21.5,
                         "hvac_modes": ["off", "fan_only"],
                         "supported_features": 385,
                         "min_temp": 16,
@@ -95,6 +95,7 @@ async def main():
                                 "entity_id": entity_id,
                                 "name": attrs["friendly_name"],
                                 "platform": "airtouch5",
+                                "device_id": f"fixture_zone_{index}",
                                 "observed": True,
                                 "state": state["state"],
                                 "area_id": "fixture_kitchen",
@@ -243,7 +244,16 @@ async def main():
                 assert canvas >= height - 1, f"The navy canvas must fill the viewport: {name}, bottom {canvas}, expected {height}"
                 await page.screenshot(path=str(SHOTS / ("climate-" + name + ".png")), full_page=name != "tall-tablet")
                 assert await page.locator("hui-error-card").count() == 0
-                await expect(page.locator("hui-tile-card")).to_have_count(12)
+                await expect(page.locator("hui-tile-card")).to_have_count(6)
+                await expect(page.locator(".hs-room-airflow")).to_have_count(6)
+                await expect(page.locator(".hs-room-airflow").first).to_contain_text("60%")
+                assert await page.locator("hui-target-temperature-card-feature").evaluate_all("els=>els.every(e=>e.getBoundingClientRect().width>=130)"), (
+                    "Native +/- and target value need separate usable space"
+                )
+                if width >= 1280 and height >= 720:
+                    assert await page.locator(".hs-room-airflow").evaluate_all("els=>els.every(e=>e.getBoundingClientRect().bottom<=innerHeight)"), (
+                        "Every room's airflow must be visible without scrolling at AirTouch size"
+                    )
                 bounds = await page.locator("hui-tile-card").evaluate_all(
                     "els=>els.map(e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom}})"
                 )
@@ -255,7 +265,22 @@ async def main():
                 assert await page.locator("hui-panel-view").evaluate("el=>el.scrollWidth<=el.clientWidth+1")
                 assert await thermostat.evaluate("el=>getComputedStyle(el).getPropertyValue('--primary-text-color').trim()") == "#f7f8fa"
                 assert (await thermostat.bounding_box())["y"] < 130, "Tall screens must not vertically center the whole control page"
-            await page.set_viewport_size({"width": 1280, "height": 800})
+                if name == "tall-tablet":
+                    await page.locator(".hs-room-airflow").last.scroll_into_view_if_needed()
+                    await page.screenshot(path=str(SHOTS / "climate-tall-tablet-rooms.png"))
+                    await thermostat.scroll_into_view_if_needed()
+            linked_room = page.locator("button-card").filter(has=page.get_by_text("Kitchen / dining / living", exact=True)).last
+            missing_temperature_room = page.locator("button-card").filter(has=page.get_by_text("Lounge", exact=True)).last
+            assert await missing_temperature_room.locator(".hs-room-now").count() == 0
+            # A linked readout must follow native HA updates without regenerating/reloading.
+            for state, position, expected in [("closed", 0, "0%"), ("unavailable", 60, "Unavailable"), ("open", 60, "60%")]:
+                async with session.post(
+                    BASE + "/api/states/cover.fixture_panel_zone_0",
+                    headers=headers,
+                    json={"state": state, "attributes": {"device_class": "damper", "current_position": position, "supported_features": 0}},
+                ) as response:
+                    assert response.status == 200
+                await expect(linked_room.locator(".hs-room-airflow")).to_contain_text(expected)
             assert await thermostat.get_by_role("button").count() == 3
             assert await thermostat.get_by_role("button").nth(2).get_attribute("aria-label") == "Show more information"
 
@@ -278,6 +303,7 @@ async def main():
                 ) as restored:
                     assert restored.status == 200
             await page.screenshot(path=str(SHOTS / "native-climate-controls.png"))
+            await page.set_viewport_size({"width": 1280, "height": 800})
             await page.goto(BASE + "/" + result["url_path"] + "/home")
             await page.get_by_role("link", name="Alex", exact=True).click()
             await expect(page.get_by_role("heading", name="Air conditioning", exact=True)).to_be_visible()

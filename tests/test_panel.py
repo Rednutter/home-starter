@@ -103,6 +103,57 @@ def test_climate_layout_preserves_native_zone_and_readonly_damper_cards():
     assert "sections" not in view
 
 
+@pytest.mark.parametrize("ambiguous", [False, True])
+def test_room_airflow_uses_unique_device_evidence_not_names_or_entity_suffixes(ambiguous):
+    from homestarter.panel import climate_panel
+
+    system = {"type": "thermostat", "entity": "climate.system"}
+    zone = {
+        "type": "tile",
+        "entity": "climate.old_name",
+        "name": "Different room name",
+        "features": [{"type": "target-temperature"}, {"type": "climate-hvac-modes", "hvac_modes": ["off", "fan_only"]}],
+    }
+    damper = {"type": "tile", "entity": "cover.another_name", "tap_action": {"action": "none"}}
+    items = [
+        {"entity_id": zone["entity"], "platform": "airtouch5", "evidence": {"device_id": "fixture_zone"}},
+        {"entity_id": damper["entity"], "device_class": "damper", "evidence": {"device_id": "fixture_zone"}},
+    ]
+    cards = [system, zone, damper]
+    if ambiguous:
+        other = {**zone, "entity": "climate.other"}
+        cards.append(other)
+        items.append({**items[0], "entity_id": other["entity"]})
+    before = copy.deepcopy(cards)
+    view = {"path": "climate", "sections": [{"cards": cards}]}
+    climate_panel(view, "fixture CSS", items)
+    fields = view["cards"][0]["custom_fields"]
+    room = fields["rooms"]["card"]["custom_fields"]["control0"]["card"]
+    assert cards == before
+    if ambiguous:
+        assert room == zone and "airflow" in fields
+    else:
+        assert "airflow" not in fields
+        assert room["variables"] == {"zone": zone["entity"], "damper": damper["entity"]}
+        controls = room["custom_fields"]["controls"]["card"]
+        assert controls["entity"] == zone["entity"] and controls["name"] == "Target"
+        assert controls["features"][0] == zone["features"][0]
+        assert controls["features"][1]["hvac_modes"] == ["off", "fan_only"]
+        assert controls["features"][1]["style"] == "dropdown"
+        assert "perform_action" not in json.dumps(room)
+
+
+def test_room_names_are_escaped_and_airflow_cannot_override_the_damper():
+    from homestarter.panel import room_panel
+
+    room = room_panel({"type": "tile", "entity": "climate.fixture", "name": "<img src=x>"}, {"entity": "cover.fixture"})
+    assert room["name"] == "&lt;img src=x&gt;"
+    assert room["triggers_update"] == ["climate.fixture", "cover.fixture"]
+    assert "current_position" in room["custom_fields"]["airflow"]
+    assert "set_cover_position" not in json.dumps(room)
+    assert "Number.isFinite" in room["custom_fields"]["current"]
+
+
 @pytest.mark.parametrize("state", ["unavailable", "unknown"])
 def test_offline_known_climate_retains_native_controls_and_reports_missing_temperature(state):
     house, surface, items, areas = fixture(state)

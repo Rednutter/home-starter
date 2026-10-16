@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.7
+
+- Group each uniquely linked AirTouch zone and damper in one room block using HA device registry evidence. Never infer pairing from names or entity IDs.
+- Distinguish reported room temperature from a labelled native Target control; use a quieter native mode dropdown and integrated readonly airflow. Preserve automatic damper control.
+- Keep all six rooms and airflow readings visible at 1280×720. Stack the system above rooms on narrower tablets to preserve usable target controls.
+- Verify pairing ambiguity, escaped names, zero/unavailable/live airflow, absent room temperatures and native control operation.
+
 ## 0.8.6
 
 - Anchor climate controls at the top on tall tablets.

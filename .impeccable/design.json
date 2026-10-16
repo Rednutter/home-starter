@@ -521,6 +521,11 @@
         "name": "AirTouch Climate continuity",
         "body": "Navy/cyan native Climate controls: photographic main thermostat left, room tiles right, readonly airflow below. Preserve all native configurations and Back navigation. Stack at 720px and below; allow vertical scrolling instead of overlapping or clipping controls.",
         "section": "components"
+      },
+      {
+        "name": "Room climate hierarchy",
+        "body": "Pair only a unique AirTouch zone/damper sharing registry device evidence. Full room name and reported temperature lead, native inline Target and mode dropdown follow, readonly Airflow stays in that room. Omit missing room temperature; label unavailable airflow. Stack system above rooms through 1100px to preserve native control width.",
+        "section": "components"
       }
     ],
     "dos": [

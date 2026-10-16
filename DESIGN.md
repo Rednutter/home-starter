@@ -311,3 +311,12 @@ Fresh finish review: **ship**. The three reviewed climate captures preserve the 
 Live tablet follow-up: use block layout for the outer climate card so tall viewports keep controls at the top. Preserve conditional notices in a separate native stack, outside the airflow grid; inactive notices must not leave outlined airflow slots. Acceptance adds an 800×1280 tall-tablet capture, top alignment, full-height canvas and inactive fictional safety notice.
 
 Follow-up finish verdict: **ship**. Fresh tall-tablet and landscape captures show top-aligned controls, six distinct zone cards and six airflow tiles without empty bordered notice slots. Native Back, control targets and temperatures remain legible; physical-tablet checks remain separate.
+
+
+### Room temperature and airflow hierarchy
+
+Each uniquely matched AirTouch zone and damper share a room block. Matching requires exactly one admitted zone and one damper on the same HA registry device, preserving historical entity/name mismatches. Ambiguous or unmatched records retain the existing native fallback. The full room name and any reported current temperature lead; a native inline Target control labels the setpoint, a native mode dropdown reduces button prominence, and a small readonly Airflow percentage/track stays within the room. Missing room temperatures are omitted, and unavailable or invalid airflow is explicit. No manual damper action is introduced.
+
+At 1280×720 all six room blocks and airflow readings fit without scrolling. At widths through 1100px, the main system stacks above the room grid; through 720px rooms stack individually. Native target controls retain at least 130px width in five fixture viewports. Native Back and the main thermostat are preserved. New image assets: none.
+
+Disposable acceptance covers live airflow changes (including 0%, unavailable and recovery) without reload, absent room temperature, six integrated readings, target-feature bounds, native temperature increase/restore at 800×1280, and the existing navigation/reload/permission checks. Fresh `climate-panel-landscape.png` and `climate-tall-tablet-rooms.png` establish grouping and responsive evidence. Finish verdict: **ship**, after correcting intermediate-width target compression; the reviewer confirmed readable target values/units and separate buttons.
