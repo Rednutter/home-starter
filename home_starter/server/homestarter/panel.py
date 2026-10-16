@@ -202,9 +202,121 @@ def climate_panel(view, css, items=()):
     view.update(type="panel", cards=[root])
 
 
+def detail_panel(view, css, template=None):
+    """Lay out admitted native sections in the specialist world's responsive shell."""
+
+    def title_text(value, level=2):
+        # button-card evaluates templates and renders names as HTML. A quoted,
+        # escaped constant keeps household names as display text.
+        title = f'<h{level} style="margin:0;font:inherit">' + escape(value or "") + f"</h{level}>"
+        return "[[[ return " + json.dumps(title) + "; ]]]"
+
+    def compact_navigation(card):
+        if card.get("type") == "button" and card.get("tap_action", {}).get("action") == "navigate":
+            return {**card, "icon_height": card.get("icon_height", "40px")}
+        if card.get("type") in {"vertical-stack", "horizontal-stack", "grid"}:
+            return {**card, "cards": [compact_navigation(child) for child in card.get("cards", [])]}
+        if card.get("type") == "conditional":
+            return {**card, "card": compact_navigation(card["card"])}
+        return card
+
+    def layout(cards, title=None):
+        fields = {
+            f"control{i}": {
+                "card": compact_navigation(card),
+                "do_not_eval": True,
+            }
+            for i, card in enumerate(cards)
+        }
+        return {
+            "type": "custom:button-card",
+            "show_icon": False,
+            "show_name": bool(title),
+            "name": title_text(title),
+            "tap_action": {"action": "none"},
+            "hold_action": {"action": "none"},
+            "styles": {
+                "card": [{"padding": "0"}, {"background": "transparent"}, {"border": "0"}, {"box-shadow": "none"}],
+                "grid": [
+                    {"grid-template-areas": "none"},
+                    {"grid-template-columns": "repeat(auto-fit,minmax(min(100%,280px),1fr))"},
+                    {"gap": "14px"},
+                    {"align-items": "start"},
+                ],
+                "name": [
+                    {"grid-area": "auto"},
+                    {"grid-column": "1 / -1"},
+                    {"text-align": "left"},
+                    {"justify-self": "stretch"},
+                    {"white-space": "normal"},
+                    {"font-size": "22px"},
+                    {"font-weight": "600"},
+                ],
+                "custom_fields": {
+                    key: [
+                        {"grid-area": "auto"},
+                        {"min-width": "0"},
+                        {"text-align": "left"},
+                        {"white-space": "normal"},
+                        {"--ha-card-border-radius": "20px"},
+                        {"--ha-card-border-width": "1px"},
+                    ]
+                    + ([{"--primary-color": "#103e59"}] if fields[key]["card"].get("type") == "media-control" else [])
+                    for key in fields
+                },
+            },
+            "custom_fields": fields,
+            # button-card assigns named inline areas after custom field styles.
+            "extra_styles": "#card.disabled{pointer-events:auto;cursor:default}#container>[id^=control]{grid-area:auto!important}",
+        }
+
+    groups = []
+    for section in view.get("sections", []):
+        cards = section.get("cards", [])
+        title = next((card.get("heading") for card in cards if card.get("type") == "heading"), None)
+        controls = [card for card in cards if card.get("type") != "heading"]
+        if not controls:
+            continue
+        group = layout(controls, title if title != view["title"] else None)
+        if section.get("visibility"):
+            group = {"type": "conditional", "conditions": section["visibility"], "card": group}
+        groups.append(group)
+    root = layout([])
+    root.update(
+        show_name=True,
+        name=title_text(view["title"], 1),
+        custom_fields={"content": {"card": {"type": "vertical-stack", "cards": groups}, "do_not_eval": True}},
+        extra_styles=css,
+    )
+    root["styles"]["card"] = [
+        {"display": "block"},
+        {"padding": "24px"},
+        {"background": "#09131b"},
+        {"border": "0"},
+        {"border-radius": "0"},
+        {"box-shadow": "none"},
+    ]
+    root["styles"]["grid"] = [{"grid-template-areas": '"n" "content"'}, {"grid-template-columns": "minmax(0,1fr)"}, {"gap": "24px"}, {"align-content": "start"}]
+    root["styles"]["name"] = [
+        {"grid-area": "n"},
+        {"text-align": "left"},
+        {"justify-self": "stretch"},
+        {"white-space": "normal"},
+        {"font-size": "26px"},
+        {"font-weight": "600"},
+    ]
+    root["styles"]["custom_fields"] = {"content": [{"min-width": "0"}, {"text-align": "left"}, {"white-space": "normal"}]}
+    if template:
+        root["template"] = template
+        root.pop("extra_styles")
+    view.pop("sections", None)
+    view.pop("max_columns", None)
+    view.update(type="panel", cards=[root])
+
+
 def apply(generated, house, climate, policy):
     """Reference shell and themed native climate controls for specialist panels."""
-    from .surfaces import card_for, fingerprint, section
+    from .surfaces import card_for, fingerprint, navigation, section
 
     static = Path(__file__).parent / "static"
     content = (static / "panel-content.js").read_text(encoding="utf-8")
@@ -214,6 +326,38 @@ def apply(generated, house, climate, policy):
     css = ":host { --hs-backdrop: " + image + "; }\n" + css
     config = generated["config"]
     base = "/" + generated["url_path"]
+    # Every overview destination remains useful even before sources are selected.
+    empty_pages = {
+        "today": ("Today", "No verified commitments to show. Choose and verify a household calendar in Home Starter."),
+        "rooms": ("Home / Rooms", "No room controls selected. Review room assignments and this screen's sources in Home Starter."),
+        "music": ("Music", "No speaker selected. Choose a room speaker in Home Starter to show its native playback controls."),
+        "context": ("Around the house", "No household information selected. Review this screen's sources in Home Starter."),
+        "call": ("Call", "Calling is not commissioned. Complete calling setup and a working call check before using this panel to call."),
+        "cameras": ("Cameras", "No camera selected. Camera selection and a working picture check are still needed. No camera feeds are shown."),
+    }
+    for path, (title, message) in empty_pages.items():
+        if not any(v["path"] == path for v in config["views"]):
+            config["views"].append(
+                {
+                    "type": "sections",
+                    "title": title,
+                    "path": path,
+                    "subview": True,
+                    "back_path": base + "/home",
+                    "sections": [section(title, [{"type": "markdown", "content": message}])],
+                }
+            )
+    rooms = next(v for v in config["views"] if v["path"] == "rooms")
+    more = [("Around the house", "context", "mdi:information-outline"), ("Other controls", "other-controls", "mdi:tune")]
+    rooms["sections"].append(
+        section("", [navigation(title, base + "/" + path, icon) for title, path, icon in more if any(v["path"] == path for v in config["views"])])
+    )
+    if generated["surface"]["id"] in policy.get("bin_context_screens", []):
+        from .waste import card
+
+        bins = card()
+        today = next(v for v in config["views"] if v["path"] == "today")
+        today["sections"].insert(0, {**section("Bins", [bins]), "visibility": bins["conditions"]})
     kiosk_name = policy.get("kiosk_user_name") if generated["surface"].get("kiosk") else None
     if generated["surface"].get("kiosk") and not kiosk_name:
         raise ValueError("Review this panel's dedicated display account before enabling kiosk presentation.")
@@ -233,7 +377,7 @@ def apply(generated, house, climate, policy):
         prefix = "" if path == "home" else path + "-"
         targets = {
             name: base + "/" + prefix + name
-            for name in ("climate", "today", "rooms", "music", "context")
+            for name in ("climate", "today", "rooms", "music", "context", "call", "cameras")
             if any(v["path"] == prefix + name for v in config["views"])
         }
         main = next((i for i in climate if i.get("attributes", {}).get("fan_modes")), next(iter(climate), None))
@@ -329,9 +473,13 @@ def apply(generated, house, climate, policy):
             }
         )
     climate_css = ":host { --hs-backdrop: " + image + "; }\n" + (static / "panel-climate.css").read_text(encoding="utf-8")
+    detail_css = climate_css.split("#card.disabled", 1)[0] + (static / "panel-details.css").read_text(encoding="utf-8")
+    config.setdefault("button_card_templates", {})["home_starter_details"] = {"extra_styles": detail_css}
     for view in config["views"]:
         if view["path"] == "climate":
             climate_panel(view, climate_css, generated["admitted"])
+        elif view["path"] not in {"home", "ambient", "dark"}:
+            detail_panel(view, "", template="home_starter_details")
     generated["fingerprint"] = fingerprint(config)
     generated["warnings"].append(
         "Landscape panel requires the installed HACS button-card module. Climate controls remain native HA subviews; uncommissioned services are labelled."

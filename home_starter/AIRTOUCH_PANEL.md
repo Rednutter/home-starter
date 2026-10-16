@@ -25,7 +25,12 @@ The overview and its Climate page share the scoped navy/cyan world. Climate uses
 button-card’s supported nested-card layout: the original native thermostat leads,
 room controls sit alongside, and readonly airflow tiles follow. Narrow screens
 stack the controls. Native card configurations, routes, Back navigation and HA
-permissions are preserved; room, music, person and context subviews are unchanged. Main
+permissions are preserved. Rooms and individual rooms, Music, Today, household
+context, saved people and kiosk Settings now share the specialist palette and
+existing backdrop around their admitted native cards. Auto-fit columns start at
+280px and shrink to the available width on narrow screens. People admission and
+source configuration remain unchanged. Ambient/dark and the primary Climate
+presentation retain their existing behavior. Main
 climate selection prefers the admitted controller advertising fan modes. Known
 offline AirTouch entities retain an inspectable native route; hidden, disabled,
 excluded or audience-blocked entities remain excluded. Entity IDs are preserved.
@@ -33,7 +38,10 @@ excluded or audience-blocked entities remain excluded. Entity IDs are preserved.
 Temperature comes from HA. Reported HVAC activity takes precedence over selected
 mode; idle is distinct from cooling/heating. Unavailable entities show no invented
 temperature or successful climate status. Calling and cameras remain explicitly
-uncommissioned/unselected. People are the existing saved screen people, never
+uncommissioned/unselected; their tiles open static setup-status pages without
+calling services or camera feeds. Missing overview destinations show explicit
+empty states. Today retains selected bins under their existing visibility and
+expiry conditions. People are the existing saved screen people, never
 invented household members. Only admitted calendar/media/weather/light sources
 appear; selected bin context requires its expiring data projection.
 
@@ -54,6 +62,33 @@ source admission, native subview preservation, offline state and HTML escaping.
 These disposable checks prove UI/control behavior, not physical controller
 connectivity. Live HA availability and the actual panel's operation must be checked
 separately before declaring the physical screen commissioned.
+
+The remaining-subpages extension now has fresh disposable native HA 2026.10.0 /
+button-card 7.0.1 evidence. Docker recovered by preserving and recreating stale
+runtime-only socket directories together; containers, images and settings remain
+intact. The passing final stabilized native run produced 48 fresh full-page
+captures across eight empty/populated pages at 1280×720, 800×1280 and 390×844,
+plus 12 saved-person viewport captures across baseline/populated states. Each viewport reloads and
+waits for fonts and stable geometry before capture. Native navigation, Back,
+reload, kiosk viewer/admin scope, actual light toggle/restore, climate target
+restore, calendar/player rendering and Play control visibility, offline/idle and bin expiry passed
+in the final stabilized run. Final visual review returned **ship at native Home
+Assistant fixture/browser scope**, with no remaining blocking findings, after
+reviewing the weather wrapping fix, stabilized person captures at all three sizes
+and the full 48-capture matrix.
+
+HA 2026.10.0's native media-card startup `_stateObj`/`_computeProgress` exception
+also reproduces on an unmodified native sections view. Matching stacks are logged
+separately in ignored `.runtime/panel-native/browser-errors.json`; all other
+errors fail acceptance. Browser evidence does not prove audible speaker playback,
+physical tablet operation or live household publication. No new image assets or
+provenance changes are introduced.
+
+Detail styling/backdrop uses one shared button-card template to stay below HA's
+4MiB WebSocket limit; an eight-person regression checks size and three embedded
+images. Native card configurations retain `do_not_eval` boundaries. Native heading
+cards preserve escaped titles, compact room navigation icons retain 40px sizing,
+and native card radii/palette and scoped dark media fill provide continuity.
 
 ## Optional kiosk presentation
 

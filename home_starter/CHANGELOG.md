@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.11
+
+- Carry the AirTouch panel theme into Rooms, individual rooms, Today, Music, household context, saved people and Settings while preserving native controls and source permissions.
+- Add truthful empty states and Call/Cameras setup-status pages. Keep selected bin context and native navigation available.
+- Share the detail backdrop to stay below Home Assistant's dashboard message limit. Keep navigation compact, headings accessible and narrow weather readings intact.
+- Verify native pages at landscape, tall-tablet and narrow sizes, including navigation, reload and restored fixture light/climate changes. Record the independently reproduced HA 2026.10 native media-card startup exception separately; audible playback and physical screen operation remain separate checks.
+
 ## 0.8.10
 
 - Fill the available climate display height with the main thermostat and grouped room panels, retaining responsive stacking and collapsed inactive notices.

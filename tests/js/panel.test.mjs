@@ -37,6 +37,14 @@ test("panel renders reported climate, not example temperatures",()=>{
   assert.match(html,/>23°</);assert.match(html,/Currently 21.5°/);assert.match(html,/Cool mode/);
 });
 
+test("setup tiles open their own status pages without claiming working services",()=>{
+  const output=scene({}, {targets:{call:"/example-panel/call",cameras:"/example-panel/cameras"}});
+  assert.match(output,/href="\/example-panel\/call"/);
+  assert.match(output,/href="\/example-panel\/cameras"/);
+  assert.match(output,/Not commissioned/);
+  assert.match(output,/Not selected/);
+});
+
 test("selected climate mode is distinct from reported activity",()=>{
   for (const state of ["cool","heat"]) {
     const output=scene({"climate.example":{state,attributes:{hvac_action:"idle"}}});

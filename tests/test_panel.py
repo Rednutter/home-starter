@@ -9,6 +9,26 @@ from homestarter.panel import resource_ready
 from homestarter.surfaces import classify, generate, publish
 
 
+def nested(value):
+    if isinstance(value, dict):
+        yield value
+        for child in value.values():
+            yield from nested(child)
+    elif isinstance(value, list):
+        for child in value:
+            yield from nested(child)
+
+
+def detail_card(original):
+    if original.get("type") == "button" and original.get("tap_action", {}).get("action") == "navigate":
+        return {**original, "icon_height": original.get("icon_height", "40px")}
+    if original.get("type") in {"vertical-stack", "horizontal-stack", "grid"}:
+        return {**original, "cards": [detail_card(child) for child in original.get("cards", [])]}
+    if original.get("type") == "conditional":
+        return {**original, "card": detail_card(original["card"])}
+    return original
+
+
 def fixture(state="cool", disabled=None, hidden=None):
     house = empty_household()
     house["people"] = [{"id": "example", "name": "Example person", "audience": "adult"}]
@@ -74,7 +94,15 @@ def test_native_fallback_and_controls_are_preserved_without_household_mutation()
                 assert themed["cards"][0]["custom_fields"]["system"]["card"] == controls[0]
                 assert "#09131b" in themed["cards"][0]["extra_styles"]
             else:
-                assert view == themed
+                assert themed["subview"] and themed["back_path"] == view["back_path"]
+                if view["path"] in {"ambient", "dark"}:
+                    assert view == themed
+                else:
+                    assert themed["type"] == "panel"
+                    for group in view["sections"]:
+                        for original in group["cards"]:
+                            if original["type"] != "heading":
+                                assert detail_card(original) in list(nested(themed))
     card = panel["config"]["views"][0]["cards"][0]
     assert card["variables"]["panel"]["climate"] == "climate.example"
     assert "call_service" not in json.dumps(card) and "fetch(" not in json.dumps(card)
@@ -101,6 +129,108 @@ def test_climate_layout_preserves_native_zone_and_readonly_damper_cards():
     assert {"display": "block"} in view["cards"][0]["styles"]["card"]
     assert view["subview"] and view["back_path"] == "/example/home"
     assert "sections" not in view
+
+
+def test_all_overview_destinations_exist_without_sources_and_people_keep_their_boundary():
+    house, surface, items, areas = fixture()
+    native = generate(house, surface, items, areas)
+    panel = generate(house, surface, items, areas, policy={"landscape_panel": True})
+    views = {view["path"]: view for view in panel["config"]["views"]}
+    targets = views["home"]["cards"][0]["variables"]["panel"]["targets"]
+    assert {"today", "rooms", "music", "context", "call", "cameras"} <= targets.keys()
+    for target in targets.values():
+        assert target.rsplit("/", 1)[1] in views
+    assert any(c.get("tap_action", {}).get("navigation_path") == "/" + panel["url_path"] + "/context" for c in nested(views["rooms"]))
+    assert "No speaker selected" in json.dumps(views["music"])
+    assert not any(card.get("entity", "").startswith(("camera.", "media_player.")) for card in nested(panel["config"]))
+    for view in native["config"]["views"]:
+        if not view["path"].startswith("person-"):
+            continue
+        themed = views[view["path"]]
+        assert themed["subview"]
+        assert themed["back_path"] == view.get("back_path", "/" + panel["url_path"] + "/home")
+        original_entities = {card["entity"] for card in nested(view) if "entity" in card}
+        assert {card["entity"] for card in nested(themed) if "entity" in card} == original_entities
+
+
+def test_details_preserve_selected_bin_expiry_and_section_visibility():
+    from homestarter.panel import detail_panel
+    from homestarter.waste import card
+
+    bins = card()
+    view = {"title": "Today", "path": "today", "sections": [{"visibility": bins["conditions"], "cards": [bins]}]}
+    detail_panel(view, "fixture CSS")
+    assert bins in list(nested(view))
+    assert any(c.get("type") == "conditional" and c.get("conditions") == bins["conditions"] for c in nested(view))
+    house, surface, items, areas = fixture()
+    for selected in (False, True):
+        panel = generate(house, surface, items, areas, policy={"landscape_panel": True, "bin_context_screens": [surface["id"]] if selected else []})
+        today = next(v for v in panel["config"]["views"] if v["path"] == "today")
+        assert (bins in list(nested(today))) is selected
+
+
+def test_populated_details_keep_native_calendar_playback_light_and_room_navigation():
+    house, surface, items, areas = fixture()
+    states = [
+        {"entity_id": "calendar.example", "state": "off", "attributes": {}},
+        {"entity_id": "media_player.example", "state": "playing", "attributes": {"supported_features": 513}},
+        {"entity_id": "light.example", "state": "on", "attributes": {"supported_features": 1}},
+    ]
+    sources = [{**state, "name": state["entity_id"], "observed": True, "area_id": "kitchen"} for state in states]
+    items += classify({"devices": [], "unattached_entities": sources}, states, {})
+    policy = {"calendars": ["calendar.example"], "calendars_screens": [surface["id"]]}
+    native = generate(house, surface, items, areas, policy=policy)
+    panel = generate(house, surface, items, areas, policy={**policy, "landscape_panel": True})
+    views = {v["path"]: v for v in panel["config"]["views"]}
+    for original in native["config"]["views"]:
+        if original["path"] in {"home", "ambient", "dark", "climate"}:
+            continue
+        themed = views[original["path"]]
+        for group in original["sections"]:
+            for card in group["cards"]:
+                if card["type"] != "heading":
+                    assert detail_card(card) in list(nested(themed))
+    assert any(c.get("type") == "media-control" for c in nested(views["music"]))
+    assert any(c.get("type") == "calendar" for c in nested(views["today"]))
+    assert any(c.get("tap_action", {}).get("navigation_path", "").split("/")[-1].startswith("room-") for c in nested(views["rooms"]))
+
+
+def test_detail_titles_and_native_config_cannot_become_button_card_code_or_html():
+    from html import escape
+
+    from homestarter.panel import detail_panel
+
+    title = '<img src=x onerror="alert(1)"> [[[ return "example"; ]]]'
+    native = {"type": "tile", "entity": "light.example", "name": title}
+    view = {"title": title, "sections": [{"cards": [native]}]}
+    detail_panel(view, "fixture CSS")
+    root = view["cards"][0]
+    # Only our generated return expression is evaluated. Household text is a
+    # JSON string, then rendered with HTML metacharacters escaped.
+    assert root["name"] == "[[[ return " + json.dumps('<h1 style="margin:0;font:inherit">' + escape(title) + "</h1>") + "; ]]]"
+    assert root["custom_fields"]["content"]["do_not_eval"] is True
+    for card in nested(root):
+        if card.get("card") == native:
+            assert card["do_not_eval"] is True
+    assert native in list(nested(root))
+
+
+def test_shared_detail_backdrop_stays_below_ha_websocket_message_limit():
+    house, surface, items, areas = fixture()
+    house["people"] = [{"id": f"person{index}", "name": f"Example person {index}", "audience": "adult"} for index in range(8)]
+    panel = generate(house, surface, items, areas, policy={"landscape_panel": True})
+    config = panel["config"]
+    payload = json.dumps(config).encode()
+    assert len(payload) < 4 * 1024 * 1024
+    # Overview, Climate and shared details template each carry the image once.
+    assert payload.count(b"data:image/jpeg;base64,") == 3
+    template = config["button_card_templates"]["home_starter_details"]
+    assert "pointer-events: auto" in template["extra_styles"]
+    for view in config["views"]:
+        if view["path"] in {"home", "ambient", "dark", "climate"}:
+            continue
+        assert view["cards"][0]["template"] == "home_starter_details"
+        assert "extra_styles" not in view["cards"][0]
 
 
 @pytest.mark.parametrize("ambiguous", [False, True])
@@ -216,7 +346,7 @@ def test_kiosk_is_explicit_and_preserves_legacy_state_and_native_back_paths():
     assert "/settings" in panel["config"]["kiosk_mode"]["hide_sidebar"]
     settings = next(v for v in panel["config"]["views"] if v["path"] == "settings")
     assert settings["subview"] and settings["back_path"].endswith("/home")
-    assert settings["sections"][0]["cards"][1]["tap_action"]["action"] == "navigate"
+    assert any(c.get("tap_action", {}).get("navigation_path") == "/profile" for c in nested(settings))
     assert panel["config"]["views"][1]["subview"]
     assert all(v.get("back_path") for v in panel["config"]["views"] if v.get("subview"))
     surface["kiosk"] = "yes"

@@ -1,0 +1,22 @@
+/* Scoped to specialist details; native controls inherit the panel palette. */
+:host {
+  --vertical-stack-card-gap: 24px;
+  --ha-card-border-radius: 20px;
+  --ha-card-header-color: #f7f8fa;
+  --paper-item-icon-color: #9bcfee;
+}
+#card {
+  min-height: calc(100dvh - 56px);
+  background: linear-gradient(110deg, rgba(9,19,27,.98), rgba(14,29,41,.72)), var(--hs-backdrop) !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+#card.disabled { pointer-events: auto; cursor: default; }
+#container { min-height: 0; align-content: start; }
+#content { width: 100%; }
+#name { overflow-wrap: anywhere; }
+@media (max-width: 720px) {
+  #card { padding: 16px !important; }
+  #container { grid-template-areas: "n" "content" !important; gap: 20px !important; }
+  #name { font-size: 26px !important; }
+}

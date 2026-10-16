@@ -43,8 +43,8 @@ const body = `<main class="hs-panel" style="--hs-chrome-height:${kioskActive ? 0
       <span class="hs-climate-action">${cfg.targets.climate ? `Climate controls ${icon("mdi:arrow-right")}` : "Climate setup still needed"}</span>
     </${climateTag}>
     ${tile("today", binText?.startsWith("Bins tonight") ? "Bins tonight" : binText?.startsWith("Bins out") ? "Bins this morning" : "Today", "mdi:calendar-blank-outline",todayText,event && !binText ? "Household calendar" : binText ? "Household collection service" : "Selected household sources",cfg.targets.today || cfg.targets.context)}
-    ${tile("call","Call","mdi:phone-outline","Not commissioned","Calling setup still needed",null)}
-    ${tile("cameras","Cameras","mdi:cctv","Not selected","Camera setup still needed",null)}
+    ${tile("call","Call","mdi:phone-outline","Not commissioned","Calling setup still needed",cfg.targets.call)}
+    ${tile("cameras","Cameras","mdi:cctv","Not selected","Camera setup still needed",cfg.targets.cameras)}
     ${tile("media","Media","mdi:music",media ? media.attributes.friendly_name : "No speaker selected",media ? media.attributes.media_title || ({playing:"Playing",paused:"Paused",idle:"Ready",off:"Off"}[media.state] || media.state) : "Choose a room speaker in setup",cfg.targets.music)}
     ${tile("home","Home","mdi:home-outline",homeText,lightStates.some(s=>!usable(s)) ? "Some lights are unavailable" : "Open rooms and controls",cfg.targets.rooms || cfg.targets.context)}
   </div>
