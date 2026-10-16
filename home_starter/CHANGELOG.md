@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.24
+
+- Serve the new Service setup module through the static-file allowlist so the
+  administration app loads. Test the complete imported admin module graph through
+  the actual server route to catch missing assets before release.
+
 ## 0.8.23
 
 - Add administrator Service setup for finishing Google calendar mappings, matching

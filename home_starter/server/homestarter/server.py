@@ -54,6 +54,7 @@ STATIC_FILES = {
     "surfaces.js": "text/javascript",
     "installation.js": "text/javascript",
     "readiness.js": "text/javascript",
+    "services.js": "text/javascript",
     "commissioning.js": "text/javascript",
     "music-runtime.js": "text/javascript",
     "styles.css": "text/css",

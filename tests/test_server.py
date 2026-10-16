@@ -61,6 +61,22 @@ async def via_ingress(app_client):
 # ---- ingress base path ---------------------------------------------------------
 
 
+async def test_admin_import_graph_is_served(app_client):
+    client, _ = await app_client()
+    pending, seen = ["app.js"], set()
+    while pending:
+        name = pending.pop()
+        if name in seen:
+            continue
+        seen.add(name)
+        response = await client.get("/static/" + name)
+        assert response.status == 200, f"Admin module is not served: {name}"
+        assert response.content_type == "text/javascript"
+        source = await response.text()
+        pending.extend(re.findall(r"""(?:from\s*|import\s*)["']\./([^"']+\.js)["']""", source))
+    assert "services.js" in seen
+
+
 class _Req:
     def __init__(self, headers):
         self.headers = headers
