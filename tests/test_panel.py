@@ -150,6 +150,7 @@ def test_room_names_are_escaped_and_airflow_cannot_override_the_damper():
     assert room["name"] == "&lt;img src=x&gt;"
     assert room["triggers_update"] == ["climate.fixture", "cover.fixture"]
     assert "current_position" in room["custom_fields"]["airflow"]
+    assert "% open" in room["custom_fields"]["airflow"]
     assert "set_cover_position" not in json.dumps(room)
     assert "Number.isFinite" in room["custom_fields"]["current"]
 

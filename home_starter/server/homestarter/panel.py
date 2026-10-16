@@ -34,8 +34,8 @@ def room_panel(zone, damper):
     airflow = (
         "const s=hass.states[variables.damper]; const p=s?.attributes.current_position; "
         "const valid=s && !['unknown','unavailable'].includes(s.state) && typeof p==='number' && Number.isFinite(p) && p>=0 && p<=100; "
-        "return `<div class='hs-room-airflow'><span>Airflow</span><span class='hs-airflow-track' aria-hidden='true'>"
-        "<span style='width:${valid?p:0}%'></span></span><strong>${valid?p+'%':'Unavailable'}</strong></div>`;"
+        "return `<div class='hs-room-airflow'><span>Damper</span><span class='hs-airflow-track' aria-hidden='true'>"
+        "<span style='width:${valid?p:0}%'></span></span><strong>${valid?p+'% open':'Unavailable'}</strong></div>`;"
     )
     return {
         "type": "custom:button-card",

@@ -320,3 +320,5 @@ Each uniquely matched AirTouch zone and damper share a room block. Matching requ
 At 1280×720 all six room blocks and airflow readings fit without scrolling. At widths through 1100px, the main system stacks above the room grid; through 720px rooms stack individually. Native target controls retain at least 130px width in five fixture viewports. Native Back and the main thermostat are preserved. New image assets: none.
 
 Disposable acceptance covers live airflow changes (including 0%, unavailable and recovery) without reload, absent room temperature, six integrated readings, target-feature bounds, native temperature increase/restore at 800×1280, and the existing navigation/reload/permission checks. Fresh `climate-panel-landscape.png` and `climate-tall-tablet-rooms.png` establish grouping and responsive evidence. Finish verdict: **ship**, after correcting intermediate-width target compression; the reviewer confirmed readable target values/units and separate buttons.
+
+Damper copy explicitly reports percentage **open**, rather than implying measured airflow while the system is off. The readonly position remains inside its room.
