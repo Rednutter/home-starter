@@ -137,6 +137,8 @@ test('Music Assistant library uses listener-owned state and exact permitted spea
  assert.match(output.markup,/Music Assistant library/);assert.match(output.markup,/10 of 60 minutes/);assert.match(output.markup,/Example radio/);
  assert.match(output.markup,/data-entity="media_player.offline"[^>]*disabled/);
  assert.doesNotMatch(output.markup,/data-command="group"/);
+ host._hsPage.music.editing=true;host._hsPage.music.draft='Typing a new query';
+ assert.equal(scene('media',{owner:'example',players:[player]}, {[player.entity_id]:livePlayer,'media_player.offline':livePlayer},host,{}, {music_backend:'fixture_addon'}).markup,output.markup,'typing must not replace the native search DOM on periodic updates');
  view.person_id='other';host._hsPage.music.at=Date.now();
  assert.doesNotMatch(scene('media',{owner:'example'}, {},host,{}, {music_backend:'fixture_addon'}).markup,/Example book|Example radio/);
 });

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.16
+
+- Preserve the native search field and keyboard focus while typing on listening pages, including periodic dashboard updates.
+
 ## 0.8.15
 
 - Connect Media and configured-person listening pages to the existing Music Assistant server through authenticated HA ingress. Browse/search real sources, save favourites, select permitted speakers and control playback without exposing provider credentials.
