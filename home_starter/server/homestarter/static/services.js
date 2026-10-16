@@ -60,7 +60,7 @@ export function initServices({ h, api, navigateHA }) {
         button("Add audiobook library", () => { draft.libraries.push({ id: "library-" + Array.from(crypto.getRandomValues(new Uint8Array(12)), v => v.toString(16).padStart(2, "0")).join(""), name: "Audiobook library", provider_id: null, people: [], progress_mode: "listener_local" }); changed(); render(); }),
         h("p", { class: "small muted" }, "These mappings record the plan; they do not grant provider access. Children still use approved House favourites. Listening progress stays with the selected Home Starter person. Provider-wide progress is not imported. Audiobook resume needs a real-library test before it is verified.")),
       button("Save service mappings", save), button("Refresh connection choices", load),
-      dirty && button("Discard edits and load saved mappings", () => { dirty = false; root.dataset.dirty = "false"; load(); }));
+      ...(dirty ? [button("Discard edits and load saved mappings", () => { dirty = false; root.dataset.dirty = "false"; load(); })] : []));
     root.querySelectorAll("input, select, button").forEach(node => { node.disabled = busy; });
   }
   async function load() {

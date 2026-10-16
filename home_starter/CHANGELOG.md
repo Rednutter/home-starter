@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.25
+
+- Omit the discard-edits control cleanly when there is no draft, without rendering
+  a boolean value beside the service setup actions.
+
 ## 0.8.24
 
 - Serve the new Service setup module through the static-file allowlist so the
