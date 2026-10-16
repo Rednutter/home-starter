@@ -330,4 +330,14 @@ const click = event => {
 
  if(event.target.closest?.('[data-command]')) {if(event.target.type !== "range") void command(event);} else navigate(event);};
 
-return html`<div class="hs-page-content" @click=${click} @change=${change} @submit=${musicSearch} @input=${musicInput} @mousedown=${stop} @touchstart=${stop} @touchend=${stop} .innerHTML=${(state.error ? `<p class="hs-feedback" role="alert">${esc(state.error)}</p>` : "")+body}></div>`;
+let pageMarkup=(state.error ? `<p class="hs-feedback" role="alert">${esc(state.error)}</p>` : "")+body;
+if(musicBackend && music && musicState.editing && state.bodyMarkup !== undefined) pageMarkup=state.bodyMarkup;
+else state.bodyMarkup=pageMarkup;
+const pageTemplate=html`<div class="hs-page-content" @click=${click} @change=${change} @submit=${musicSearch} @input=${musicInput} @mousedown=${stop} @touchstart=${stop} @touchend=${stop} .innerHTML=${pageMarkup}></div>`;
+
+// button-card recompiles JS templates; retain Lit's template identity across timer ticks.
+if(pageTemplate.strings) {
+ this._hsContentStrings ||= pageTemplate.strings;
+ pageTemplate.strings=this._hsContentStrings;
+}
+return pageTemplate;

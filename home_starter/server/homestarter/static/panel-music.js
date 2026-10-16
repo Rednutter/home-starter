@@ -33,7 +33,7 @@ const musicRequest = async body => {
 if(musicBackend && ["media","person"].includes(focus.kind) && !musicState.loading && !musicState.editing && Date.now()-musicState.at>5000) void musicRequest();
 const musicAction = async (action,extra={}) => {
  if(state.pending || musicState.loading) return;
- state.pending=true;state.error="";this.requestUpdate();
+ musicState.editing=false;state.pending=true;state.error="";this.requestUpdate();
  try {await musicRequest({action,player:state.destination,...extra});} finally {state.pending=false;this.requestUpdate();}
 };
 const musicButton = (label,action,item,extra="") => `<button type="button" data-music="${action}"${item ? ` data-item="${esc(item)}"`:""}${extra}${state.pending || musicState.loading ? " disabled":""}>${esc(label)}</button>`;

@@ -12,7 +12,7 @@ function scene(kind='today',changes={},states={},host=null,services={},backend={
  const focus={kind,path:kind,title:'Example page',back:base+'/home',owner:null,controls:[],players:[],rooms:[],listener:{id:null,scope:'house'},bindings:{},context_entity:'sensor.example_context',...changes};
  const hass={states,services,user:{id:'fixture-user',name:'Fixture display',is_admin:false},config:{time_zone:'Australia/Sydney'},locale:{language:'en'},callService:async(...args)=>calls.push(args)};
  const common={base,surface_id:'example_panel',epoch:0,kiosk_user_name:'Fixture display',weather:null,people:[{name:'House',path:base+'/home',icon:'mdi:home-outline'}],...backend};
- const output=render.call(host,hass,{focus_json:JSON.stringify(focus),common_json:JSON.stringify(common)},(strings,...values)=>({markup:values.findLast(v=>typeof v==='string'),functions:values.filter(v=>typeof v==='function')}),{location:{search:''}},{runAction:a=>nav.push(a)});
+ const output=render.call(host,hass,{focus_json:JSON.stringify(focus),common_json:JSON.stringify(common)},(strings,...values)=>({strings,markup:values.findLast(v=>typeof v==='string'),functions:values.filter(v=>typeof v==='function')}),{location:{search:''}},{runAction:a=>nav.push(a)});
  return {...output,calls,nav,host,hass,focus};
 }
 function event(dataset,value,tagName='BUTTON') {const el={dataset,value,tagName};return {target:{...el,closest:q=>q.includes('data-adapter') ? dataset.adapter ? el:null : q.includes('data-command') ? dataset.command ? el:null : null},stopPropagation(){},preventDefault(){}};}
@@ -138,6 +138,7 @@ test('Music Assistant library uses listener-owned state and exact permitted spea
  assert.match(output.markup,/data-entity="media_player.offline"[^>]*disabled/);
  assert.doesNotMatch(output.markup,/data-command="group"/);
  host._hsPage.music.editing=true;host._hsPage.music.draft='Typing a new query';
+ assert.equal(scene('media',{owner:'example',players:[player]}, {[player.entity_id]:livePlayer,'media_player.offline':livePlayer},host,{}, {music_backend:'fixture_addon'}).strings,output.strings,'button-card recompilation must retain Lit template identity');
  assert.equal(scene('media',{owner:'example',players:[player]}, {[player.entity_id]:livePlayer,'media_player.offline':livePlayer},host,{}, {music_backend:'fixture_addon'}).markup,output.markup,'typing must not replace the native search DOM on periodic updates');
  const personalHost={...host,_hsPage:{...host._hsPage,path:'person',music:{...host._hsPage.music,view:{...view,default_destination:player.entity_id}}}};
  const personal=scene('person',{owner:'example',destinations:{media:base+'/music',today:base+'/today',rooms:base+'/rooms',call:base+'/call'},supervision:[]}, {[player.entity_id]:livePlayer},personalHost,{}, {music_backend:'fixture_addon'});

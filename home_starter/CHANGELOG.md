@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.18
+
+- Retain Lit template identity across button-card timer renders and hold listening content steady while editing search. Verify the draft and keyboard focus survive repeated updates in native Home Assistant.
+
 ## 0.8.17
 
 - Require the current listening identity for transport controls, including House. A House page cannot resume another person’s queue.
