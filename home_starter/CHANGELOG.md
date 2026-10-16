@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.12
+
+- Preserve the AirTouch overview's asymmetric layout while restoring charcoal surfaces, restrained inactive borders and stronger blue only for reported Climate operation and selected household navigation.
+- Add bundled decorative imagery for Today, Call, Cameras and Media with embedded generation provenance. Keep setup states truthful and native control pages unchanged.
+- Describe zones as enabled separately from HVAC operation. An Off system stays Off even if an integration retains stale activity attributes.
+- Give House and saved people the primary footer; retain accessible, touch-sized Ambient and Settings shortcuts in a secondary display group. Automatic idle/wake and physical startup/default-dashboard setup remain separate work.
+
 ## 0.8.11
 
 - Carry the AirTouch panel theme into Rooms, individual rooms, Today, Music, household context, saved people and Settings while preserving native controls and source permissions.

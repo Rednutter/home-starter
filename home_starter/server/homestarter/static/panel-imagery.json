@@ -1,0 +1,46 @@
+[
+  {
+    "file": "panel-today.jpg",
+    "kind": "AI-generated decorative photograph",
+    "generator": "OpenAI built-in image_gen",
+    "date": "2026-10-16",
+    "purpose": "today overview card",
+    "source_sha256": "c353ad44edb2f5e3efc5835457f0628d1ff36e259f393fca5d6d8cf5c138b98a",
+    "not_live_household_data": true,
+    "sha256": "f2e45110ca70de0ddf598d4fe687d25519cb32467337e5896baabb6ad680e507",
+    "prompt": "Create one landscape 16:9 decorative photographic background for an understated smart-home wall-tablet card. Subject: A ceramic plate of freshly prepared vegetables and pasta on a dark timber kitchen table, a folded linen napkin and a glass nearby. Household dinner preparation, no hands. Style: believable premium interior photography, dusk, charcoal and muted warm neutrals; softly lit but the subject must remain visible after a UI dark gradient. Composition: main subject in right half, left third quiet and dark for white UI text. Full-bleed image only, no UI, no lettering, no logos, no watermarks. Generic invented setting, not a photograph of the user's house. Save output normally."
+  },
+  {
+    "file": "panel-call.jpg",
+    "kind": "AI-generated decorative photograph",
+    "generator": "OpenAI built-in image_gen",
+    "date": "2026-10-16",
+    "purpose": "call overview card",
+    "source_sha256": "5aca26fcb09d6047c9da28c2e11d2051751dde8fd369cfa89797cbbe408951fd",
+    "not_live_household_data": true,
+    "sha256": "c91619bbc6c022f0bfca8805d00cdeb5034192176b149fd8d3de4f1dcafdb60f",
+    "prompt": "Create one landscape 16:9 decorative photographic background for an understated smart-home wall-tablet card. Subject: Close detail of a simple black wall-mounted door intercom handset by a warm grey entry wall; physical handset and coiled cord, no screen and no indicator lights. Style: believable premium interior photography, dusk, charcoal and muted warm neutrals; softly lit but the subject must remain visible after a UI dark gradient. Composition: main subject in right half, left third quiet and dark for white UI text. Full-bleed image only, no UI, no lettering, no logos, no watermarks. Generic invented setting, not a photograph of the user's house. Save output normally."
+  },
+  {
+    "file": "panel-cameras.jpg",
+    "kind": "AI-generated decorative photograph",
+    "generator": "OpenAI built-in image_gen",
+    "date": "2026-10-16",
+    "purpose": "cameras overview card",
+    "source_sha256": "ed083ecf2e46772f6f1deb6735563a4040036ccf15916bbd2146cc23530d5a76",
+    "not_live_household_data": true,
+    "sha256": "083f6ed8cdf617c64aeba71f9128cd3a0ef698096bc7eadf8b0c93d69a78901f",
+    "prompt": "Create one landscape 16:9 decorative photographic background for an understated smart-home wall-tablet card. Subject: A quiet modern residential front porch at twilight, timber front door and soft wall light on the right, concrete path and planting. Normal architectural photography, no surveillance overlay, no people, no visible street numbers. Style: believable premium interior photography, dusk, charcoal and muted warm neutrals; softly lit but the subject must remain visible after a UI dark gradient. Composition: main subject in right half, left third quiet and dark for white UI text. Full-bleed image only, no UI, no lettering, no logos, no watermarks. Generic invented setting, not a photograph of the user's house. Save output normally."
+  },
+  {
+    "file": "panel-media.jpg",
+    "kind": "AI-generated decorative photograph",
+    "generator": "OpenAI built-in image_gen",
+    "date": "2026-10-16",
+    "purpose": "media overview card",
+    "source_sha256": "ac356ab7f05ed653a4693a3459a5b26bc0d69841646420dd85d0774cd2636a40",
+    "not_live_household_data": true,
+    "sha256": "9792f1a1ea2a9301402ddf57e848ea60444d4b8d74a56540e3e6a60ca0b48571",
+    "prompt": "Create one landscape 16:9 decorative photographic background for an understated smart-home wall-tablet card. Subject: A charcoal fabric wireless speaker and a vinyl record on a walnut sideboard, warm neutral interior softly blurred behind; speaker on the right, no brand and no display. Style: believable premium interior photography, dusk, charcoal and muted warm neutrals; softly lit but the subject must remain visible after a UI dark gradient. Composition: main subject in right half, left third quiet and dark for white UI text. Full-bleed image only, no UI, no lettering, no logos, no watermarks. Generic invented setting, not a photograph of the user's house. Save output normally."
+  }
+]

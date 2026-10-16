@@ -2,8 +2,13 @@
 
 The specialist overview follows the approved landscape composition: clock/date
 and selected weather, a prominent Climate panel, Today, Call/Cameras, Media/Home,
-and House plus saved people navigation. Generic generated room photography is
-bundled with embedded provenance; no household photograph is required.
+and House plus saved people navigation. The overview uses a dark neutral base,
+subdued slate borders and blue for active Climate or selected household navigation.
+Generic generated photography is bundled with embedded provenance; no household
+photograph is required. Room/interior imagery belongs to Climate and Home; Today,
+Call, Cameras and Media each have their own contextual decorative image. These
+images are never evidence of a configured capability or a live camera picture.
+Text-side gradients protect legibility while revealing photography on the right.
 
 ## Dependency and publication
 
@@ -36,7 +41,9 @@ offline AirTouch entities retain an inspectable native route; hidden, disabled,
 excluded or audience-blocked entities remain excluded. Entity IDs are preserved.
 
 Temperature comes from HA. Reported HVAC activity takes precedence over selected
-mode; idle is distinct from cooling/heating. Unavailable entities show no invented
+mode while the system is enabled; Off overrides stale activity attributes. Idle
+is distinct from cooling/heating. Zone enablement is reported as "zones enabled"
+and never implies that an Off system is operating. Unavailable entities show no invented
 temperature or successful climate status. Calling and cameras remain explicitly
 uncommissioned/unselected; their tiles open static setup-status pages without
 calling services or camera feeds. Missing overview destinations show explicit
@@ -100,7 +107,7 @@ account display names stop the preview; publication rechecks the modules.
 
 Kiosk applies only to that non-admin account on this dashboard. The overview fills
 the viewport; control/person subviews retain HA's header and Back navigation.
-The footer **Settings** link opens a native Settings view, restoring HA navigation.
+The secondary footer **Settings** shortcut opens a native Settings view, restoring HA navigation.
 It offers Profile/app settings and a **Panel mode** return. Tile/footer taps use
 button-card's supported HA navigation action to stay in the Companion app. No cached global kiosk
 settings or permission changes are applied. Administrator navigation stays visible.
@@ -112,6 +119,41 @@ proof honestly. `devtools/accept_panel_native.py --kiosk` checks account scope,
 settings exit/reentry, reload, full-height overview, native Back and climate control
 restoration, plus readable footer labels at all four viewport sizes. Climate,
 Settings and Panel mode taps must not issue browser document loads.
+
+## Overview refinement and remaining display work
+
+Primary navigation is House plus the saved household people in configured order;
+no reference-image family names or portraits are shipped. Its larger targets leave
+room for future real avatars and names. Ambient and Settings retain accessible
+icon shortcuts in a separate Display group, with at least 52px touch targets.
+Setup explanations have quieter type than titles and status readings.
+
+Ambient remains a manually entered display state, not a household destination.
+There is no automatic idle → Ambient → Dark engine or wake-return-to-House policy
+in this pass. Settings remains a commissioning escape rather than a person tab.
+Neither the display's default HA dashboard nor its app startup URL is changed by
+publication or these visual refinements. Those must be checked on the physical
+panel; kiosk presentation does not enforce a startup destination.
+
+Home Starter commissioning remains the source of truth for capability status.
+Native Climate controls, all detail-page contents, source admission, kiosk account
+scope, top-row information and the asymmetric board proportions are preserved.
+The four new overview JPEGs carry exact generation prompts and origin metadata;
+`static/panel-imagery.json` records source/output hashes. They embed only once per
+overview and the eight-person dashboard remains below HA's 4MiB message limit.
+
+The 0.8.12 refinement started on `main` at `cc7ec7e` (0.8.11). Verification passed
+538 Python tests, 30 JavaScript tests, lint/format checks and the full native HA
+`--kiosk` acceptance run. Native captures cover 1280×800, 1280×720, 1024×600 and
+390px overview layouts, plus native detail routes and tall-tablet controls.
+New assertions cover neutral inactive edges, selected navigation, primary versus
+display navigation, wall-panel touch targets, and Cooling/Idle/Off transitions
+without reloading. Those transitions retain the existing 30-second refresh cadence.
+Fixture climate/light changes were restored. The eight-person payload measured
+1,659,321 bytes. The known native HA media-card exception remains reproduced and
+recorded separately. This pass does not establish physical panel readability,
+actual playback, call/camera commissioning or a persistent startup destination.
+No HA Green deployment is part of this refinement.
 
 ## Room climate and airflow
 

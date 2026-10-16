@@ -324,6 +324,13 @@ def apply(generated, house, climate, policy):
     backdrop = static / "panel-room.jpg"
     image = "url(data:image/jpeg;base64," + base64.b64encode(backdrop.read_bytes()).decode() + ")" if backdrop.exists() else "none"
     css = ":host { --hs-backdrop: " + image + "; }\n" + css
+    # Decorative feature art is embedded only in the overview, never per person.
+    art = []
+    for kind in ("today", "call", "cameras", "media"):
+        asset = static / f"panel-{kind}.jpg"
+        value = "url(data:image/jpeg;base64," + base64.b64encode(asset.read_bytes()).decode() + ")" if asset.exists() else "none"
+        art.append(f"--hs-{kind}-art: {value};")
+    css = ":host { " + " ".join(art) + " }\n" + css
     config = generated["config"]
     base = "/" + generated["url_path"]
     # Every overview destination remains useful even before sources are selected.

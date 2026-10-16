@@ -11,10 +11,11 @@ const locale = hass.locale?.language || undefined;
 const date = options => new Intl.DateTimeFormat(locale, {timeZone:hass.config.time_zone, ...options}).format(now);
 const temperature = value => typeof value === "number" && Number.isFinite(value) ? `${esc(value)}°` : "—";
 const climate = get(cfg.climate), online = usable(climate);
-const mode = online ? ({off:"Off",idle:"Idle",cooling:"Cooling",heating:"Heating",fan:"Fan only",drying:"Drying",defrosting:"Defrosting",preheating:"Preheating"}[climate.attributes.hvac_action] || {off:"Off",cool:"Cool mode",heat:"Heat mode",fan_only:"Fan mode",auto:"Auto mode",dry:"Dry mode"}[climate.state] || climate.state) : "Connection unavailable";
+const operating = online && climate.state !== "off" && ["cooling","heating","fan","drying","defrosting","preheating"].includes(climate.attributes.hvac_action);
+const mode = online ? (climate.state === "off" ? "Off" : {off:"Off",idle:"Idle",cooling:"Cooling",heating:"Heating",fan:"Fan only",drying:"Drying",defrosting:"Defrosting",preheating:"Preheating"}[climate.attributes.hvac_action] || {cool:"Cool mode",heat:"Heat mode",fan_only:"Fan mode",auto:"Auto mode",dry:"Dry mode"}[climate.state] || climate.state) : "Connection unavailable";
 const zones = cfg.zones.map(get).filter(usable);
-const activeZones = zones.filter(s=>s.state !== "off").length;
-const zoneText = cfg.zones.length ? `${activeZones} of ${cfg.zones.length} zones on${zones.length < cfg.zones.length ? " · some unavailable" : ""}` : "";
+const enabledZones = zones.filter(s=>s.state !== "off").length;
+const zoneText = cfg.zones.length ? `${enabledZones} of ${cfg.zones.length} zones enabled${zones.length < cfg.zones.length ? " · some unavailable" : ""}` : "";
 const weather = get(cfg.weather);
 const weatherText = usable(weather) ? temperature(weather.attributes.temperature) : "";
 const binSource = cfg.bins ? get("sensor.home_starter_bin_source") : undefined;
@@ -25,9 +26,9 @@ const todayText = binText || (event ? event.attributes.message : "No verified co
 const media = cfg.media.map(get).find(s=>usable(s) && s.state === "playing") || cfg.media.map(get).find(usable);
 const lightStates = cfg.lights.map(get), lightsOn = lightStates.filter(s=>s?.state === "on").length;
 const homeText = cfg.lights.length ? `${lightsOn} of ${cfg.lights.length} lights on` : "Rooms and household controls";
-const tile = (kind,title,ico,body,detail,target) => {
+const tile = (kind,title,ico,body,detail,target,setup=false) => {
   const tag = target ? "a" : "section";
-  return `<${tag} class="hs-tile hs-${kind}${target ? " hs-link" : ""}"${target ? ` href="${esc(target)}"` : ""} aria-label="${esc(title)}">
+  return `<${tag} class="hs-tile hs-${kind}${setup ? " hs-setup" : ""}${target ? " hs-link" : ""}"${target ? ` href="${esc(target)}"` : ""} aria-label="${esc(title)}">
     <h2>${icon(ico)}${esc(title)}</h2><div class="hs-tile-copy"><div class="hs-body">${esc(body)}</div>${detail ? `<div class="hs-detail">${esc(detail)}</div>` : ""}</div>
     ${target ? `<span class="hs-open" aria-hidden="true">${icon("mdi:arrow-top-right")}</span>` : ""}</${tag}>`;
 };
@@ -37,18 +38,18 @@ const body = `<main class="hs-panel" style="--hs-chrome-height:${kioskActive ? 0
   <header class="hs-header"><div><time class="hs-time">${esc(date({hour:"numeric",minute:"2-digit"}))}</time><span class="hs-date">${esc(date({weekday:"short",day:"numeric",month:"short"}))}</span></div>${weatherText ? `<span class="hs-weather">${icon("mdi:weather-partly-cloudy")}${weatherText}</span>` : ""}</header>
   ${alert ? `<aside class="hs-alert" role="alert">${icon("mdi:alert")} ${esc(alert.attributes.friendly_name)} needs attention</aside>` : ""}
   <div class="hs-board">
-    <${climateTag} class="hs-tile hs-climate${cfg.targets.climate ? " hs-link" : ""}"${cfg.targets.climate ? ` href="${esc(cfg.targets.climate)}" aria-label="Open climate controls"` : ' aria-label="Climate not configured"'}>
+    <${climateTag} class="hs-tile hs-climate${operating ? " hs-operating" : ""}${cfg.targets.climate ? " hs-link" : ""}"${cfg.targets.climate ? ` href="${esc(cfg.targets.climate)}" aria-label="Open climate controls"` : ' aria-label="Climate not configured"'}>
       <h2>${icon("mdi:snowflake")}Climate</h2><div class="hs-temperature">${online ? temperature(climate.attributes.temperature) : "—"}</div>
       <div class="hs-mode">${esc(mode)}</div><div class="hs-climate-detail">${online && typeof climate.attributes.current_temperature === "number" ? `Currently ${temperature(climate.attributes.current_temperature)}` : "Live temperature not reporting"}${zoneText ? `<br>${esc(zoneText)}` : ""}</div>
       <span class="hs-climate-action">${cfg.targets.climate ? `Climate controls ${icon("mdi:arrow-right")}` : "Climate setup still needed"}</span>
     </${climateTag}>
-    ${tile("today", binText?.startsWith("Bins tonight") ? "Bins tonight" : binText?.startsWith("Bins out") ? "Bins this morning" : "Today", "mdi:calendar-blank-outline",todayText,event && !binText ? "Household calendar" : binText ? "Household collection service" : "Selected household sources",cfg.targets.today || cfg.targets.context)}
-    ${tile("call","Call","mdi:phone-outline","Not commissioned","Calling setup still needed",cfg.targets.call)}
-    ${tile("cameras","Cameras","mdi:cctv","Not selected","Camera setup still needed",cfg.targets.cameras)}
-    ${tile("media","Media","mdi:music",media ? media.attributes.friendly_name : "No speaker selected",media ? media.attributes.media_title || ({playing:"Playing",paused:"Paused",idle:"Ready",off:"Off"}[media.state] || media.state) : "Choose a room speaker in setup",cfg.targets.music)}
+    ${tile("today", binText?.startsWith("Bins tonight") ? "Bins tonight" : binText?.startsWith("Bins out") ? "Bins this morning" : "Today", "mdi:calendar-blank-outline",todayText,event && !binText ? "Household calendar" : binText ? "Household collection service" : "Selected household sources",cfg.targets.today || cfg.targets.context,!binText && !event)}
+    ${tile("call","Call","mdi:phone-outline","Not commissioned","Calling setup still needed",cfg.targets.call,true)}
+    ${tile("cameras","Cameras","mdi:cctv","Not selected","Camera setup still needed",cfg.targets.cameras,true)}
+    ${tile("media","Media","mdi:music",media ? media.attributes.friendly_name : "No speaker selected",media ? media.attributes.media_title || ({playing:"Playing",paused:"Paused",idle:"Ready",off:"Off"}[media.state] || media.state) : "Choose a room speaker in setup",cfg.targets.music,!media)}
     ${tile("home","Home","mdi:home-outline",homeText,lightStates.some(s=>!usable(s)) ? "Some lights are unavailable" : "Open rooms and controls",cfg.targets.rooms || cfg.targets.context)}
   </div>
-  <nav class="hs-nav" aria-label="Household">${cfg.people.map(p=>`<a href="${esc(p.path)}"${p.path === cfg.path ? ' aria-current="page"' : ""}>${icon(p.icon)}<span>${esc(p.name)}</span></a>`).join("")}<a class="hs-display" href="${esc(cfg.base)}/ambient">${icon("mdi:weather-night")}<span>Ambient</span></a>${cfg.kiosk_user_name ? `<a class="hs-display" href="${esc(cfg.base)}/${displayViewer && escapedKiosk ? "home" : "settings"}">${icon(displayViewer && escapedKiosk ? "mdi:fullscreen" : "mdi:cog-outline")}<span>${displayViewer && escapedKiosk ? "Panel mode" : "Settings"}</span></a>` : ""}</nav>
+  <footer class="hs-nav"><nav class="hs-household" aria-label="Household">${cfg.people.map(p=>`<a href="${esc(p.path)}"${p.path === cfg.path ? ' aria-current="page"' : ""}>${icon(p.icon)}<span>${esc(p.name)}</span></a>`).join("")}</nav><div class="hs-utilities" role="group" aria-label="Display"><a class="hs-display" href="${esc(cfg.base)}/ambient" aria-label="Ambient" title="Ambient display">${icon("mdi:weather-night")}<span class="hs-sr-only">Ambient</span></a>${cfg.kiosk_user_name ? `<a class="hs-display" href="${esc(cfg.base)}/${displayViewer && escapedKiosk ? "home" : "settings"}" aria-label="${displayViewer && escapedKiosk ? "Panel mode" : "Settings"}" title="${displayViewer && escapedKiosk ? "Panel mode" : "Settings"}">${icon(displayViewer && escapedKiosk ? "mdi:fullscreen" : "mdi:cog-outline")}<span class="hs-sr-only">${displayViewer && escapedKiosk ? "Panel mode" : "Settings"}</span></a>` : ""}</div></footer>
 </main>`;
 // Use HA navigation: ordinary anchor loads can leave the Android companion app.
 const stop = event => event.stopPropagation();

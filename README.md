@@ -33,7 +33,7 @@ Local captures belong in ignored `screens/` or `.runtime/`; never commit real HA
 responses, names, contacts, calendars, identifiers, credentials or screenshots.
 Before every push, inspect status, the complete staged diff and new files, then run
 `python devtools/privacy_check.py --staged` after installing `requirements-dev.txt`.
-The reviewed secret baseline contains hashes of synthetic test values only; a
+The reviewed secret baseline contains hashes of synthetic values and generated asset digests only; a
 scanner cannot replace manual privacy review. See [acceptance](home_starter/ACCEPTANCE.md).
 
 Home Readiness is persistent: return to incomplete household, room, Music,

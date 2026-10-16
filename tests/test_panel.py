@@ -222,8 +222,8 @@ def test_shared_detail_backdrop_stays_below_ha_websocket_message_limit():
     config = panel["config"]
     payload = json.dumps(config).encode()
     assert len(payload) < 4 * 1024 * 1024
-    # Overview, Climate and shared details template each carry the image once.
-    assert payload.count(b"data:image/jpeg;base64,") == 3
+    # Overview has five decorative images; Climate and shared details reuse room.
+    assert payload.count(b"data:image/jpeg;base64,") == 7
     template = config["button_card_templates"]["home_starter_details"]
     assert "pointer-events: auto" in template["extra_styles"]
     for view in config["views"]:

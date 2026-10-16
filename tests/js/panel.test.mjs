@@ -52,6 +52,39 @@ test("selected climate mode is distinct from reported activity",()=>{
   }
   assert.match(scene({"climate.example":{state:"cool",attributes:{hvac_action:"cooling"}}}),/>Cooling</);
 });
+test("enabled zones remain distinct from HVAC operation and inactive accent",()=>{
+  const zones=Array.from({length:6},(_,i)=>`climate.zone_${i}`);
+  const states=Object.fromEntries(zones.map(id=>[id,{state:"cool",attributes:{}}]));
+  const off=scene({...states,"climate.example":{state:"off",attributes:{hvac_action:"cooling"}}},{zones});
+  assert.match(off,/>Off</);assert.match(off,/6 of 6 zones enabled/);
+  assert.doesNotMatch(off,/zones on|hs-operating/);
+  const cooling=scene({...states,"climate.example":{state:"cool",attributes:{hvac_action:"cooling"}}},{zones});
+  assert.match(cooling,/hs-climate hs-operating/);assert.match(cooling,/>Cooling</);
+  assert.match(cooling,/zones enabled/);
+  assert.doesNotMatch(scene({"climate.example":{state:"cool",attributes:{hvac_action:"idle"}}}),/hs-operating/);
+  delete states[zones[0]];
+  assert.match(scene(states,{zones}),/5 of 6 zones enabled · some unavailable/);
+});
+test("household navigation uses saved people and separates display utilities",()=>{
+  const output=scene({}, {kiosk_user_name:"Fixture panel",people:[
+    {name:"House",path:"/example-panel/home",icon:"mdi:home-outline"},
+    {name:"Saved person",path:"/example-panel/person-saved",icon:"mdi:account-circle-outline"}
+  ]});
+  const household=output.match(/<nav class="hs-household"[^>]*>(.*?)<\/nav>/s)[1];
+  assert.match(household,/aria-current="page"/);assert.match(household,/Saved person/);
+  assert.doesNotMatch(household,/Ambient|Settings|Grant|Renae|Liam|Mia|Noah/);
+  assert.match(output,/<div class="hs-utilities" role="group" aria-label="Display">/);
+  assert.match(output,/aria-label="Ambient"/);assert.match(output,/aria-label="Settings"/);
+});
+test("setup copy stays truthful and secondary without active card styling",()=>{
+  const output=scene();
+  for(const kind of ["today","call","cameras","media"]) assert.match(output,new RegExp(`hs-${kind} hs-setup`));
+  for(const state of ["Not commissioned","Not selected","No speaker selected","No verified commitments to show"]) assert.ok(output.includes(state));
+  assert.doesNotMatch(output,/hs-operating/);
+  const css=readFileSync("home_starter/server/homestarter/static/panel-layout.css","utf8");
+  assert.match(css,/--hs-edge: #41484e/);assert.match(css,/border: 1px solid var\(--hs-edge\)/);
+  assert.match(css,/\.hs-nav a\[aria-current\] \{ background: #103e59; color: #70c7ff/);
+});
 test("offline climate stays honest and native control route remains",()=>{
   const html=scene({"climate.example":{state:"unavailable",attributes:{temperature:23}}});
   assert.match(html,/Connection unavailable/);assert.doesNotMatch(html,/>23°</);assert.match(html,/href="\/example-panel\/climate"/);

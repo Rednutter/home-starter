@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-15T20:47:16.974218Z",
+  "generatedAt": "2026-10-16T06:51:36.906006Z",
   "title": "Design System: Home Starter",
   "extensions": {
     "colorMeta": {
@@ -339,6 +339,230 @@
           "oklch(84% 0.0127 258.37)",
           "oklch(95% 0.0127 258.37)"
         ]
+      },
+      "overview-canvas": {
+        "role": "neutral",
+        "displayName": "overview canvas",
+        "tonalRamp": [
+          "oklch(15% 0.0101 234.53)",
+          "oklch(26% 0.0101 234.53)",
+          "oklch(38% 0.0101 234.53)",
+          "oklch(49% 0.0101 234.53)",
+          "oklch(61% 0.0101 234.53)",
+          "oklch(72% 0.0101 234.53)",
+          "oklch(84% 0.0101 234.53)",
+          "oklch(95% 0.0101 234.53)"
+        ]
+      },
+      "overview-edge": {
+        "role": "neutral",
+        "displayName": "overview edge",
+        "tonalRamp": [
+          "oklch(15% 0.0137 243.95)",
+          "oklch(26% 0.0137 243.95)",
+          "oklch(38% 0.0137 243.95)",
+          "oklch(49% 0.0137 243.95)",
+          "oklch(61% 0.0137 243.95)",
+          "oklch(72% 0.0137 243.95)",
+          "oklch(84% 0.0137 243.95)",
+          "oklch(95% 0.0137 243.95)"
+        ]
+      },
+      "overview-secondary": {
+        "role": "neutral",
+        "displayName": "overview secondary",
+        "tonalRamp": [
+          "oklch(15% 0.0035 247.86)",
+          "oklch(26% 0.0035 247.86)",
+          "oklch(38% 0.0035 247.86)",
+          "oklch(49% 0.0035 247.86)",
+          "oklch(61% 0.0035 247.86)",
+          "oklch(72% 0.0035 247.86)",
+          "oklch(84% 0.0035 247.86)",
+          "oklch(95% 0.0035 247.86)"
+        ]
+      },
+      "overview-quiet": {
+        "role": "neutral",
+        "displayName": "overview quiet",
+        "tonalRamp": [
+          "oklch(15% 0.0090 247.94)",
+          "oklch(26% 0.0090 247.94)",
+          "oklch(38% 0.0090 247.94)",
+          "oklch(49% 0.0090 247.94)",
+          "oklch(61% 0.0090 247.94)",
+          "oklch(72% 0.0090 247.94)",
+          "oklch(84% 0.0090 247.94)",
+          "oklch(95% 0.0090 247.94)"
+        ]
+      },
+      "overview-tile": {
+        "role": "neutral",
+        "displayName": "overview tile",
+        "tonalRamp": [
+          "oklch(15% 0.0074 248.16)",
+          "oklch(26% 0.0074 248.16)",
+          "oklch(38% 0.0074 248.16)",
+          "oklch(49% 0.0074 248.16)",
+          "oklch(61% 0.0074 248.16)",
+          "oklch(72% 0.0074 248.16)",
+          "oklch(84% 0.0074 248.16)",
+          "oklch(95% 0.0074 248.16)"
+        ]
+      },
+      "overview-nav-edge": {
+        "role": "neutral",
+        "displayName": "overview nav edge",
+        "tonalRamp": [
+          "oklch(15% 0.0131 238.96)",
+          "oklch(26% 0.0131 238.96)",
+          "oklch(38% 0.0131 238.96)",
+          "oklch(49% 0.0131 238.96)",
+          "oklch(61% 0.0131 238.96)",
+          "oklch(72% 0.0131 238.96)",
+          "oklch(84% 0.0131 238.96)",
+          "oklch(95% 0.0131 238.96)"
+        ]
+      },
+      "overview-operating-edge": {
+        "role": "primary",
+        "displayName": "overview operating edge",
+        "tonalRamp": [
+          "oklch(15% 0.0653 236.14)",
+          "oklch(26% 0.0653 236.14)",
+          "oklch(38% 0.0653 236.14)",
+          "oklch(49% 0.0653 236.14)",
+          "oklch(61% 0.0653 236.14)",
+          "oklch(72% 0.0653 236.14)",
+          "oklch(84% 0.0653 236.14)",
+          "oklch(95% 0.0653 236.14)"
+        ]
+      },
+      "panel-canvas": {
+        "role": "neutral",
+        "displayName": "panel canvas",
+        "tonalRamp": [
+          "oklch(15% 0.0222 243.49)",
+          "oklch(26% 0.0222 243.49)",
+          "oklch(38% 0.0222 243.49)",
+          "oklch(49% 0.0222 243.49)",
+          "oklch(61% 0.0222 243.49)",
+          "oklch(72% 0.0222 243.49)",
+          "oklch(84% 0.0222 243.49)",
+          "oklch(95% 0.0222 243.49)"
+        ]
+      },
+      "panel-text": {
+        "role": "neutral",
+        "displayName": "panel text",
+        "tonalRamp": [
+          "oklch(15% 0.0029 264.54)",
+          "oklch(26% 0.0029 264.54)",
+          "oklch(38% 0.0029 264.54)",
+          "oklch(49% 0.0029 264.54)",
+          "oklch(61% 0.0029 264.54)",
+          "oklch(72% 0.0029 264.54)",
+          "oklch(84% 0.0029 264.54)",
+          "oklch(95% 0.0029 264.54)"
+        ]
+      },
+      "panel-muted": {
+        "role": "neutral",
+        "displayName": "panel muted",
+        "tonalRamp": [
+          "oklch(15% 0.0148 244.74)",
+          "oklch(26% 0.0148 244.74)",
+          "oklch(38% 0.0148 244.74)",
+          "oklch(49% 0.0148 244.74)",
+          "oklch(61% 0.0148 244.74)",
+          "oklch(72% 0.0148 244.74)",
+          "oklch(84% 0.0148 244.74)",
+          "oklch(95% 0.0148 244.74)"
+        ]
+      },
+      "panel-border": {
+        "role": "neutral",
+        "displayName": "panel border",
+        "tonalRamp": [
+          "oklch(15% 0.0248 241.78)",
+          "oklch(26% 0.0248 241.78)",
+          "oklch(38% 0.0248 241.78)",
+          "oklch(49% 0.0248 241.78)",
+          "oklch(61% 0.0248 241.78)",
+          "oklch(72% 0.0248 241.78)",
+          "oklch(84% 0.0248 241.78)",
+          "oklch(95% 0.0248 241.78)"
+        ]
+      },
+      "panel-climate-accent": {
+        "role": "primary",
+        "displayName": "panel climate accent",
+        "tonalRamp": [
+          "oklch(15% 0.1362 241.85)",
+          "oklch(26% 0.1362 241.85)",
+          "oklch(38% 0.1362 241.85)",
+          "oklch(49% 0.1362 241.85)",
+          "oklch(61% 0.1362 241.85)",
+          "oklch(72% 0.1362 241.85)",
+          "oklch(84% 0.1362 241.85)",
+          "oklch(95% 0.1362 241.85)"
+        ]
+      },
+      "panel-nav": {
+        "role": "neutral",
+        "displayName": "panel nav",
+        "tonalRamp": [
+          "oklch(15% 0.0193 245.27)",
+          "oklch(26% 0.0193 245.27)",
+          "oklch(38% 0.0193 245.27)",
+          "oklch(49% 0.0193 245.27)",
+          "oklch(61% 0.0193 245.27)",
+          "oklch(72% 0.0193 245.27)",
+          "oklch(84% 0.0193 245.27)",
+          "oklch(95% 0.0193 245.27)"
+        ]
+      },
+      "panel-nav-active": {
+        "role": "primary",
+        "displayName": "panel nav active",
+        "tonalRamp": [
+          "oklch(15% 0.0675 239.24)",
+          "oklch(26% 0.0675 239.24)",
+          "oklch(38% 0.0675 239.24)",
+          "oklch(49% 0.0675 239.24)",
+          "oklch(61% 0.0675 239.24)",
+          "oklch(72% 0.0675 239.24)",
+          "oklch(84% 0.0675 239.24)",
+          "oklch(95% 0.0675 239.24)"
+        ]
+      },
+      "panel-nav-active-text": {
+        "role": "primary",
+        "displayName": "panel nav active text",
+        "tonalRamp": [
+          "oklch(15% 0.1160 238.76)",
+          "oklch(26% 0.1160 238.76)",
+          "oklch(38% 0.1160 238.76)",
+          "oklch(49% 0.1160 238.76)",
+          "oklch(61% 0.1160 238.76)",
+          "oklch(72% 0.1160 238.76)",
+          "oklch(84% 0.1160 238.76)",
+          "oklch(95% 0.1160 238.76)"
+        ]
+      },
+      "panel-focus": {
+        "role": "primary",
+        "displayName": "panel focus",
+        "tonalRamp": [
+          "oklch(15% 0.1010 234.47)",
+          "oklch(26% 0.1010 234.47)",
+          "oklch(38% 0.1010 234.47)",
+          "oklch(49% 0.1010 234.47)",
+          "oklch(61% 0.1010 234.47)",
+          "oklch(72% 0.1010 234.47)",
+          "oklch(84% 0.1010 234.47)",
+          "oklch(95% 0.1010 234.47)"
+        ]
       }
     },
     "typographyMeta": {
@@ -349,6 +573,10 @@
       "preview-clock": {
         "displayName": "Layout preview clock",
         "purpose": "Preview only; native Clock is theme-owned."
+      },
+      "panel-body": {
+        "displayName": "Pinned panel Roboto",
+        "purpose": "Intentional reference-led overview typography; native controls retain their own typography."
       }
     },
     "shadows": [
@@ -388,7 +616,7 @@
         "value": "750px"
       }
     ],
-    "scope": "Administrator primitives plus explicitly scoped panel-* tokens for the AirTouch specialist overview. Native Home Assistant controls and chrome remain theme-owned. Tonal ramps are synthesized panel previews, not implemented palette tokens. Explicit specialist kiosk presentation hides native chrome only for its validated dedicated nonadministrator viewer; Settings restores it and native control subviews retain Back.",
+    "scope": "Administrator primitives plus scoped AirTouch panel tokens. Neutral overview-* tokens apply only to the overview; existing navy/cyan panel-* tokens remain for unchanged native Climate/detail pages. Shared text, focus, radii and selected navigation stay within the existing panel system. Native controls/chrome and permissions remain HA-owned. Tonal ramps are synthesized panel previews, not implemented palette tokens.",
     "sources": [
       "home_starter/server/homestarter/static/styles.css",
       "home_starter/server/homestarter/static/index.html",
@@ -400,7 +628,10 @@
       "home_starter/MUSIC.md",
       "home_starter/server/homestarter/panel.py",
       "home_starter/server/homestarter/static/panel-content.js",
-      "home_starter/server/homestarter/static/panel-layout.css"
+      "home_starter/server/homestarter/static/panel-layout.css",
+      "home_starter/server/homestarter/static/panel-imagery.json",
+      "home_starter/server/homestarter/static/panel-climate.css",
+      "home_starter/server/homestarter/static/panel-details.css"
     ],
     "airtouchKiosk": {
       "scope": "Explicit surface.kiosk opt-in for the specialist AirTouch overview only; existing visual worlds and HA permissions are preserved.",
@@ -411,19 +642,27 @@
       },
       "nativeIntegration": "Kiosk Mode 15.0.0; sidebar hidden only on the selected generated dashboard for the validated unique-name nonadministrator account. Header hidden only on the overview; native control subviews retain header and Back.",
       "escape": "Settings opens a native Settings subview with HA chrome, Profile/app settings and Panel mode return. Native HA navigation keeps taps in the Companion app. No cache locking.",
-      "narrowFooter": "At container widths up to 720px, whole items wrap with a 76px minimum width and flex basis; minimum target height remains 56px.",
-      "verification": "Disposable native --kiosk acceptance passed four sizes, footer labels, administrator chrome, nonadministrator climate increase/restore, Settings escape, re-entry, reload and Back. Fresh finish review returned ship after the narrow Settings wrap fix; no regression was found.",
+      "narrowFooter": "Through 720px container width, House and saved people wrap whole with 76px minimum and 118px maximum width; secondary 52px Ambient/Settings shortcuts occupy a separate row. Household height is 70px base / 66px compact; tray is 84px / 76px.",
+      "verification": "Full disposable native --kiosk acceptance passed controls with restore, reload, navigation, Settings escape/re-entry and active-to-Off transitions. 538 Python and 30 JavaScript tests passed; eight-person payload 1,659,321 bytes. Documentation-sync finding resolved in DESIGN.md and the surface contract.",
       "captures": [
-        "screens/panel-ui/kiosk.png",
-        "screens/panel-ui/kiosk-settings.png",
-        "screens/panel-ui/landscape.png",
         "screens/panel-ui/panel-landscape.png",
         "screens/panel-ui/compact-landscape.png",
         "screens/panel-ui/narrow.png",
-        "screens/panel-ui/offline.png",
-        "screens/panel-ui/idle.png"
+        "screens/panel-ui/cooling.png",
+        "screens/panel-ui/idle.png",
+        "screens/panel-ui/off-zones-enabled.png"
       ],
-      "limits": "Green selected-dashboard publication remains pending. Disposable captures do not prove physical-screen acceptance or actual AirTouch operation."
+      "limits": "0.8.12 prepared locally; live 0.8.11 unchanged. Physical tablet and actual AirTouch operation unverified. Automatic idle/Ambient/Dark and wake-return policy not implemented; default-dashboard/app startup not configured."
+    },
+    "airtouchOverview": {
+      "material": "Dark neutral overview and slate inactive edges. Existing native Climate/detail navy/cyan palette remains unchanged. Shared panel type/radii/focus continue the existing system.",
+      "gradient": "linear-gradient(100deg,rgba(22,24,26,.96) 0%,rgba(22,24,26,.86) 40%,rgba(22,24,26,.26) 100%)",
+      "operatingGradient": "linear-gradient(100deg,rgba(11,35,51,.96) 0%,rgba(11,35,51,.82) 40%,rgba(11,35,51,.25) 100%)",
+      "activity": "Blue only for reported operation while state is not off, or selected household navigation. Off overrides stale hvac_action; enabled zones are counted separately from activity.",
+      "imagery": "panel-room.jpg reused for Climate/Home. Four new contextual decorative JPEGs embed exact prompts/origin; panel-imagery.json carries source/output hashes. No household photograph or capability/feed evidence.",
+      "navigation": "House plus saved people primary; Ambient and kiosk Settings secondary accessible icon shortcuts. No invented members or avatars.",
+      "refresh": "Existing 30s update_timer retained.",
+      "detector": "Ran once; no errors. Pinned Roboto and advisory new overview tokens are intentional scoped choices, not a parallel design system."
     }
   },
   "components": [
@@ -492,14 +731,14 @@
       "name": "AirTouch selected navigation",
       "kind": "nav",
       "refersTo": "panel-nav-active",
-      "description": "Scoped specialist household navigation, with Settings escape for explicit kiosk presentation; retained HA control subviews keep Back.",
-      "html": "<nav class=\"ds-panel-nav\" aria-label=\"Household\"><a href=\"#house\" aria-current=\"page\"><span>House</span></a><a href=\"#ambient\"><span>Ambient</span></a><a href=\"#settings\"><span>Settings</span></a></nav>",
-      "css": ".ds-panel-nav{display:flex;flex-wrap:wrap;gap:8px;padding:6px;border:1px solid #2b3b48;border-radius:22px;background:#081017;font-family:Roboto,Arial,sans-serif}.ds-panel-nav a{min-width:56px;min-height:56px;flex:1;display:flex;align-items:center;justify-content:center;border-radius:16px;color:#e3e8ed;text-decoration:none;padding:4px 6px;font-size:16px;text-align:center}.ds-panel-nav a[aria-current]{background:#103e59;color:#70c7ff;font-weight:600}.ds-panel-nav a:hover{background-color:#203342}.ds-panel-nav a:focus-visible{outline:3px solid #82d2ff;outline-offset:-5px}.ds-panel-nav a:active{background-color:#203342}@media(max-width:720px){.ds-panel-nav a{flex:1 1 76px;min-width:76px;font-size:14px}}"
+      "description": "House and saved people are primary; accessible Ambient and kiosk Settings icons form a secondary Display group. Demonstration includes no invented member.",
+      "html": "<footer class=\"ds-panel-nav\"><nav class=\"ds-household\" aria-label=\"Household\"><a href=\"#house\" aria-current=\"page\"><svg viewBox=\"0 0 24 24\" width=\"30\" height=\"30\" aria-hidden=\"true\"><path d=\"M3 10 12 3l9 7M6 9v12h5v-7h2v7h5V9\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"/></svg><span>House</span></a></nav><div class=\"ds-utilities\" role=\"group\" aria-label=\"Display\"><a href=\"#ambient\" aria-label=\"Ambient\" title=\"Ambient display\"><svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" aria-hidden=\"true\"><path d=\"M20 15A9 9 0 0 1 9 4 9 9 0 1 0 20 15Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"/></svg></a><a href=\"#settings\" aria-label=\"Settings\" title=\"Settings\"><svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" aria-hidden=\"true\"><path d=\"m10 3-1 3-3 1-3 3 2 2-2 2 3 3 3 1 1 3h4l1-3 3-1 3-3-2-2 2-2-3-3-3-1-1-3Z\" fill=\"none\" stroke=\"currentColor\"/><circle cx=\"12\" cy=\"12\" r=\"3\" fill=\"none\" stroke=\"currentColor\"/></svg></a></div></footer>",
+      "css": ".ds-panel-nav{display:flex;align-items:stretch;gap:16px;min-height:84px;padding:6px;border:1px solid #2e353a;border-radius:22px;background:#0b1013;font-family:Roboto,Arial,sans-serif}.ds-household{min-width:0;display:flex;justify-content:space-around;align-items:stretch;gap:8px;flex:1}.ds-panel-nav a{box-sizing:border-box;min-width:76px;max-width:118px;min-height:70px;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border-radius:16px;color:#e3e8ed;text-decoration:none;padding:6px;font-size:16px;text-align:center}.ds-panel-nav a[aria-current]{background:#103e59;color:#70c7ff;font-weight:600}.ds-utilities{display:flex;align-items:center;gap:4px}.ds-utilities a{flex:none;min-width:52px;width:52px;min-height:52px;color:#b9bec3}.ds-panel-nav a:hover,.ds-panel-nav a:active{background:#272c30}.ds-panel-nav a[aria-current]:hover{background:#174b68}.ds-panel-nav a:focus-visible{outline:3px solid #82d2ff;outline-offset:-5px}@media(max-width:720px){.ds-panel-nav{flex-wrap:wrap;gap:6px}.ds-household{flex:1 1 100%;flex-wrap:wrap}.ds-household a{flex:1 1 76px;font-size:14px}.ds-utilities{margin-left:auto}}@media(max-height:750px) and (min-width:721px){.ds-panel-nav{min-height:76px;padding:4px}.ds-household a{min-height:66px}}"
     }
   ],
   "narrative": {
     "northStar": "Code-led Operate",
-    "overview": "Preserve the incumbent Home Assistant-like administration interface: compact system typography, blue actions, neutral bordered cards and progressive disclosure. The household screen setup extends this identity rather than introducing another visual world.\n\nHome Starter owns the administrator setup and its non-operating layout preview. Generated household dashboards use native Home Assistant cards and the viewer's theme. Their chrome, typography, card styling and sidebar are Home Assistant's responsibility; do not treat those screenshot values as Home Starter tokens. V0.3 establishes admission, hierarchy and generation boundaries, not a finished visual design for every household profile. Operational limits live in [SURFACES.md](home_starter/SURFACES.md).\n\nScoped specialist world: the reference-led AirTouch overview uses navy, photographic panels, white Roboto and cyan accents. panel-* tokens apply only here; the Climate page now shares that scoped world through unchanged nested native controls; administrator styling and other subviews retain their existing worlds. See DESIGN.md for scoped evidence and actual-hardware verification limits.",
+    "overview": "Preserve the incumbent Home Assistant-like administration interface: compact system typography, blue actions, neutral bordered cards and progressive disclosure. The household screen setup extends this identity rather than introducing another visual world.\n\nHome Starter owns the administrator setup and its non-operating layout preview. Generated household dashboards use native Home Assistant cards and the viewer's theme. Their chrome, typography, card styling and sidebar are Home Assistant's responsibility; do not treat those screenshot values as Home Starter tokens. V0.3 establishes admission, hierarchy and generation boundaries, not a finished visual design for every household profile. Operational limits live in [SURFACES.md](home_starter/SURFACES.md).\n\n**Scoped specialist world: AirTouch household panel.** The explicitly requested reference-led AirTouch overview uses a dark neutral photographic overview, white Roboto and blue reserved for operating Climate and selected household navigation. Its direction comes from the supplied `home_starter_airtouch_reference.png` and the contract in `.impeccable/surfaces/airtouch-panel.md`. The overview uses scoped neutral tokens; Climate and detail subviews retain their existing navy/cyan palette and generic room backdrop around preserved native controls. Do not replace their still-used panel tokens with overview colors. Administration retains Code-led Operate and Home Assistant chrome retains native styling. This world remains scoped to the specialist landscape panel.",
     "keyCharacteristics": [
       "Compact administration with collapsible details.",
       "Explicit settings, preview and publication states.",
@@ -519,7 +758,7 @@
       },
       {
         "name": "AirTouch Climate continuity",
-        "body": "Navy/cyan native Climate controls: photographic main thermostat left, room tiles right, readonly airflow below. Preserve all native configurations and Back navigation. Stack at 720px and below; allow vertical scrolling instead of overlapping or clipping controls.",
+        "body": "Retain the established navy/cyan native Climate route and existing room backdrop. Preserve native configurations, room/device grouping and Back; the neutral overview refinement does not restyle this route.",
         "section": "components"
       },
       {
@@ -530,11 +769,11 @@
     ],
     "dos": [
       "Do preserve the incumbent admin tokens and progressive disclosure.",
+      "Do scope neutral overview tokens and contextual photographs to the AirTouch overview; retain the existing navy/cyan Climate and detail worlds and native controls.",
+      "Do distinguish reported climate activity, selected operating mode, enabled zones and unavailable evidence; Off overrides stale activity.",
       "Do distinguish layout preview, verified publication and native control verification.",
       "Do compress admitted household items into room summaries and native subviews.",
-      "Do retain person-versus-physical-screen preference ownership and suitability explanations.",
-      "Do scope AirTouch panel tokens and photographic composition to the selected specialist overview, preserving native controls.",
-      "Do distinguish reported climate activity, selected operating mode and unavailable evidence."
+      "Do retain person-versus-physical-screen preference ownership and suitability explanations."
     ],
     "donts": [
       "Don't apply admin CSS tokens to native Home Assistant dashboards.",

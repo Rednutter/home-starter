@@ -271,6 +271,17 @@ async def main():
                 await expect(page.locator(".hs-weather")).to_contain_text("14°")
                 assert header and header["height"] < 70, "Weather icon must not expand the header"
                 await copy_fits()
+                assert await page.locator(".hs-household a").count() == 3, "Only House and the two saved fixture people belong in primary navigation"
+                assert await page.locator(".hs-household .hs-display").count() == 0
+                assert await page.locator(".hs-nav a").evaluate_all(
+                    "els=>els.every(e=>{const r=e.getBoundingClientRect();return r.width>=48&&r.height>=48})"
+                ), "Household and secondary display actions must retain wall-panel touch targets"
+                assert await page.locator(".hs-tile:not(.hs-operating)").evaluate_all(
+                    "els=>els.every(e=>getComputedStyle(e).borderColor==='rgb(65, 72, 78)')"
+                ), "Inactive cards must use the shared slate border"
+                assert await page.locator(".hs-household a[aria-current]").evaluate("e=>getComputedStyle(e).backgroundColor==='rgb(16, 62, 89)'"), (
+                    "Selected household navigation retains its blue accent"
+                )
                 assert await page.locator(".hs-nav a span").evaluate_all(
                     "els=>els.every(e=>e.getBoundingClientRect().height<=parseFloat(getComputedStyle(e).fontSize)*1.5)"
                 ), "Footer labels must not split midword"
@@ -514,7 +525,21 @@ async def main():
                 assert response.status == 200
             await show_scene(generate(house, surface, idle_items, areas, policy=panel_policy))
             await expect(page.get_by_text("Idle", exact=True)).to_be_visible()
+            assert await page.locator(".hs-climate.hs-operating").count() == 0
             await page.screenshot(path=str(SHOTS / "idle.png"))
+            for state, action, operating in [("cool", "cooling", True), ("off", "cooling", False)]:
+                async with session.post(
+                    BASE + "/api/states/climate.fixture_panel_offline",
+                    headers=headers,
+                    json={"state": state, "attributes": {**climate["attributes"], "hvac_action": action}},
+                ) as response:
+                    assert response.status == 200
+                # The overview intentionally refreshes clock/context every 30s.
+                # Verify transitions without a reload within that existing cadence.
+                await expect(page.locator(".hs-climate.hs-operating")).to_have_count(int(operating), timeout=35000)
+                await expect(page.locator(".hs-mode")).to_have_text("Cooling" if operating else "Off")
+                await expect(page.locator(".hs-climate-detail")).to_contain_text("zones enabled")
+                await page.screenshot(path=str(SHOTS / ("cooling.png" if operating else "off-zones-enabled.png")))
             # Same fixture projection contract as the waste acceptance; restore it.
             source = next((s for s in await core.states() if s["entity_id"] == "sensor.home_starter_bin_source"), {"state": "unavailable", "attributes": {}})
 
