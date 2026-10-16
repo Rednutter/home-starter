@@ -239,3 +239,20 @@ against contract fixtures; it does **not** verify native HA rendering or hardwar
 The disposable-Core/native harness requires a working Linux Docker engine.
 Official Supervisor schemas require Linux (`fcntl`); the App linter runs on Windows.
 Record real Green acceptance separately in private runtime storage.
+
+
+## AirTouch page system (0.8.13)
+
+The approved House dashboard is the visual design system for focused specialist
+pages. House + configured people is primary navigation; Ambient and Settings remain
+secondary display utilities. Today, Call, Cameras / Door, custom Media, Rooms and
+individual rooms share status/header/Back/House/footer primitives. Each configured
+person gets a first-class landing page and explicitly owned focused routes.
+
+People own context/listening identity; rooms and physical players remain shared
+destinations. Existing admission and preferences apply. A child's explicitly
+assigned bedroom speaker is a default; other permitted destinations remain available.
+Person selection is not HA authentication. Native main Climate controls are retained.
+Commissioning remains Home Starter's responsibility, with truthful setup states for
+missing call/camera/listening adapters. See [AirTouch](AIRTOUCH_PANEL.md) for the
+adapter, context, kiosk, manual lifecycle and verification boundaries.

@@ -347,3 +347,81 @@ async def test_temporary_calendar_read_failure_does_not_retain_old_rows(make_env
     view = await runtime.inspect(env.core, store)
     assert not view["events"] and "temporarily unavailable" in view["near"]
     assert "Example commitment" not in str(view)
+
+
+async def test_focused_person_context_uses_explicit_native_link_and_never_clones_house(make_env, monkeypatch):
+    env, store, house, saved, source = await configured(make_env)
+    inv = await collect_inventory(env.core)
+    states = await env.core.states()
+    house["people"] = [{"id": p, "name": "Example " + p, "audience": "everyone"} for p in ("example_a", "example_b")]
+    saved["members"] = {p: {"kind": "child", "rooms": [], "devices": [], "presence": ["person." + p], "access": "no"} for p in ("example_a", "example_b")}
+    states += [{"entity_id": "person." + p, "state": "home", "attributes": {"id": "native_" + p}} for p in ("example_a", "example_b")]
+    native = [{"id": "native_" + p, "name": "Example " + p, "confirmed": True, "role": "child"} for p in ("example_a", "example_b")]
+    parsed, _ = c.parse_events(env.mock.calendar_events[source], r.selection_signature({"sources": [source]}, inv), ZONE)
+    saved["context"]["events"] = {
+        parsed[0]["key"]: {"people": ["native_example_a"], "travel_minutes": 10, "buffer_minutes": 0, "round_minutes": 5, "routine_time": None}
+    }
+    policy = r.policy_for(saved, house, inv, states)
+    policy.update(presence=["person.example_a", "person.example_b"], presence_screens=["example_wall"])
+    monkeypatch.setattr(r, "policy_for", lambda *args: policy)
+    inputs = (house, saved, inv, states, ZONE, native)
+    shared = await runtime.inspect(env.core, store, house["surfaces"][0], inputs=inputs)
+    first = await runtime.inspect(env.core, store, house["surfaces"][0], person_id="example_a", inputs=inputs)
+    second = await runtime.inspect(env.core, store, house["surfaces"][0], person_id="example_b", inputs=inputs)
+    assert shared["briefing"] and first["briefing"] and not second["briefing"]
+    assert "Leave by" in first["briefing"][0]["detail"]
+    house["preferences"]["example_a"] = {"pin": [], "order": [], "hide": [source]}
+    hidden = await runtime.inspect(env.core, store, house["surfaces"][0], person_id="example_a", inputs=inputs)
+    assert not hidden["briefing"]
+    saved["members"]["example_a"]["presence"] = []
+    missing = await runtime.inspect(env.core, store, house["surfaces"][0], person_id="example_a", inputs=inputs)
+    assert not missing["briefing"] and "Personal context not linked" in missing["issues"]
+    assert c.entity_id("example_wall", "example_a") != c.entity_id("example_wall", "example_b") != c.entity_id("example_wall")
+
+
+def test_touch_briefing_is_bounded_and_prioritizes_actionable_departure():
+    raw = [event("Example later " + str(n), NOW + timedelta(hours=n + 3)) for n in range(12)] + [event("Example departure", NOW + timedelta(minutes=30))]
+    events, _ = c.parse_events(raw, "fixture-source", ZONE)
+    target = next(e for e in events if e["title"] == "Example departure")
+    settings = {
+        "rules": [],
+        "events": {target["key"]: {"people": ["example"], "travel_minutes": 10, "buffer_minutes": 0, "round_minutes": 5, "routine_time": None}},
+    }
+    result = c.build(events, NOW, ZONE, settings, {"example": "Example person"})
+    assert len(result["briefing"]) == 7 and result["briefing"][0]["title"] == "Example departure"
+    assert result["briefing"][0]["detail"] == "Leave by 07:20"
+
+
+async def test_scoped_publication_updates_person_projections_but_refuses_foreign_owner(make_env):
+    env, store, house, _, _ = await configured(make_env)
+    house["people"] = [{"id": "example_child", "name": "Example child", "audience": "everyone"}]
+    house = store.save(house)
+    inv = await collect_inventory(env.core)
+    generated = generate(house, house["surfaces"][0], classify(inv, await env.core.states(), {}), inv["areas"])
+    path = generated["url_path"]
+    env.mock.dashboard_configs[path] = generated["config"]
+    store.write(store.publication_path, {path: {"fingerprint": generated["fingerprint"], "context": 2, "context_epoch": house["epoch"]}})
+    await runtime.update(env.core, store)
+    shared = env.mock.activity_states[c.entity_id("example_wall")]
+    personal_id = c.entity_id("example_wall", "example_child")
+    personal = env.mock.activity_states[personal_id]
+    assert shared["attributes"]["briefing"]
+    assert personal["attributes"]["briefing"] == []  # No verified native Person link.
+    assert personal["attributes"]["home_starter_context"]["person_id"] == "example_child"
+    personal["attributes"]["home_starter_context"]["person_id"] = "another_person"
+    previous = copy.deepcopy(personal)
+    with pytest.raises(CoreError, match="already owned"):
+        await runtime.update(env.core, store)
+    assert env.mock.activity_states[personal_id] == previous
+
+
+async def test_bins_do_not_displace_an_immediate_household_commitment(make_env, monkeypatch):
+    env, store, house, _, source = await configured(make_env)
+    now = datetime.now(UTC)
+    env.mock.calendar_events[source] = [event("Immediate commitment", now - timedelta(minutes=5))]
+    monkeypatch.setattr(runtime.waste, "load", lambda *args: {"confirmed": None})
+    monkeypatch.setattr(
+        runtime.waste, "view", lambda *args: {"configured": True, "screens": ["example_wall"], "summary": "Bins tonight", "attention": "attention"}
+    )
+    view = await runtime.inspect(env.core, store, house["surfaces"][0], now=now)
+    assert [row["title"] for row in view["briefing"]][:2] == ["Immediate commitment", "Bins tonight"]

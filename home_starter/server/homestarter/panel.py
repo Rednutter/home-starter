@@ -59,7 +59,7 @@ def room_panel(zone, damper):
                 {"height": "100%"},
                 {"border": "0"},
                 {"box-shadow": "none"},
-                {"background": "linear-gradient(105deg,rgba(15,38,55,.96),rgba(23,31,41,.86)),var(--hs-backdrop)"},
+                {"background": "linear-gradient(105deg,rgba(22,24,26,.96),rgba(22,24,26,.72)),var(--hs-backdrop)"},
                 {"background-size": "cover"},
                 {"background-position": "center"},
                 {"--ha-font-size-m": "22px"},
@@ -174,7 +174,7 @@ def climate_panel(view, css, items=()):
     root["styles"]["card"] = [
         {"display": "block"},
         {"padding": "22px"},
-        {"background": "#09131b"},
+        {"background": "#0b1013"},
         {"border": "0"},
         {"border-radius": "0"},
         {"box-shadow": "none"},
@@ -291,7 +291,7 @@ def detail_panel(view, css, template=None):
     root["styles"]["card"] = [
         {"display": "block"},
         {"padding": "24px"},
-        {"background": "#09131b"},
+        {"background": "#0b1013"},
         {"border": "0"},
         {"border-radius": "0"},
         {"box-shadow": "none"},
@@ -314,7 +314,7 @@ def detail_panel(view, css, template=None):
     view.update(type="panel", cards=[root])
 
 
-def apply(generated, house, climate, policy):
+def apply(generated, house, climate, policy, *, items=(), areas=()):
     """Reference shell and themed native climate controls for specialist panels."""
     from .surfaces import card_for, fingerprint, navigation, section
 
@@ -479,14 +479,9 @@ def apply(generated, house, climate, policy):
                 ],
             }
         )
-    climate_css = ":host { --hs-backdrop: " + image + "; }\n" + (static / "panel-climate.css").read_text(encoding="utf-8")
-    detail_css = climate_css.split("#card.disabled", 1)[0] + (static / "panel-details.css").read_text(encoding="utf-8")
-    config.setdefault("button_card_templates", {})["home_starter_details"] = {"extra_styles": detail_css}
-    for view in config["views"]:
-        if view["path"] == "climate":
-            climate_panel(view, climate_css, generated["admitted"])
-        elif view["path"] not in {"home", "ambient", "dark"}:
-            detail_panel(view, "", template="home_starter_details")
+    from .panel_pages import apply_pages
+
+    apply_pages(generated, house, items, areas, policy)
     generated["fingerprint"] = fingerprint(config)
     generated["warnings"].append(
         "Landscape panel requires the installed HACS button-card module. Climate controls remain native HA subviews; uncommissioned services are labelled."

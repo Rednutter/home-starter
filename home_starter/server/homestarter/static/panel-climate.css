@@ -3,24 +3,24 @@
   --secondary-text-color: #cad3db;
   --primary-color: #56baff;
   --accent-color: #56baff;
-  --ha-card-background: #142632;
-  --card-background-color: #142632;
-  --secondary-background-color: #213b4c;
-  --divider-color: #52606b;
-  --ha-card-border-color: #52606b;
+  --ha-card-background: #191c1f;
+  --card-background-color: #191c1f;
+  --secondary-background-color: #252a2e;
+  --divider-color: #41484e;
+  --ha-card-border-color: #41484e;
   --ha-card-border-radius: 20px;
   --ha-card-box-shadow: none;
   --state-icon-color: #9bcfee;
   --state-climate-off-color: #a8bccb;
-  --control-button-background-color: #26465b;
+  --control-button-background-color: #30363b;
   --control-button-border-radius: 14px;
-  --control-select-background: #213b4c;
-  --mdc-select-fill-color: #213b4c;
-  --mdc-theme-surface: #142632;
+  --control-select-background: #252a2e;
+  --mdc-select-fill-color: #252a2e;
+  --mdc-theme-surface: #191c1f;
   --mdc-theme-on-surface: #f7f8fa;
   color: #f7f8fa;
   font-family: Roboto, Arial, sans-serif;
-  background: #09131b;
+  background: #0b1013;
 }
 #card.disabled { pointer-events: auto; cursor: default; }
 #card { min-height: calc(100dvh - 56px); box-sizing: border-box; }
@@ -30,9 +30,9 @@
   --ha-card-border-width: 0;
   padding: 12px;
   box-sizing: border-box;
-  border: 1px solid #52606b;
+  border: 1px solid #41484e;
   border-radius: 24px;
-  background: linear-gradient(100deg,rgba(13,40,59,.97),rgba(14,29,41,.72)),var(--hs-backdrop);
+  background: linear-gradient(100deg,rgba(22,24,26,.96),rgba(22,24,26,.26)),var(--hs-backdrop);
   background-size: cover;
   background-position: center;
 }

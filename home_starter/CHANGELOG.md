@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.13
+
+- Extend the approved House world into purpose-built Today, Call, Cameras / Door, Media, Rooms and configured-person pages with a shared neutral shell and explicit return routes.
+- Separate people/listening identity from rooms and player destinations; scope personal Today through explicit native Person links and preserve child default/alternative destinations.
+- Add fresh owned adapter contracts for calling, camera entry and personal listening, including independent book progress and bedtime controls. Missing commissioned producers remain truthful setup states.
+- Keep native Climate semantics, add consistent dedicated-viewer kiosk presentation with an explicit Settings escape, and retain manual Ambient/Dark with safety alerts. No automatic lifecycle, live integration or Green deployment is implied.
+- Verify fixture navigation, responsive controls and restored light/thermostat actions; cover scope/ownership, capability guards, service errors and inert label rendering in regression tests.
+
 ## 0.8.12
 
 - Preserve the AirTouch overview's asymmetric layout while restoring charcoal surfaces, restrained inactive borders and stronger blue only for reported Climate operation and selected household navigation.

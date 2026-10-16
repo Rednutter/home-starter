@@ -986,10 +986,13 @@ async def api_surface_publish(request: web.Request) -> web.Response:
             if preview["generated"]["surface"]["profile"] == "wall":
                 result["context"] = 1
                 result["context_epoch"] = current_house["epoch"]
+            elif preview["generated"].get("focused_pages"):
+                result["context"] = 2
+                result["context_epoch"] = current_house["epoch"]
             records[result["url_path"]] = result
             if records != state.household.read(state.household.publication_path, {}):
                 state.household.write(state.household.publication_path, records)
-            if result.get("context") == 1:
+            if result.get("context") in (1, 2):
                 try:
                     await context_runtime.update(state.core, state.household)
                 except (CoreError, OSError, ValueError, KeyError, TypeError):

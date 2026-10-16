@@ -46,3 +46,24 @@ sources, speakers and groups remain untested.
 
 Sources: [MA API](https://www.music-assistant.io/api/) and
 [pinned MA server](https://github.com/music-assistant/server/tree/2.10.6).
+
+
+## AirTouch listener/destination boundary (0.8.13)
+
+Custom focused Media separates `listener.id` from selected physical destination.
+The current player supplies playback metadata/transport and feature-gated volume
+or grouping. Choosing a destination alone never starts audio. Child default output
+comes from explicitly assigned rooms; permitted alternatives are deliberate choices.
+Raw player volume is labelled as the speaker's own scale until household loudness
+calibration is commissioned.
+
+The personal-listening UI contract supports separately owned audiobook positions,
+Mine/Shared/House choices, delayed start (Now/5/10/15 minutes/At), countdown,
+Cancel/Start now and sleep timers. The commissioned provider must own durable
+listener identity, progress and scheduling; positions are never stored on a speaker
+or advanced by the page before delayed playback starts. Real registered service
+descriptors and fresh revisioned owned state are required. Readiness currently
+produces no such binding, so ordinary dashboards show Personal library not connected.
+Music Assistant/Audiobookshelf/account wiring remains separate commissioning work;
+fictional adapter tests prove UI contracts, not audible playback or provider support.
+See [AirTouch](AIRTOUCH_PANEL.md) for the complete source/action boundary.

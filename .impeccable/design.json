@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-16T06:51:36.906006Z",
+  "generatedAt": "2026-10-16T08:05:37.159902+00:00",
   "title": "Design System: Home Starter",
   "extensions": {
     "colorMeta": {
@@ -442,14 +442,14 @@
         "role": "neutral",
         "displayName": "panel canvas",
         "tonalRamp": [
-          "oklch(15% 0.0222 243.49)",
-          "oklch(26% 0.0222 243.49)",
-          "oklch(38% 0.0222 243.49)",
-          "oklch(49% 0.0222 243.49)",
-          "oklch(61% 0.0222 243.49)",
-          "oklch(72% 0.0222 243.49)",
-          "oklch(84% 0.0222 243.49)",
-          "oklch(95% 0.0222 243.49)"
+          "oklch(15% 0.0101 234.53)",
+          "oklch(26% 0.0101 234.53)",
+          "oklch(38% 0.0101 234.53)",
+          "oklch(49% 0.0101 234.53)",
+          "oklch(61% 0.0101 234.53)",
+          "oklch(72% 0.0101 234.53)",
+          "oklch(84% 0.0101 234.53)",
+          "oklch(95% 0.0101 234.53)"
         ]
       },
       "panel-text": {
@@ -512,14 +512,14 @@
         "role": "neutral",
         "displayName": "panel nav",
         "tonalRamp": [
-          "oklch(15% 0.0193 245.27)",
-          "oklch(26% 0.0193 245.27)",
-          "oklch(38% 0.0193 245.27)",
-          "oklch(49% 0.0193 245.27)",
-          "oklch(61% 0.0193 245.27)",
-          "oklch(72% 0.0193 245.27)",
-          "oklch(84% 0.0193 245.27)",
-          "oklch(95% 0.0193 245.27)"
+          "oklch(15% 0.0101 234.53)",
+          "oklch(26% 0.0101 234.53)",
+          "oklch(38% 0.0101 234.53)",
+          "oklch(49% 0.0101 234.53)",
+          "oklch(61% 0.0101 234.53)",
+          "oklch(72% 0.0101 234.53)",
+          "oklch(84% 0.0101 234.53)",
+          "oklch(95% 0.0101 234.53)"
         ]
       },
       "panel-nav-active": {
@@ -563,6 +563,48 @@
           "oklch(84% 0.1010 234.47)",
           "oklch(95% 0.1010 234.47)"
         ]
+      },
+      "panel-control": {
+        "role": "neutral",
+        "displayName": "Neutral control surface",
+        "tonalRamp": [
+          "oklch(15% 0.008 245)",
+          "oklch(26% 0.008 245)",
+          "oklch(38% 0.008 245)",
+          "oklch(49% 0.008 245)",
+          "oklch(61% 0.008 245)",
+          "oklch(72% 0.008 245)",
+          "oklch(84% 0.008 245)",
+          "oklch(95% 0.008 245)"
+        ]
+      },
+      "panel-control-hover-edge": {
+        "role": "neutral",
+        "displayName": "Hover edge",
+        "tonalRamp": [
+          "oklch(15% 0.014 240)",
+          "oklch(26% 0.014 240)",
+          "oklch(38% 0.014 240)",
+          "oklch(49% 0.014 240)",
+          "oklch(61% 0.014 240)",
+          "oklch(72% 0.014 240)",
+          "oklch(84% 0.014 240)",
+          "oklch(95% 0.014 240)"
+        ]
+      },
+      "panel-feedback-edge": {
+        "role": "neutral",
+        "displayName": "Feedback edge",
+        "tonalRamp": [
+          "oklch(15% 0.055 75)",
+          "oklch(26% 0.055 75)",
+          "oklch(38% 0.055 75)",
+          "oklch(49% 0.055 75)",
+          "oklch(61% 0.055 75)",
+          "oklch(72% 0.055 75)",
+          "oklch(84% 0.055 75)",
+          "oklch(95% 0.055 75)"
+        ]
       }
     },
     "typographyMeta": {
@@ -576,7 +618,31 @@
       },
       "panel-body": {
         "displayName": "Pinned panel Roboto",
-        "purpose": "Intentional reference-led overview typography; native controls retain their own typography."
+        "purpose": "Pinned House Roboto shared by every owned AirTouch route; native thermostats retain native type."
+      },
+      "panel-section": {
+        "displayName": "panel section",
+        "purpose": "Focused feature headings."
+      },
+      "panel-control-title": {
+        "displayName": "panel control title",
+        "purpose": "Room and control-group titles."
+      },
+      "panel-important": {
+        "displayName": "panel important",
+        "purpose": "Lead actionable state."
+      },
+      "panel-secondary": {
+        "displayName": "panel secondary",
+        "purpose": "Supporting feature text."
+      },
+      "panel-control-detail": {
+        "displayName": "panel control detail",
+        "purpose": "Compact control status."
+      },
+      "panel-quiet": {
+        "displayName": "panel quiet",
+        "purpose": "Setup and secondary context."
       }
     },
     "shadows": [
@@ -614,9 +680,17 @@
       {
         "name": "panel-compact-landscape-height",
         "value": "750px"
+      },
+      {
+        "name": "panel-person-media-stack",
+        "value": "800px"
+      },
+      {
+        "name": "panel-climate-stack",
+        "value": "1100px"
       }
     ],
-    "scope": "Administrator primitives plus scoped AirTouch panel tokens. Neutral overview-* tokens apply only to the overview; existing navy/cyan panel-* tokens remain for unchanged native Climate/detail pages. Shared text, focus, radii and selected navigation stay within the existing panel system. Native controls/chrome and permissions remain HA-owned. Tonal ramps are synthesized panel previews, not implemented palette tokens.",
+    "scope": "Administrator primitives remain unchanged. AirTouch overview-* neutral roles now extend every owned route; panel-* roles carry shared text, controls, climate accent, focus, radii and selected navigation. Native Climate semantics and HA permissions are preserved. Synthesized tonal ramps are preview metadata, not new implemented palette tokens.",
     "sources": [
       "home_starter/server/homestarter/static/styles.css",
       "home_starter/server/homestarter/static/index.html",
@@ -631,38 +705,46 @@
       "home_starter/server/homestarter/static/panel-layout.css",
       "home_starter/server/homestarter/static/panel-imagery.json",
       "home_starter/server/homestarter/static/panel-climate.css",
-      "home_starter/server/homestarter/static/panel-details.css"
+      "home_starter/server/homestarter/panel_pages.py",
+      "home_starter/server/homestarter/static/panel-pages.css",
+      "home_starter/server/homestarter/static/panel-shell.js",
+      "home_starter/server/homestarter/static/panel-pages.js",
+      "home_starter/AIRTOUCH_PANEL.md",
+      "home_starter/HOUSEHOLD_CONTEXT.md"
     ],
     "airtouchKiosk": {
-      "scope": "Explicit surface.kiosk opt-in for the specialist AirTouch overview only; existing visual worlds and HA permissions are preserved.",
+      "scope": "Explicit specialist surface.kiosk opt-in, validated uniquely named dedicated nonadministrator viewer, all owned routes.",
       "chromeHeight": {
         "activeDedicatedViewer": "0px",
-        "administratorOrSettingsEscape": "56px",
+        "otherViewers": "56px",
         "cssProperty": "--hs-chrome-height"
       },
-      "nativeIntegration": "Kiosk Mode 15.0.0; sidebar hidden only on the selected generated dashboard for the validated unique-name nonadministrator account. Header hidden only on the overview; native control subviews retain header and Back.",
-      "escape": "Settings opens a native Settings subview with HA chrome, Profile/app settings and Panel mode return. Native HA navigation keeps taps in the Companion app. No cache locking.",
+      "nativeIntegration": "Kiosk Mode 15.0.0 hides header/sidebar on all owned routes including Settings, Ambient and Dark. Administrators, other accounts and dashboards retain native chrome.",
+      "escape": "Settings retains Profile/app settings, Panel mode and Exit panel to HA Overview with disable_km; HA 2026.10 redirects legacy Overview to /home/overview. Supported native HA navigation remains in the Companion app.",
       "narrowFooter": "Through 720px container width, House and saved people wrap whole with 76px minimum and 118px maximum width; secondary 52px Ambient/Settings shortcuts occupy a separate row. Household height is 70px base / 66px compact; tray is 84px / 76px.",
-      "verification": "Full disposable native --kiosk acceptance passed controls with restore, reload, navigation, Settings escape/re-entry and active-to-Off transitions. 538 Python and 30 JavaScript tests passed; eight-person payload 1,659,321 bytes. Documentation-sync finding resolved in DESIGN.md and the surface contract.",
+      "verification": "Final disposable HA acceptance passed; 44 captures across three sizes, no browser errors, fixture light/native thermostat actions restored, six-zone layout and Settings escape passed. 547 Python and 42 JavaScript tests plus ruff check/format pass. Reviewer scored the listed visual fixes resolved at disposable HA fixture/browser scope.",
       "captures": [
-        "screens/panel-ui/panel-landscape.png",
-        "screens/panel-ui/compact-landscape.png",
-        "screens/panel-ui/narrow.png",
-        "screens/panel-ui/cooling.png",
-        "screens/panel-ui/idle.png",
-        "screens/panel-ui/off-zones-enabled.png"
+        "screens/panel-pages-ui/"
       ],
-      "limits": "0.8.12 prepared locally; live 0.8.11 unchanged. Physical tablet and actual AirTouch operation unverified. Automatic idle/Ambient/Dark and wake-return policy not implemented; default-dashboard/app startup not configured."
+      "limits": "0.8.13 local from main 0.8.12 @ 13be2ad4b80d653ea7d5fbaecda6cd1d8e99d9b0; no Green deployment/publication. No physical-device proof, automatic inactivity/event takeover/wake or startup policy."
     },
     "airtouchOverview": {
-      "material": "Dark neutral overview and slate inactive edges. Existing native Climate/detail navy/cyan palette remains unchanged. Shared panel type/radii/focus continue the existing system.",
+      "material": "Approved House neutral ground, slate edges, white Roboto, radii and focus extend all owned routes. Native Climate semantics stay within that shell.",
       "gradient": "linear-gradient(100deg,rgba(22,24,26,.96) 0%,rgba(22,24,26,.86) 40%,rgba(22,24,26,.26) 100%)",
       "operatingGradient": "linear-gradient(100deg,rgba(11,35,51,.96) 0%,rgba(11,35,51,.82) 40%,rgba(11,35,51,.25) 100%)",
-      "activity": "Blue only for reported operation while state is not off, or selected household navigation. Off overrides stale hvac_action; enabled zones are counted separately from activity.",
-      "imagery": "panel-room.jpg reused for Climate/Home. Four new contextual decorative JPEGs embed exact prompts/origin; panel-imagery.json carries source/output hashes. No household photograph or capability/feed evidence.",
+      "activity": "Operation, selected/active playback controls and focus use restrained blue. Off overrides stale hvac_action; enabled zones are independent.",
+      "imagery": "Five existing decorative rasters, contextual per feature; exact prompt/origin metadata and source/output hashes retained. Provenance scan: five rasters, zero missing. No new assets or household/feed claims.",
       "navigation": "House plus saved people primary; Ambient and kiosk Settings secondary accessible icon shortcuts. No invented members or avatars.",
       "refresh": "Existing 30s update_timer retained.",
-      "detector": "Ran once; no errors. Pinned Roboto and advisory new overview tokens are intentional scoped choices, not a parallel design system."
+      "detector": "Ran once: ten advisory type/color findings and one pinned-Roboto warning; no errors. Documented scoped tokens reconcile the intentional roles without changing House values."
+    },
+    "airtouchPages": {
+      "shell": "Status header; Back/title; purpose-built feature content; household footer except Dark. Deeper routes add House. Personal feature Back returns to person; room Back returns to owning Rooms.",
+      "controlGeometry": "56px minimum buttons/selects, 24px feature corners/padding, 20px control-group corners, 14px action corners; bounded icon hosts with zero inherited margins.",
+      "personBoundary": "Configured people only. Context/listening identity is separate from shared rooms/players. Tab selection is not authentication. Personal Today requires explicit confirmed native Person linkage.",
+      "adapters": "Readiness currently supplies no call/camera-entry/personal-listening producers. Internal opt-in revisioned owned projection/service contracts only; ordinary pages remain truthful setup states. No parallel commissioning UI.",
+      "metadata": "JSON-string route/source metadata parsed inside renderer; escaped text; shared registry avoids duplicated raw provider attributes; native Climate do_not_eval retained.",
+      "lifecycle": "Manual Ambient/Dark only. No automatic inactivity, incoming-event takeover from another route, wake/return coordinator or startup/default-dashboard configuration."
     }
   },
   "components": [
@@ -734,11 +816,19 @@
       "description": "House and saved people are primary; accessible Ambient and kiosk Settings icons form a secondary Display group. Demonstration includes no invented member.",
       "html": "<footer class=\"ds-panel-nav\"><nav class=\"ds-household\" aria-label=\"Household\"><a href=\"#house\" aria-current=\"page\"><svg viewBox=\"0 0 24 24\" width=\"30\" height=\"30\" aria-hidden=\"true\"><path d=\"M3 10 12 3l9 7M6 9v12h5v-7h2v7h5V9\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"/></svg><span>House</span></a></nav><div class=\"ds-utilities\" role=\"group\" aria-label=\"Display\"><a href=\"#ambient\" aria-label=\"Ambient\" title=\"Ambient display\"><svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" aria-hidden=\"true\"><path d=\"M20 15A9 9 0 0 1 9 4 9 9 0 1 0 20 15Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"/></svg></a><a href=\"#settings\" aria-label=\"Settings\" title=\"Settings\"><svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" aria-hidden=\"true\"><path d=\"m10 3-1 3-3 1-3 3 2 2-2 2 3 3 3 1 1 3h4l1-3 3-1 3-3-2-2 2-2-3-3-3-1-1-3Z\" fill=\"none\" stroke=\"currentColor\"/><circle cx=\"12\" cy=\"12\" r=\"3\" fill=\"none\" stroke=\"currentColor\"/></svg></a></div></footer>",
       "css": ".ds-panel-nav{display:flex;align-items:stretch;gap:16px;min-height:84px;padding:6px;border:1px solid #2e353a;border-radius:22px;background:#0b1013;font-family:Roboto,Arial,sans-serif}.ds-household{min-width:0;display:flex;justify-content:space-around;align-items:stretch;gap:8px;flex:1}.ds-panel-nav a{box-sizing:border-box;min-width:76px;max-width:118px;min-height:70px;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border-radius:16px;color:#e3e8ed;text-decoration:none;padding:6px;font-size:16px;text-align:center}.ds-panel-nav a[aria-current]{background:#103e59;color:#70c7ff;font-weight:600}.ds-utilities{display:flex;align-items:center;gap:4px}.ds-utilities a{flex:none;min-width:52px;width:52px;min-height:52px;color:#b9bec3}.ds-panel-nav a:hover,.ds-panel-nav a:active{background:#272c30}.ds-panel-nav a[aria-current]:hover{background:#174b68}.ds-panel-nav a:focus-visible{outline:3px solid #82d2ff;outline-offset:-5px}@media(max-width:720px){.ds-panel-nav{flex-wrap:wrap;gap:6px}.ds-household{flex:1 1 100%;flex-wrap:wrap}.ds-household a{flex:1 1 76px;font-size:14px}.ds-utilities{margin-left:auto}}@media(max-height:750px) and (min-width:721px){.ds-panel-nav{min-height:76px;padding:4px}.ds-household a{min-height:66px}}"
+    },
+    {
+      "name": "AirTouch feature control",
+      "kind": "button",
+      "refersTo": "panel-control",
+      "description": "Neutral touch control; blue is selected or playing state.",
+      "html": "<button class=\"ds-panel-control\" type=\"button\" aria-pressed=\"true\">Playing</button>",
+      "css": ".ds-panel-control{font:20px/1.4 Roboto,Arial,sans-serif;min-width:56px;min-height:56px;padding:10px 16px;border:1px solid #41484e;border-radius:14px;color:#f7f8fa;background:#252a2e;cursor:pointer}.ds-panel-control[aria-pressed=true]{background:#103e59;color:#70c7ff;border-color:#46738e}.ds-panel-control:hover:not(:disabled){border-color:#8b969e}.ds-panel-control:focus-visible{outline:3px solid #82d2ff;outline-offset:3px}.ds-panel-control:active{background:#103e59}.ds-panel-control:disabled{color:#b9bec3;cursor:default}"
     }
   ],
   "narrative": {
     "northStar": "Code-led Operate",
-    "overview": "Preserve the incumbent Home Assistant-like administration interface: compact system typography, blue actions, neutral bordered cards and progressive disclosure. The household screen setup extends this identity rather than introducing another visual world.\n\nHome Starter owns the administrator setup and its non-operating layout preview. Generated household dashboards use native Home Assistant cards and the viewer's theme. Their chrome, typography, card styling and sidebar are Home Assistant's responsibility; do not treat those screenshot values as Home Starter tokens. V0.3 establishes admission, hierarchy and generation boundaries, not a finished visual design for every household profile. Operational limits live in [SURFACES.md](home_starter/SURFACES.md).\n\n**Scoped specialist world: AirTouch household panel.** The explicitly requested reference-led AirTouch overview uses a dark neutral photographic overview, white Roboto and blue reserved for operating Climate and selected household navigation. Its direction comes from the supplied `home_starter_airtouch_reference.png` and the contract in `.impeccable/surfaces/airtouch-panel.md`. The overview uses scoped neutral tokens; Climate and detail subviews retain their existing navy/cyan palette and generic room backdrop around preserved native controls. Do not replace their still-used panel tokens with overview colors. Administration retains Code-led Operate and Home Assistant chrome retains native styling. This world remains scoped to the specialist landscape panel.",
+    "overview": "Preserve the incumbent Home Assistant-like administration interface: compact system typography, blue actions, neutral bordered cards and progressive disclosure. The household screen setup extends this identity rather than introducing another visual world.\n\nHome Starter owns the administrator setup and its non-operating layout preview. Generated household dashboards use native Home Assistant cards and the viewer's theme. Their chrome, typography, card styling and sidebar are Home Assistant's responsibility; do not treat those screenshot values as Home Starter tokens. V0.3 establishes admission, hierarchy and generation boundaries, not a finished visual design for every household profile. Operational limits live in [SURFACES.md](home_starter/SURFACES.md).\n\n**Scoped specialist world: AirTouch household panel.** The approved House dashboard is the foundation for every owned AirTouch route: neutral near-black/charcoal, white Roboto, slate edges, contextual photographs and directional overlays. Blue marks active/selected controls, operation and focus. Focused pages share that material while adapting their content to the task; native Climate controls retain their semantics within the neutral shell. The supplied `home_starter_airtouch_reference.png` and `.impeccable/surfaces/airtouch-panel.md` establish this specialist scope. Administration retains Code-led Operate; other generated profiles remain native and theme-owned.",
     "keyCharacteristics": [
       "Compact administration with collapsible details.",
       "Explicit settings, preview and publication states.",
@@ -747,32 +837,27 @@
     ],
     "rules": [
       {
-        "name": "AirTouch content bounds",
-        "body": "In the specialist overview, the base bottom row uses minmax(150px,.7fr) to retain detail text. At container widths up to 720px, Call and Cameras share an auto-height row. Compact landscape applies through 750px viewport height at widths above 720px and uses its existing 112px bottom row.",
-        "section": "layout"
+        "name": "AirTouch continuity",
+        "body": "All owned routes reuse the approved neutral House material, Roboto, geometry, imagery treatment and navigation. Feature content changes with purpose; preserved native Climate thermostat, zone/setpoint and readonly damper semantics stay inside this world. Main system stacks above rooms through (1100px), with room controls stacking through (720px). Unique registry-device evidence still binds a zone to its damper; missing temperatures are omitted and unavailable damper positions are explicit. Ordinary icon states retain accessible explanations.",
+        "section": "components"
       },
       {
         "name": "AirTouch kiosk escape",
-        "body": "The explicit specialist-only `surface.kiosk` option uses installed Kiosk Mode for the validated dedicated nonadministrator account with a unique display name. It hides the sidebar only on that generated dashboard and hides the header only on its overview; native control subviews retain their header and Back target. The footer adds Settings, which uses native HA navigation to open a Settings subview with HA chrome, Profile/app settings and a Panel mode return. Tile and footer taps use button-card's supported navigation helper so they remain in the Companion app. Administrator chrome and other dashboards retain their existing presentation. This changes presentation only, with no permissions change or cache locking.",
+        "body": "Explicit specialist `surface.kiosk` requires installed Kiosk Mode and the validated uniquely named dedicated nonadministrator account. Both HA header and sidebar hide consistently on all owned routes, including Settings, Ambient and Dark. Settings contains Profile/app settings, Panel mode and Exit panel; Exit targets native HA Overview with `disable_km` (HA 2026.10 redirects its legacy Overview route to `/home/overview`). Other accounts, administrators and other dashboards retain native chrome. Supported HA navigation keeps the flow within the Companion app; presentation never changes permissions.",
         "section": "components"
       },
       {
-        "name": "AirTouch Climate continuity",
-        "body": "Retain the established navy/cyan native Climate route and existing room backdrop. Preserve native configurations, room/device grouping and Back; the neutral overview refinement does not restyle this route.",
-        "section": "components"
-      },
-      {
-        "name": "Room climate hierarchy",
-        "body": "Pair only a unique AirTouch zone/damper sharing registry device evidence. Full room name and thermometer reading lead, native full-width +/- setpoints and compact mode icons follow, and a readonly damper icon/bar/percentage stays in that room. Keep explanatory words in accessible labels/tooltips. Omit missing room temperature; expose unavailable damper meaning. Stack system above rooms through 1100px to preserve control width.",
+        "name": "Person context",
+        "body": "House and configured people in saved order form the primary navigation. A person owns context/listening identity; rooms and players remain physical shared destinations. A person tab is not authentication. Personal Today requires an explicitly linked, uniquely confirmed native Person through the selected presence source; absent linkage yields empty personal content rather than a copied House feed. Existing admission, child ownership, source choices and audience rules remain in force. HA owns service permission checks.",
         "section": "components"
       }
     ],
     "dos": [
       "Do preserve the incumbent admin tokens and progressive disclosure.",
-      "Do scope neutral overview tokens and contextual photographs to the AirTouch overview; retain the existing navy/cyan Climate and detail worlds and native controls.",
+      "Do extend the approved neutral House world across every owned AirTouch page while preserving native Climate control semantics.",
       "Do distinguish reported climate activity, selected operating mode, enabled zones and unavailable evidence; Off overrides stale activity.",
       "Do distinguish layout preview, verified publication and native control verification.",
-      "Do compress admitted household items into room summaries and native subviews.",
+      "Do compress admitted household items into room summaries and contextual focused views appropriate to their profile.",
       "Do retain person-versus-physical-screen preference ownership and suitability explanations."
     ],
     "donts": [

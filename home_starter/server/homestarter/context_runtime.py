@@ -9,26 +9,47 @@ from .inventory import collect_inventory
 from .surfaces import admitted, classify, fingerprint, preferences
 
 
-async def inspect(core, store, surface=None, now=None):
-    now = now or datetime.now(UTC)
+async def snapshot(core, store):
     house = store.load()
     saved = readiness.load(store, house)
-    settings = saved["context"]
     inventory = await collect_inventory(core)
     states = await core.states()
     zone = (await core.config())["time_zone"]
     members = (await this_house.inspect(core, store))["people"]
+    return house, saved, inventory, states, zone, members
+
+
+async def inspect(core, store, surface=None, now=None, *, person_id=None, inputs=None):
+    now = now or datetime.now(UTC)
+    house, saved, inventory, states, zone, members = inputs or await snapshot(core, store)
+    settings = saved["context"]
     people = {p["id"]: p["name"] for p in members if p["confirmed"] and p["role"] in {"adult", "child"}}
-    if surface and surface.get("person_id"):
+    policy = readiness.policy_for(saved, house, inventory, states)
+    linked_person = None
+    if person_id is not None:
+        member = saved["members"].get(person_id, {})
+        # Explicit native Person source links, never matching names or a room.
+        linked = set(member.get("presence", [])) & set(policy.get("presence", []))
+        ids = {s.get("attributes", {}).get("id") for s in states if s["entity_id"] in linked and s["entity_id"].startswith("person.")}
+        confirmed = {p["id"] for p in members if p["confirmed"] and p["role"] == member.get("kind")}
+        candidates = ids & confirmed if person_id in {p["id"] for p in house["people"]} else set()
+        linked_person = next(iter(candidates)) if len(candidates) == 1 and (not surface or surface["id"] in policy.get("presence_screens", [])) else None
+        settings = {
+            "rules": [r for r in settings["rules"] if linked_person and linked_person in r["people"]],
+            "events": {k: v for k, v in settings["events"].items() if linked_person and linked_person in v["people"]},
+        }
+    elif surface and surface.get("person_id"):
         # Legacy screen profiles have no verified native Person link. Do not guess it
         # from names or let a personal wall acquire another member's explicit notes.
         settings = {"rules": [r for r in settings["rules"] if not r["people"]], "events": {}}
     result = {"revision": saved["revision"], "epoch": house["epoch"], "settings": settings, "people": people, "events": [], "zone": zone}
     items = classify(inventory, states, house["overrides"])
-    policy = readiness.policy_for(saved, house, inventory, states)
     admitted_ids = None
     if surface:
-        admitted_ids = {i["id"] for i in items if readiness.allowed(i, surface, house, policy) and admitted(i, surface, house, preferences(house, surface))}
+        scoped = {**surface, "person_id": person_id} if person_id is not None else surface
+        if person_id is not None and saved["members"].get(person_id, {}).get("kind") == "child":
+            scoped = {**scoped, "audience": "everyone"}
+        admitted_ids = {i["id"] for i in items if readiness.allowed(i, scoped, house, policy) and admitted(i, scoped, house, preferences(house, scoped))}
     events, issues, expiries = [], [], []
     from zoneinfo import ZoneInfo
 
@@ -65,7 +86,7 @@ async def inspect(core, store, surface=None, now=None):
                 raw = [e for e in raw if isinstance(e, dict) and readiness.collection_event(e, source, inventory)]
             parsed, invalid = context.parse_events(raw, readiness.selection_signature({"sources": [source]}, inventory), zone)
             # A selected collection source is already admitted by the existing verifier.
-            events.extend(parsed)
+            events.extend(e for e in parsed if person_id is None or e["key"] in settings["events"])
             if invalid:
                 issues.append("Some calendar entries could not be read")
             expiries.append(datetime.fromisoformat(saved["verified"][key]["at"]) + timedelta(days=1))
@@ -73,6 +94,8 @@ async def inspect(core, store, surface=None, now=None):
             issues.append(("Calendar" if key == "calendars" else "Collection source") + " temporarily unavailable")
     events = sorted({e["key"]: e for e in events}.values(), key=lambda e: e["start"].astimezone(UTC))
     content = context.build(events, now, zone, settings, people)
+    if person_id is not None and not linked_person:
+        issues.append("Personal context not linked")
     # No old cached event is retained after a read failure. Accepted rules remain explicit.
     if issues:
         content["near"] = "\n\n".join(issues) + ("\n\n" + content["near"] if events or content["rule_count"] else "")
@@ -85,10 +108,15 @@ async def inspect(core, store, surface=None, now=None):
     result.update(content, issues=issues, checked_at=now.isoformat(), valid_until=min([now + timedelta(seconds=150), *expiries]).isoformat())
     try:
         bins = waste.view(waste.load(store, house), zone, now)
-        if bins["configured"] and (not surface or surface["id"] in bins["screens"]):
+        if person_id is None and bins["configured"] and (not surface or surface["id"] in bins["screens"]):
             result["waste"] = bins
             if bins["summary"]:
                 result["near"] = bins["summary"] + "\n\n" + result["near"]
+                if bins.get("attention") != "quiet":
+                    rows = result["briefing"]
+                    index = next((n for n, row in enumerate(rows) if row.get("priority", 2) >= 2), len(rows))
+                    rows.insert(index, {"id": "bins", "title": bins["summary"], "when": "Household collection", "detail": "", "proximity": "now"})
+                    result["briefing"] = rows[:7]
     except (ValueError, OSError, KeyError, TypeError):
         result["issues"].append("Bin schedule needs checking")
     result["events"] = [
@@ -105,12 +133,13 @@ async def update(core, store):
     targets = [
         s
         for s in house["surfaces"]
-        if s["profile"] == "wall"
-        and records.get("home-starter-" + s["id"].replace("_", "-"), {}).get("context") == 1
+        if s["profile"] in ("wall", "specialist")
+        and records.get("home-starter-" + s["id"].replace("_", "-"), {}).get("context") in (1, 2)
         and records["home-starter-" + s["id"].replace("_", "-")].get("context_epoch") == house["epoch"]
     ]
     if not targets:
         return
+    inputs = await snapshot(core, store)
     states = {s["entity_id"]: s for s in await core.states()}
     for surface in targets:
         entity = context.entity_id(surface["id"])
@@ -130,10 +159,42 @@ async def update(core, store):
         if fingerprint(live) != records[path]["fingerprint"]:
             # Do not republish an externally edited dashboard, or send it new data.
             continue
-        view = await inspect(core, store, surface)
+        view = await inspect(core, store, surface, inputs=inputs)
         attributes = {k: view[k] for k in ("near", "ahead", "phase", "today_count", "ahead_count", "checked_at", "valid_until")}
+        if records[path].get("context") == 2:
+            attributes["briefing"] = view["briefing"]
         attributes.update(home_starter_context=owner, friendly_name="Household context")
         current = store.load()
         if current != house or readiness.load(store, current)["revision"] != view["revision"]:
             continue  # A concurrent opt-out/reset/save must not receive the older read.
         await core.context_state(entity, {"state": "attention" if view["issues"] else "current", "attributes": attributes})
+        if records[path].get("context") == 2:
+            for person in house["people"]:
+                personal_entity = context.entity_id(surface["id"], person["id"])
+                previous = states.get(personal_entity)
+                personal_owner = {**owner, "person_id": person["id"]}
+                previous_owner = previous.get("attributes", {}).get("home_starter_context") if previous else None
+                if previous and (
+                    not isinstance(previous_owner, dict)
+                    or previous_owner.get("surface") != surface["id"]
+                    or previous_owner.get("person_id") != person["id"]
+                    or type(previous_owner.get("epoch")) is not int
+                    or previous_owner["epoch"] > house["epoch"]
+                ):
+                    raise CoreError("api", "Personal context address is already owned by another source.")
+                personal = await inspect(core, store, surface, person_id=person["id"], inputs=inputs)
+                if store.load() != house or readiness.load(store, house)["revision"] != personal["revision"]:
+                    break
+                await core.context_state(
+                    personal_entity,
+                    {
+                        "state": "attention" if personal["issues"] else "current",
+                        "attributes": {
+                            "home_starter_context": personal_owner,
+                            "friendly_name": "Personal household context",
+                            "briefing": personal["briefing"],
+                            "checked_at": personal["checked_at"],
+                            "valid_until": personal["valid_until"],
+                        },
+                    },
+                )

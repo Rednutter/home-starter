@@ -1,62 +1,57 @@
 ---
-version: 1
+version: 2
 slug: airtouch-panel
-primary_target: home_starter/server/homestarter/panel.py
-related_targets: [home_starter/server/homestarter/static/panel-layout.css, home_starter/server/homestarter/static/panel-content.js, home_starter/server/homestarter/static/panel-climate.css, home_starter/server/homestarter/static/panel-details.css]
+primary_target: home_starter/server/homestarter/panel_pages.py
+related_targets: [home_starter/server/homestarter/panel.py, home_starter/server/homestarter/static/panel-layout.css, home_starter/server/homestarter/static/panel-pages.css, home_starter/server/homestarter/static/panel-shell.js, home_starter/server/homestarter/static/panel-pages.js, home_starter/server/homestarter/static/panel-climate.css]
 ---
 
-# AirTouch household panel
+# AirTouch household page system
 
-MODE: Operate. User-pinned AirTouch reference; code-led adaptation to truthful HA data.
+MODE: Operate. The user-approved House (0.8.12) is the visual foundation, extended by code-led focused pages; House is not redesigned.
 
 ## Direction contract
 
-THESIS: One landscape household surface; climate leads without a scrolling thermostat stack.
-OWN-WORLD: Dark neutral overview canvas, white Roboto, rounded contextual photographic panels and subdued slate inactive edges. Blue signals operating Climate or selected household navigation. Existing navy/cyan Climate/detail styling remains unchanged.
-STORY: Read live climate and household context, then open preserved native controls. Missing capabilities remain explicit.
-FIRST VIEWPORT: Clock/date/weather header; climate occupies the left two rows, Today above Call/Cameras on the right, Media/Home below; House plus saved people span the bottom as primary navigation; Ambient and kiosk Settings are secondary accessible Display shortcuts. Narrow containers wrap household items whole and put utilities on a separate row without clipped controls.
-FORM: User-pinned composition, no seed tournament. Mature button-card supplies layout; native HA supplies control subviews and permissions. Only reviewed specialist publication changes.
-FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+THESIS: House plus actual configured people, each with their own context and listening identity; rooms and players remain physical shared destinations.
+OWN-WORLD: Approved neutral near-black/charcoal, white Roboto, subdued slate edges, restrained active/selected blue, contextual photographs and directional text-side overlays across every owned route. No separate navy application world.
+STORY: Glance → focused feature → control → Back/House. Personal feature Back returns to that person; room Back returns to its owning Rooms view. Direct loads and reloads preserve explicit destinations.
+FIRST VIEWPORT: Shared status header, clear Back/title, purposeful body and household footer, except Dark's Wake/safety state. Person landing uses compact rooms, listening availability and scoped Today; richer controls belong on focused routes.
+FORM: One shared button-card page template and registry reuse approved House tokens/material. Purpose-built Today, Call, Cameras / Door, Media, Rooms and person routes; native Climate thermostat, zones, setpoints and readonly damper semantics remain intact. No generic entity/media/calendar pages or fabricated integrations.
+FINISH: Final native acceptance is passing; the reviewer scored the listed visual fixes resolved at disposable HA fixture/browser scope. Record only observed fixture/browser outcomes, retain raster provenance, and keep live commissioning/physical-device limits explicit.
 
-CLIMATE CONTINUITY: The Climate route retains its existing scoped navy/cyan palette and photographic main-system panel; native thermostat and zone actions remain unchanged. Main system beside rooms; each uniquely device-linked zone includes its own readonly airflow. Thermometer readings, full-width +/- setpoints, compact native mode icons and damper bars have distinct hierarchy. Keep ordinary display states visual, with explanatory wording in accessible labels/tooltips. Stack system above rooms at 1100px and below; rooms become a single column at 720px. Preserve native Back and all other subviews.
+## Shared material and geometry
 
-ROOM MATERIAL: Reuse the generic backdrop under quiet navy overlays. Place name/reported temperature beside native controls to reduce dead space; retain the full-width damper bar. Finish verdict: ship after landscape, narrow and tall-tablet review.
+House retains its asymmetric six-card board and time/date/weather. Climate spans the two left rows; Today above Call/Cameras, Media/Home below, House and saved people in the footer. Ambient and kiosk Settings are secondary Display utilities. Existing saved order supplies people; no sample family, portrait or capability ships.
 
-VIEWPORT FILL: Main Climate row and nested room cards stretch through available height; inactive notices remain collapsed. Existing saved ordering supplies household column groups. Native responsive acceptance and finish review: ship.
+Focused pages use the same neutral canvas, Roboto, slate edges and image treatment. Feature corners/padding are (24px), control groups have (20px) corners, actions (14px), Back/House links (16px). Headings use (26/24/22px), body (20px), supporting copy (18px), quiet copy (16px). Buttons/selects have (56px) minimum dimensions. Icons have bounded hosts and zero inherited margin. Keyboard focus remains explicit. Native Climate retains its own controls within the neutral wrapper; blue is meaningful state/focus, never the default page ground.
 
-DETAIL CONTINUITY: Within the specialist landscape panel, Rooms and individual rooms, Music, Today, household context, saved people and kiosk Settings inherit the navy/cyan palette and existing generic backdrop. Preserve admitted native nested cards, source configurations, section visibility, native Back and people admission boundaries. Auto-fit columns have a (280px) minimum and shrink to the available width on narrow screens. Ambient/dark and the primary Climate presentation remain unchanged. Missing overview destinations show truthful empty states; Call and Cameras open static setup-status pages without calling services, capabilities or camera feeds. Selected bins retain their existing condition and expiry.
+Contextual Today, Call, Cameras and Media photographs reuse their existing assets; Climate/Rooms use the room material. Directional overlays protect content and reveal imagery on the opposite side. Five existing rasters retain prompt/origin metadata and source/output hashes in `static/panel-imagery.json`. They are decorative invented settings, not household evidence, working hardware or live feeds. No new assets; provenance scan: five rasters, zero missing records.
 
-DETAIL IMPLEMENTATION: One shared button-card template carries detail styling/backdrop so the generated dashboard stays within HA's (4MiB) WebSocket limit; an eight-person regression checks the limit and three embedded images. Native card configurations keep `do_not_eval` boundaries. Semantic h1/h2 headings preserve escaped titles, room-stack navigation icons use compact (40px) sizing, and native card radii/palette plus the scoped dark media fill retain continuity. Only headings allow arbitrary word breaks, preserving narrow weather units.
+The House board preserves its (720px) narrow-container and (750px) compact-landscape reflow. Focused feature grids auto-fit from a shrinking (280px) minimum. Person/Media columns stack through (800px), headings and briefing rows wrap through (720px), and Climate stacks system above rooms through (1100px). Whole controls scroll vertically when needed. Household targets remain (76–118px) wide, (70px) base / (66px) compact high, within an (84px) / (76px) tray. Secondary Display targets remain (52px). Narrow footer links wrap whole and utilities receive their own row.
 
-DETAIL ACCEPTANCE: Docker recovered after stale runtime-only socket directories were preserved and recreated together; containers, images and settings remain intact. Disposable HA (2026.10.0) with button-card (7.0.1) supplies fresh native browser evidence. The passing final stabilized native run produced 48 fresh full-page captures across eight empty/populated detail pages at 1280×720, 800×1280 and 390×844, plus 12 saved-person viewport captures across baseline/populated states. Capture helpers wait for fonts and stable geometry and reload each viewport. Native navigation/Back/reload, kiosk viewer/admin scope, light toggle/restore, climate target restore, calendar/player rendering and Play control visibility, offline/idle and bin expiry passed in the final stabilized run; the final visual review returned ship at native Home Assistant fixture/browser scope, with no remaining blocking findings. The upstream native media-card startup `_stateObj`/`_computeProgress` exception is reproduced on an unmodified native sections view and logged separately in ignored browser-error evidence; other errors fail acceptance. This does not prove audible playback, physical-screen operation or live household publication. No new assets or provenance changes.
+## Content and identity
 
+Today consumes the existing context engine: one actionable lead and up to six later rows, with chronology beneath its headline and honest source expiry. Personal Today needs an explicit selected native Person source uniquely linked to the confirmed member; absent linkage yields an empty personal briefing, never a House clone. Projection scope includes surface, epoch and person. People tabs select shared-wall context, not authentication or confidentiality from other display users or HA state readers.
 
-## Overview refinement contract
+Call shows commissioned destinations or simplifies to incoming/active controls. Cameras shows one selected source with only explicit supported Talk/Open actions; entry actions require association, current event and actual-user permission. Media separates listener identity/progress from speaker destinations, feature-gates transport/grouping/volume and labels native volume as the speaker's scale. Destination selection alone never starts playback or advances a book. Children default to explicitly assigned room speakers and may choose expressly permitted alternatives. Provider services own durable scheduling/progress.
 
-Preserve the asymmetric six-card board and existing clock/date/selected-weather information. Climate and Home reuse the generic room image. Today shows a decorative meal, Call an intercom, Cameras a porch and Media a speaker. Text-side directional neutral gradients reveal the photographs to the right while protecting contrast. Four new JPEGs carry exact prompts and origin metadata; `static/panel-imagery.json` records source/output hashes. None depicts the household, verifies a capability or supplies a live feed. Do not invent sources, members, portraits or commissioning status.
+Rooms represent actual admitted physical areas with useful supported light, fan, climate and normal-blind controls. Security/entry devices remain status-only here. Climate distinguishes operation from selected mode and enabled zones; Off overrides stale activity. Zone/damper pairing requires unique registry-device evidence. Missing temperature is omitted; unavailable damper position is explicit and the percentage describes opening, not measured airflow.
 
-Climate is blue only for reported operation while its state is not Off; Off takes priority over stale activity. Idle and Off stay neutral. “N of M zones enabled” describes admitted zone state separately from HVAC operation; unavailable zones are explicit. Uncommissioned/unselected capability explanations remain truthful secondary copy, below titles and live readings. The existing 30s refresh remains.
+Home Starter owns commissioning. Current readiness does not produce new call, camera-entry or personal-listening bindings: ordinary generated pages therefore show setup states. Internal opt-in revisioned owned projections and explicit registered service descriptors are future commissioner contracts, not a parallel setup UI or live integration proof. Raw discovery, a source name or person tab cannot establish readiness. No credentials are stored in page metadata.
 
-Household links are 76–118px wide with 70px base / 66px compact target heights. Navigation is 84px base / 76px compact. Ambient and Settings are separate 52px square shortcuts with accessible names. At container widths through 720px, household links wrap and utilities occupy a separate row. No reference-image family names or avatars ship. Settings remains the kiosk escape; Ambient remains manual.
+## Architecture and kiosk
 
-### Reference disposition matrix
+`panel_pages.py` builds routes, one shared `home_starter_page` template and a compact per-House/per-person source registry. `panel-shell.js` supplies status/header/safety/navigation; `panel-pages.js` supplies feature bodies; `panel-pages.css` extends approved House CSS. Route/shared metadata are JSON strings parsed inside the renderer, keeping household labels inert to button-card recursive evaluation. Text is escaped, raw provider attributes are not duplicated, and native Climate configuration retains `do_not_eval`. Shared images and registry stay below HA's (4MiB) message limit for an eight-person dashboard.
 
-| Reference property | Disposition | Implemented evidence |
-| --- | --- | --- |
-| Asymmetric six-card landscape geometry | Match | Climate spans two left rows; Today above Call/Cameras; Media/Home below. |
-| Dark neutral ground and inactive edges | Match | Overview-scoped charcoal canvas and slate borders; native Climate/detail navy tokens remain intact. |
-| Blue emphasis | Match | Operating Climate and selected household item; idle/Off neutral, keyboard focus explicit. |
-| Contextual photographs | Justified adaptation | Four generated decorative photographs plus reused room image; embedded provenance replaces any real-household/capability implication. |
-| Directional overlays and readable white Roboto | Match | Dark text-side gradient and pinned Roboto preserve the supplied visual direction. |
-| Capability/setup information | Justified adaptation | Honest secondary setup copy replaces unsupported reference capabilities and source claims. |
-| Household destinations | Justified adaptation | House and saved people only, configured order, no fictional family members or portraits. |
-| Ambient/Settings hierarchy | Match | Separate secondary Display icons with 52px touch targets; narrow layouts use a separate row. |
-| Climate state/zone information | Justified adaptation | Off overrides stale activity; enabled-zone counts do not claim HVAC operation. |
-| Small-screen composition | Justified adaptation | Whole-item wrapping and vertical reflow preserve controls instead of shrinking/clipping the landscape board. |
-| Native Climate and details | Preserved scope | Existing navy/cyan controls, backdrop, contents, Back and admission boundaries remain unchanged. |
+Explicit specialist `surface.kiosk` requires installed Kiosk Mode and the validated uniquely named dedicated nonadministrator viewer. All owned routes hide HA header/sidebar consistently, including Settings, Ambient and Dark. Settings preserves Profile/app settings, Panel mode and Exit panel to HA Overview with `disable_km`; HA (2026.10) redirects its legacy Overview route to `/home/overview`. Administrators, other accounts and dashboards retain native chrome. Supported HA navigation remains inside the Companion app. This changes presentation, not permissions, account appearance or a startup URL.
 
-### Refinement evidence and limits
+Ambient/Dark are manual states with Active/Wake return and safety attention. Automatic inactivity, incoming-event takeover from another route, wake/return coordination, device power and app startup/default-dashboard remain separate work. Incoming call/door UI exists inside focused pages, without a claimed background coordinator.
 
-Latest native evidence: `screens/panel-ui/{panel-landscape,compact-landscape,narrow,cooling,idle,off-zones-enabled}.png`. Full `devtools/accept_panel_native.py --kiosk` passed native controls with restore, navigation, reload, kiosk escape/re-entry and active/Off transitions. (538) Python and (30) JavaScript tests passed; the eight-person payload is (1,659,321 bytes), under (4MiB). The once-run detector has no errors; pinned Roboto and advisory overview-token findings are intentional scoped choices. The finish review's documentation-sync disposition is resolved by this contract and DESIGN.md.
+## Verification and release boundary
 
-Home Starter (0.8.12) is prepared locally; live (0.8.11) remains unchanged. Physical-tablet acceptance and actual hardware operation remain unverified. Automatic idle → Ambient → Dark and wake-return policy are not implemented, and default-dashboard/app startup is not configured. Browser captures and tests do not establish those outcomes.
+Started from `main` (0.8.12), commit `13be2ad4b80d653ea7d5fbaecda6cd1d8e99d9b0`; (0.8.13) is local page-system work. No Green deployment/publication is part of this task.
+
+Final disposable HA acceptance (`.runtime/panel-pages-native/result.json`) passed on HA (2026.10.0), button-card (7.0.1) and Kiosk Mode (15.0.0). `screens/panel-pages-ui/` contains 44 final captures across 13 representative routes at (1280×720), (800×1280) and (390×844), plus House, Dark and three populated Today/person captures. Browser errors are empty; actual fixture light and native thermostat actions were restored; six-zone layout and Settings escape passed. Fictional zones use distinct actual fixture areas, avoiding misleading room inventories. All (547) Python and (42) JavaScript tests pass; ruff check/format pass.
+
+The first finish review's five issues were addressed: icon geometry, person hierarchy, personal identity, kiosk ground/escape and Today heading hierarchy. Final icon margins were explicitly reset and fictional room assignments corrected before final captures. The reviewer scored the listed visual fixes resolved at disposable HA fixture/browser scope; earlier native-detail ship records are historical evidence only. The detector ran once: ten advisory type/color findings plus the pinned-Roboto warning, no errors. Scoped token documentation reconciles the intentional roles without changing approved House values.
+
+Browser fixture evidence does not establish live commissioning, audible playback, actual call/camera services, household loudness calibration, physical AirTouch operation or automatic lifecycle behavior. Technical source of truth and adapter/privacy limits: `home_starter/{AIRTOUCH_PANEL.md,HOUSEHOLD_CONTEXT.md,MUSIC.md}`.

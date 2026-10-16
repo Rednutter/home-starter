@@ -169,6 +169,7 @@ def build(events, now, zone, settings, people):
         "ahead_count": len(next_rows),
         "rule_count": len(notes),
         "scheduled_remaining": len(relevant),
+        "briefing": briefing(relevant, now, settings, people),
     }
 
 
@@ -182,8 +183,48 @@ def proximity(event, now):
     return "later_today" if days == 0 else "tomorrow" if days == 1 else "next_few_days" if days <= 3 else "coming_weeks"
 
 
-def entity_id(surface_id):
-    return "sensor.home_starter_context_" + hashlib.sha256(surface_id.encode()).hexdigest()[:12]
+def briefing(events, now, settings, people):
+    """Bounded actionable rows for touch views, from the existing context engine."""
+    rows = []
+    for event in events:
+        position = proximity(event, now)
+        if position == "elapsed":
+            continue
+        link = settings["events"].get(event["key"])
+        valid = link and all(p in people for p in link["people"])
+        leave = departure(event["start"], link) if valid and not event["all_day"] and event["start"] > now else None
+        urgent = bool(leave and leave - now <= timedelta(hours=2))
+        when = "All day" if event["all_day"] else event["start"].strftime("%H:%M")
+        if position == "now" and not event["all_day"]:
+            when = "Now"
+        elif position == "tomorrow":
+            when = "Tomorrow · " + when
+        elif position not in ("now", "later_today"):
+            when = event["start"].strftime("%a %d %b") + " · " + when
+        rows.append(
+            (
+                0 if urgent or position == "now" else 2,
+                event["start"],
+                {
+                    "id": event["key"],
+                    "title": event["title"],
+                    "when": when,
+                    "detail": "Leave by " + leave.strftime("%H:%M") if leave else "",
+                    "proximity": position,
+                },
+            )
+        )
+    if 5 <= now.hour < 10:
+        for rule in settings["rules"]:
+            if rule["start"] <= now.date().isoformat() <= rule["end"] and now.weekday() in rule["weekdays"] and all(p in people for p in rule["people"]):
+                rows.append((1, now, {"id": rule["id"], "title": rule["text"], "when": "This morning", "detail": "", "proximity": "now"}))
+    rows.sort(key=lambda row: (row[0], row[1]))
+    return [{**row[2], "priority": row[0]} for row in rows[:7]]
+
+
+def entity_id(surface_id, person_id=None):
+    key = surface_id if person_id is None else json.dumps([surface_id, person_id])
+    return "sensor.home_starter_context_" + hashlib.sha256(key.encode()).hexdigest()[:12]
 
 
 def wall_cards(surface_id):

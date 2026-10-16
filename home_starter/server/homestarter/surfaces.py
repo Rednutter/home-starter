@@ -442,7 +442,7 @@ def generate(house: dict, surface: dict, items: list[dict], areas: list[dict], a
                 and i.get("enabled")
                 and admitted({**i, "usable": True}, surface, house, preferences(house, surface))
             ]
-            return apply(generated, house, climate, policy)
+            return apply(generated, house, climate, policy, items=items, areas=areas)
         return generated
     path = "home-starter-" + surface["id"].replace("_", "-")
     base = "/" + path

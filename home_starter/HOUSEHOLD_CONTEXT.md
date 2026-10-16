@@ -187,3 +187,33 @@ calendar content, household exports or live screenshots.
 
 Native mechanisms: [HA Markdown card](https://www.home-assistant.io/dashboards/markdown/)
 and [HA REST API](https://developers.home-assistant.io/docs/api/rest/).
+
+
+## AirTouch focused briefing (0.8.13)
+
+The same context engine now emits at most seven structured briefing rows. Current
+commitments and imminent explicit departures lead; applicable morning requirements
+follow, then chronological upcoming commitments. Relevant verified bins enter ahead
+of ordinary future rows without displacing an immediate commitment. No separate
+AirTouch context engine, calendar database or notification feed is introduced.
+
+A newly published focused panel records context opt-in version 2 for the current
+household epoch. Its explicit publication refreshes context immediately, then the
+existing minute worker refreshes House and configured-person owned projections.
+Existing wall version-1 publication remains supported. Reset, external dashboard
+edits, ownership collisions and concurrent opt-outs still stop writes.
+
+Per-person projection addresses include both surface and person IDs. Content needs
+an explicit selected HA Person presence source uniquely linked to a confirmed native
+member of the matching role; names, rooms and tab selection never establish identity.
+Only that member's explicit event associations and rules enter their briefing.
+Missing linkage yields empty personal content instead of a House clone. The selected
+calendar still requires normal verification, screen/audience admission and merged
+hide preferences. This is shared-panel scoping, not authentication or confidentiality
+from other people who can use the display or read HA state.
+
+Focused renderers check surface, epoch, person ownership, future validity and a
+nonnegative age below 180 seconds. Projections expire after at most 150 seconds.
+Selected briefing text enters HA state and may enter recorder/history; personal
+projection attributes contain only scoped rows, timestamps and ownership, not the
+House near/ahead narrative. No provider credentials are stored in these projections.
