@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.14
+
+- Keep House/configured-person navigation visible on every AirTouch page, including Dark. Page content scrolls above the persistent footer, including narrow House layouts and long Climate/room views.
+- Verify footer visibility before and after content scrolling with eight configured fixture people across landscape, tablet and narrow viewports.
+
 ## 0.8.13
 
 - Extend the approved House world into purpose-built Today, Call, Cameras / Door, Media, Rooms and configured-person pages with a shared neutral shell and explicit return routes.

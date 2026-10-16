@@ -105,7 +105,7 @@ def apply_pages(generated, house, items, areas, policy):
             "grid": [
                 {"grid-template-areas": '"header" "body" "footer"'},
                 {"grid-template-columns": "minmax(0,1fr)"},
-                {"grid-template-rows": "auto 1fr auto"},
+                {"grid-template-rows": "auto minmax(0,1fr) auto"},
                 {"gap": "14px"},
             ],
             "custom_fields": {key: [{"min-width": "0"}, {"white-space": "normal"}, {"text-align": "left"}] for key in ("header", "body", "footer")},

@@ -24,7 +24,7 @@ from homestarter.settings import Secret
 from homestarter.surfaces import classify, generate, publish
 
 ROOT = Path(".runtime/panel-pages-native")
-SHOTS = Path("screens/panel-pages-ui")
+SHOTS = Path("screens/panel-nav-ui")
 
 
 async def main():
@@ -95,6 +95,7 @@ async def main():
                 )
         house = empty_household()
         house["people"] = [{"id": "alex", "name": "Alex", "audience": "adult"}, {"id": "sam", "name": "Sam", "audience": "everyone"}]
+        house["people"] += [{"id": f"fixture_member_{n}", "name": f"Fixture member {n}", "audience": "everyone"} for n in range(6)]
         surface = {
             "id": "panel_pages_acceptance",
             "name": "Fixture AirTouch pages",
@@ -172,7 +173,30 @@ async def main():
             await page.get_by_label("Password", exact=True).fill(display["password"])
             await page.get_by_role("button", name="Log in", exact=True).click()
             await expect(page.get_by_role("main", name=surface["name"])).to_be_visible(timeout=30000)
-            await capture(path=str(SHOTS / "house.png"))
+
+            async def nav_visible():
+                await expect(page.get_by_role("navigation", name="Household", exact=True)).to_be_visible()
+                assert await page.locator(".hs-nav").evaluate("e=>{const r=e.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight+1}"), (
+                    "Household menu must stay inside the viewport"
+                )
+                assert await page.locator(".hs-household a").count() == len(house["people"]) + 1
+                assert await page.locator(".hs-nav").evaluate(
+                    """e=>{const r=e.getBoundingClientRect();return [...e.querySelectorAll('a')].every(a=>{
+                      const b=a.getBoundingClientRect();return b.left>=r.left&&b.right<=r.right+1&&b.top>=r.top&&b.bottom<=r.bottom+1;
+                    })}"""
+                ), "Every household/display target must fit within the visible menu"
+
+            for label, width, height in [("landscape", 1280, 720), ("tablet", 800, 1280), ("narrow", 390, 844)]:
+                await page.set_viewport_size({"width": width, "height": height})
+                await page.reload()
+                await page.wait_for_load_state("networkidle")
+                await nav_visible()
+                menu_before = await page.locator(".hs-nav").bounding_box()
+                await page.locator(".hs-board").evaluate("e=>e.scrollTop=e.scrollHeight")
+                await nav_visible()
+                assert abs((await page.locator(".hs-nav").bounding_box())["y"] - menu_before["y"]) < 1
+                await capture(path=str(SHOTS / ("home-" + label + ".png")))
+            await page.set_viewport_size({"width": 1280, "height": 720})
 
             async def load(path):
                 await page.goto(BASE + "/" + scene["url_path"] + "/" + path)
@@ -219,6 +243,14 @@ async def main():
                     await capture(path=str(SHOTS / (path + "-" + name + ".png")), full_page=True)
                     assert await page.locator("hui-panel-view").evaluate("e=>e.scrollWidth<=e.clientWidth+1"), path + " overflow"
                     assert await page.locator(".hs-back").count() == 1
+                    await nav_visible()
+                    menu_before = await page.locator(".hs-nav").bounding_box()
+                    await page.locator("button-card").first.evaluate("e=>{const b=e.shadowRoot.querySelector('#body');b.scrollTop=b.scrollHeight;}")
+                    await nav_visible()
+                    assert abs((await page.locator(".hs-nav").bounding_box())["y"] - menu_before["y"]) < 1
+                    if path == "climate":
+                        await capture(path=str(SHOTS / ("climate-scrolled-" + name + ".png")))
+                    await page.locator("button-card").first.evaluate("e=>e.shadowRoot.querySelector('#body').scrollTop=0")
                     assert await page.locator(".hs-page-content button ha-icon,.hs-room-link ha-icon").evaluate_all(
                         "es=>es.every(e=>getComputedStyle(e).marginLeft==='0px'&&getComputedStyle(e).marginRight==='0px')"
                     ), path + " icon spacing"
@@ -241,7 +273,12 @@ async def main():
             await page.wait_for_load_state("networkidle")
             await expect(page.get_by_text("Loading...", exact=True)).not_to_be_visible()
             await page.evaluate("document.fonts.ready")
-            await capture(path=str(SHOTS / "dark.png"))
+            for label, width, height in [("landscape", 1280, 720), ("tablet", 800, 1280), ("narrow", 390, 844)]:
+                await page.set_viewport_size({"width": width, "height": height})
+                await page.reload()
+                await page.wait_for_load_state("networkidle")
+                await nav_visible()
+                await capture(path=str(SHOTS / ("dark-" + label + ".png")))
             await page.get_by_role("link", name="Wake", exact=True).click()
             await expect(page.get_by_role("main", name=surface["name"])).to_be_visible()
             # Context projections are fixture-only representations of the engine contract.
@@ -318,6 +355,8 @@ async def main():
                         "native_thermostat_restored": True,
                         "six_zone_layout": True,
                         "settings_escape": True,
+                        "persistent_household_menu": True,
+                        "configured_people": len(house["people"]),
                     },
                     indent=2,
                 )

@@ -26,7 +26,7 @@ No reference-image family names, portraits or sample capabilities ship.
 
 Every focused route has an explicit Back target. Room Back returns to its owning
 Rooms view; personal feature Back returns to that person. A House shortcut appears
-on deeper routes. Household navigation stays available except in Dark. Navigation
+on deeper routes. Household navigation stays visible on every page, including Dark. Navigation
 uses button-card's supported HA action helper and remains within the Companion app.
 Direct loading and reload use the same explicit routes.
 
@@ -147,3 +147,13 @@ HTML/template boundaries, retained native Climate configuration and message size
 Fixture/browser evidence does not prove live audible playback, camera/call services,
 physical AirTouch operation or household commissioning. Final test/review counts
 are recorded with the delivery and design-system evidence.
+
+
+## Persistent household menu (0.8.14)
+
+House/configured-person navigation stays within the viewport on all AirTouch pages,
+including personal pages, Climate, Rooms, Settings, Ambient and Dark. Only feature
+content scrolls; the footer never requires scrolling the page to find it. Narrow
+House boards follow the same rule, retaining whole wrapped household targets and
+secondary display utilities. The existing native Climate controls remain scrollable
+above the menu. This is a navigation correction, not a new display lifecycle.

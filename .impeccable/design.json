@@ -721,7 +721,8 @@
       },
       "nativeIntegration": "Kiosk Mode 15.0.0 hides header/sidebar on all owned routes including Settings, Ambient and Dark. Administrators, other accounts and dashboards retain native chrome.",
       "escape": "Settings retains Profile/app settings, Panel mode and Exit panel to HA Overview with disable_km; HA 2026.10 redirects legacy Overview to /home/overview. Supported native HA navigation remains in the Companion app.",
-      "narrowFooter": "Through 720px container width, House and saved people wrap whole with 76px minimum and 118px maximum width; secondary 52px Ambient/Settings shortcuts occupy a separate row. Household height is 70px base / 66px compact; tray is 84px / 76px.",
+      "narrowFooter": "House and saved people wrap whole whenever needed, including intermediate tablet widths, with 76px minimum and 118px maximum width. Through 720px, secondary 52px Ambient/Settings shortcuts occupy a separate row. Household height is 70px base / 66px compact; tray grows to fit configured people.",
+      "persistentFooter": "All AirTouch routes, including Dark, retain a visible household menu. Focused bodies and narrow Home boards scroll independently inside the viewport above it. Navigation targets never require page scrolling or overlap content.",
       "verification": "Final disposable HA acceptance passed; 44 captures across three sizes, no browser errors, fixture light/native thermostat actions restored, six-zone layout and Settings escape passed. 547 Python and 42 JavaScript tests plus ruff check/format pass. Reviewer scored the listed visual fixes resolved at disposable HA fixture/browser scope.",
       "captures": [
         "screens/panel-pages-ui/"

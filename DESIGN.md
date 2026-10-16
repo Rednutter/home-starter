@@ -220,9 +220,9 @@ At a container width of (720px) or less, the panel grows vertically: climate and
 
 ### AirTouch focused-page layout
 
-Focused pages keep the status header, consistent Back/title row, purpose-built body and household footer. Deeper routes add a House shortcut; personal feature Back returns to that person and room Back to its owning Rooms view. Dark keeps Wake and safety attention instead of the household footer. Person landing pages keep rooms, listening availability and scoped Today compact, with richer controls on focused routes.
+Focused pages keep the status header, consistent Back/title row, purpose-built body and household footer. Deeper routes add a House shortcut; personal feature Back returns to that person and room Back to its owning Rooms view. Dark keeps Wake and safety attention alongside the persistent household footer. Person landing pages keep rooms, listening availability and scoped Today compact, with richer controls on focused routes.
 
-Feature grids auto-fit from a (280px) minimum that shrinks to available width. Person and Media columns stack through (800px); through (720px), headings wrap, briefing time/content stack, and feature padding reduces to (20px). Focused content grows vertically and scrolls rather than clipping controls. This composition belongs to AirTouch, not every native household dashboard.
+Feature grids auto-fit from a (280px) minimum that shrinks to available width. Person and Media columns stack through (800px); through (720px), headings wrap, briefing time/content stack, and feature padding reduces to (20px). The viewport frame keeps status/header and household footer visible while the focused body scrolls independently, rather than pushing navigation below the screen. Narrow House boards scroll above the same persistent footer. This composition belongs to AirTouch, not every native household dashboard.
 
 ## Elevation & Depth
 

@@ -118,3 +118,13 @@ test('Dark retains active safety alerts without identifying a person as authenti
  const output=header.call({style:{setProperty(){}}},{states:{'binary_sensor.example_smoke':{state:'on',attributes:{}}},user:{},config:{time_zone:'Australia/Sydney'}},{common_json:JSON.stringify(common),focus_json:JSON.stringify({kind:'dark',path:'dark',owner:null})},(strings,...values)=>values.find(v=>typeof v==='string'),{location:{search:''}},{});
  assert.match(output,/role="alert"/);assert.match(output,/Example smoke alarm/);
 });
+
+
+test('household footer stays available on every focused page including Dark',()=>{
+ const footer=new Function('hass','variables','html','window','helpers',shell+'\nreturn footer();');
+ const common={base,surface_id:'example_panel',epoch:0,people:[{name:'House',path:base+'/home',icon:'mdi:home-outline'},{name:'Example person',path:base+'/person-6578616d706c65',icon:'mdi:account-circle-outline'}]};
+ for(const kind of ['person','today','media','room','rooms','context','climate','call','camera','settings','ambient','dark']){
+  const output=footer.call({style:{setProperty(){}}},{states:{},user:{},config:{time_zone:'Australia/Sydney'}},{common_json:JSON.stringify(common),focus_json:JSON.stringify({kind,path:kind,owner:'example'})},(strings,...values)=>values.find(v=>typeof v==='string'),{location:{search:''}},{});
+  assert.match(output,/aria-label="Household"/);assert.match(output,/>House</);assert.match(output,/>Example person</);assert.match(output,/aria-current="page"/);
+ }
+});

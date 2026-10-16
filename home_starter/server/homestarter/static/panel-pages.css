@@ -1,8 +1,8 @@
 /* The approved overview supplies all palette, type, geometry and navigation rules. */
-#card { height: auto !important; min-height: calc(100dvh - var(--hs-chrome-height,56px)); display: block !important; }
+#card { height: calc(100dvh - var(--hs-chrome-height,56px)) !important; min-height: 0; display: block !important; overflow: hidden; }
 #card.disabled { pointer-events: auto; cursor: default; }
-#container { min-height: calc(100dvh - var(--hs-chrome-height,56px) - 34px); }
-#body { --hs-content-height: calc(100dvh - var(--hs-chrome-height,56px) - 220px); min-width: 0; align-self: start; }
+#container { height: 100%; min-height: 0; }
+#body { --hs-content-height: calc(100dvh - var(--hs-chrome-height,56px) - 220px); min-width: 0; min-height: 0; align-self: stretch; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-color: #41484e #0b1013; }
 .hs-page-heading { display: flex; align-items: center; gap: 18px; margin: 18px 0 2px; }
 .hs-page-heading h1 { font-size: 26px; line-height: 1.2; margin: 0; font-weight: 600; text-align: left; overflow-wrap: anywhere; }
 .hs-subtitle { color: var(--hs-quiet); font-size: 16px; margin: 5px 0 0; }
