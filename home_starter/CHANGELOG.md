@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.8
+
+- Use visual room controls: compact native mode icons, a full-width temperature adjuster, and an integrated damper icon/bar/percentage.
+- Keep explanatory wording in accessible labels and tooltips. Preserve native actions, unique device pairing and readonly damper opening.
+
 ## 0.8.7
 
 - Group each uniquely linked AirTouch zone and damper in one room block using HA device registry evidence. Never infer pairing from names or entity IDs.

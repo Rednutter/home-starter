@@ -524,7 +524,7 @@
       },
       {
         "name": "Room climate hierarchy",
-        "body": "Pair only a unique AirTouch zone/damper sharing registry device evidence. Full room name and reported temperature lead, native inline Target and mode dropdown follow, readonly Airflow stays in that room. Omit missing room temperature; label unavailable airflow. Stack system above rooms through 1100px to preserve native control width.",
+        "body": "Pair only a unique AirTouch zone/damper sharing registry device evidence. Full room name and thermometer reading lead, native full-width +/- setpoints and compact mode icons follow, and a readonly damper icon/bar/percentage stays in that room. Keep explanatory words in accessible labels/tooltips. Omit missing room temperature; expose unavailable damper meaning. Stack system above rooms through 1100px to preserve control width.",
         "section": "components"
       }
     ],

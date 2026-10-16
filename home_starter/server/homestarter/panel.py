@@ -23,19 +23,24 @@ def resource_ready(resources, component="button-card"):
 
 def room_panel(zone, damper):
     """Keep native temperature/mode features; group the same-device airflow."""
-    controls = {**zone, "name": "Target", "hide_state": True, "features_position": "inline"}
-    controls["features"] = [{**feature, **({"style": "dropdown"} if feature["type"] == "climate-hvac-modes" else {})} for feature in zone.get("features", [])]
+    controls = {**zone, "name": "", "hide_state": True, "features_position": "inline"}
+    controls["features"] = sorted(
+        [{**feature, **({"style": "icons"} if feature["type"] == "climate-hvac-modes" else {})} for feature in zone.get("features", [])],
+        key=lambda feature: feature["type"] != "climate-hvac-modes",
+    )
     # Two enclosing button-cards (page and room grid) each consume one bracket pair.
     current = (
         "const s=hass.states[variables.zone]; const t=s?.attributes.current_temperature; "
         "return s && !['unknown','unavailable'].includes(s.state) && typeof t==='number' && Number.isFinite(t) "
-        "? `<span class='hs-room-now'><small>Room</small> ${t}°</span>` : '';"
+        "? `<span class='hs-room-now' aria-label='Room temperature ${t} degrees'>"
+        "<ha-icon icon='mdi:thermometer' aria-hidden='true'></ha-icon>${t}°</span>` : '';"
     )
     airflow = (
         "const s=hass.states[variables.damper]; const p=s?.attributes.current_position; "
         "const valid=s && !['unknown','unavailable'].includes(s.state) && typeof p==='number' && Number.isFinite(p) && p>=0 && p<=100; "
-        "return `<div class='hs-room-airflow'><span>Damper</span><span class='hs-airflow-track' aria-hidden='true'>"
-        "<span style='width:${valid?p:0}%'></span></span><strong>${valid?p+'% open':'Unavailable'}</strong></div>`;"
+        "return `<div class='hs-room-airflow' role='img' aria-label='Damper ${valid?p+\"% open\":\"unavailable\"}'>"
+        "<ha-icon icon='mdi:valve' title='Damper opening' aria-hidden='true'></ha-icon><span class='hs-airflow-track' aria-hidden='true'>"
+        "<span style='width:${valid?p:0}%'></span></span><strong>${valid?p+'%':'—'}</strong></div>`;"
     )
     return {
         "type": "custom:button-card",
@@ -72,8 +77,10 @@ def room_panel(zone, damper):
         },
         "custom_fields": {"current": "[[[[[ " + current + " ]]]]]", "controls": {"card": controls}, "airflow": "[[[[[ " + airflow + " ]]]]]"},
         "extra_styles": (
-            ".hs-room-now{font-size:24px;font-variant-numeric:tabular-nums}.hs-room-now small{font-size:13px;color:#cad3db}"
+            ".hs-room-now{display:flex;align-items:center;gap:4px;font-size:24px;font-variant-numeric:tabular-nums}"
+            ".hs-room-now ha-icon{--mdc-icon-size:16px;width:16px;height:16px;flex:0 0 16px;color:#cad3db}"
             ".hs-room-airflow{display:flex;align-items:center;gap:10px;color:#cad3db;font:14px Roboto,Arial,sans-serif;text-align:left}"
+            ".hs-room-airflow ha-icon{--mdc-icon-size:18px;width:18px;height:18px;flex:0 0 18px}"
             ".hs-room-airflow strong{font-weight:500;min-width:40px;text-align:right}"
             ".hs-airflow-track{flex:1;height:4px;background:#2b4353;border-radius:2px;overflow:hidden}"
             ".hs-airflow-track>span{display:block;height:100%;background:#79bedf}#card.disabled{pointer-events:auto;cursor:default}"

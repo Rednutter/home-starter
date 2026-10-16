@@ -280,7 +280,9 @@ async def main():
                     json={"state": state, "attributes": {"device_class": "damper", "current_position": position, "supported_features": 0}},
                 ) as response:
                     assert response.status == 200
-                await expect(linked_room.locator(".hs-room-airflow")).to_contain_text(expected)
+                await expect(linked_room.locator(".hs-room-airflow")).to_have_attribute(
+                    "aria-label", "Damper " + ("unavailable" if expected == "Unavailable" else expected + " open")
+                )
             assert await thermostat.get_by_role("button").count() == 3
             assert await thermostat.get_by_role("button").nth(2).get_attribute("aria-label") == "Show more information"
 
