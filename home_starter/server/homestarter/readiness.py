@@ -162,8 +162,8 @@ def save(store, house, body, inventory, states, *, persist=True):
             or not subset(choice["screens"], screen_ids | set(current["choices"].get(key, {}).get("screens", [])))
         ):
             raise ValueError("Choose existing sources and displays.")
-        if key in ("calendars", "waste") and len(choice["sources"]) > 1:
-            raise ValueError("Choose one consolidated calendar or collection source.")
+        if key == "waste" and len(choice["sources"]) > 1:
+            raise ValueError("Choose one collection source.")
         answers = choice["answers"]
         if not isinstance(answers, dict) or not set(answers) <= ANSWERS.get(key, {}).keys():
             raise ValueError("Unsupported interview answer. Do not enter credentials here.")
@@ -215,7 +215,12 @@ async def verify(core, value, key, inventory, states):
     if key in ("calendars", "waste"):
         until = now + timedelta(days=90 if key == "waste" else 30)
         query = urlencode({"start": now.isoformat(), "end": until.isoformat()})
-        events = await core.rest_get("/calendars/" + choice["sources"][0] + "?" + query)
+        events = []
+        for source in choice["sources"]:
+            received = await core.rest_get("/calendars/" + source + "?" + query)
+            if not isinstance(received, list):
+                raise ValueError("A selected calendar did not return a supported event list.")
+            events.extend(received)
 
         def credible(event):
             if not isinstance(event, dict) or not isinstance(event.get("summary"), str) or not isinstance(event.get("start"), dict):

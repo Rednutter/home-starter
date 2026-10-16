@@ -24,7 +24,7 @@ from typing import Any
 import aiohttp
 from aiohttp import web
 
-from . import __version__, commissioning, context, context_runtime, readiness, screen_identity, this_house, waste, waste_runtime
+from . import __version__, commissioning, context, context_runtime, household_services, readiness, screen_identity, this_house, waste, waste_runtime
 from .activity import update_activity
 from .core import CoreClient, CoreError
 from .household import PROFILES, HouseholdStore, validate_household
@@ -88,6 +88,7 @@ class State:
         self.household = HouseholdStore(settings.data_dir)
         self.listening = ListeningRuntime(self.music_runtime, self.core, self.household)
         self.listening_task: asyncio.Task | None = None
+        self.services_task: asyncio.Task | None = None
         self.previews: dict[str, dict] = {}
         self.activity_task: asyncio.Task | None = None
         self.commissioning_task: asyncio.Task | None = None
@@ -95,6 +96,14 @@ class State:
         self.waste_task: asyncio.Task | None = None
         self.waste_provider = WodongaProvider(session)
         self.waste_previews: dict[str, dict] = {}
+
+    async def monitor_services(self) -> None:
+        while True:
+            try:
+                await household_services.poll_endpoints(self.session, self.core, self.household)
+            except (CoreError, OSError, ValueError, KeyError, TypeError):
+                _LOGGER.warning("Endpoint health unavailable; saved service relationships are preserved.")
+            await asyncio.sleep(20)
 
     async def monitor_listening(self) -> None:
         while True:
@@ -249,6 +258,10 @@ async def harden(request: web.Request, handler):
         if connection:
             tokens.append(connection["token"].reveal())
     except (MusicRuntimeError, OSError, ValueError):
+        pass
+    try:
+        tokens.extend(household_services.connections(request.app[K_STATE].household).values())
+    except (OSError, ValueError):
         pass
     body = getattr(response, "body", None)
     if isinstance(body, (bytes, bytearray)) and any(token and token.encode() in body for token in tokens):
@@ -807,6 +820,50 @@ async def api_installation_action(request: web.Request) -> web.Response:
         return _json({"error": "The action could not be verified. Refresh before retrying; existing data is preserved."}, 503)
 
 
+async def api_household_services(request: web.Request) -> web.Response:
+    state = await household_admin(request)
+    try:
+        async with state.household_lock:
+            house = state.household.load()
+            if request.method == "POST":
+                commissioning.gate(state.household)
+                body = await household_body(request)
+                if request.match_info.get("action") == "provider":
+                    if set(body) != {"epoch", "domain"} or body["epoch"] != house["epoch"]:
+                        raise ValueError("Refresh provider setup before continuing.")
+                    config = await state.core.config()
+                    await state.music_runtime.add_catalogue(body["domain"], config.get("country") or "AU")
+                elif request.match_info.get("action") == "endpoint":
+                    if set(body) != {"epoch", "id", "key"} or body["epoch"] != house["epoch"]:
+                        raise ValueError("Refresh endpoint setup before connecting it.")
+                    household_services.bind(state.household, household_services.load(state.household, house), body["id"], body["key"])
+                else:
+                    config = household_services.validate(body, house)
+                    view = await this_house.inspect(state.core, state.household)
+                    native = {p["id"] for p in view["people"] if p["confirmed"] and p["role"] in {"adult", "child"}}
+                    if not view["complete"] or not set(config["person_links"].values()) <= native:
+                        raise ValueError("Link only current confirmed household members.")
+                    household_services.save(state.household, house, config)
+            config = household_services.load(state.household, house)
+            connected = household_services.connections(state.household)
+        inventory = await collect_inventory(state.core)
+        try:
+            music = await state.music_runtime.snapshot()
+        except (MusicRuntimeError, CoreError, SupervisorError):
+            music = None
+        return _json(
+            {
+                "configuration": config,
+                "endpoint_keys_configured": sorted(connected),
+                "checks": household_services.status(config, inventory["integrations"], await state.core.states(), music),
+            }
+        )
+    except ValueError as error:
+        return _json({"error": str(error)}, 409)
+    except (CoreError, SupervisorError, MusicRuntimeError, OSError, KeyError, TypeError):
+        return _json({"error": "Service setup could not be read safely. Existing settings are preserved."}, 503)
+
+
 async def api_readiness(request: web.Request) -> web.Response:
     state = await household_admin(request)
     try:
@@ -820,6 +877,11 @@ async def api_readiness(request: web.Request) -> web.Response:
         except (CoreError, SupervisorError, ValueError):
             music = {"state": "unavailable"}
         result = readiness.report(house, value, inventory, states, music)
+        try:
+            connected = await state.music_runtime.snapshot()
+        except (MusicRuntimeError, CoreError, SupervisorError):
+            connected = None
+        result["service_checks"] = household_services.status(household_services.load(state.household, house), inventory["integrations"], states, connected)
         row = next(r for r in result["rows"] if r["id"] == "waste")
         row["route"] = "#waste-collection"
         row["questions"] = ["Check the Council service and confirm your collection day in Waste collection."]
@@ -1094,11 +1156,16 @@ def create_app(settings: Settings, session: aiohttp.ClientSession | None = None)
         app[K_STATE] = State(settings, sess)
         app[K_OWN_SESSION] = own
         app[K_STATE].listening_task = asyncio.create_task(app[K_STATE].monitor_listening())
+        app[K_STATE].services_task = asyncio.create_task(app[K_STATE].monitor_services())
         app[K_STATE].activity_task = asyncio.create_task(app[K_STATE].monitor_activity())
         app[K_STATE].context_task = asyncio.create_task(app[K_STATE].monitor_context())
         app[K_STATE].waste_task = asyncio.create_task(app[K_STATE].monitor_waste())
 
     async def on_cleanup(app: web.Application) -> None:
+        if task := app[K_STATE].services_task:
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
         if task := app[K_STATE].listening_task:
             task.cancel()
             with suppress(asyncio.CancelledError):
@@ -1142,6 +1209,9 @@ def create_app(settings: Settings, session: aiohttp.ClientSession | None = None)
     app.router.add_get("/api/commissioning", api_commissioning)
     app.router.add_post("/api/commissioning/{action}", api_commissioning_action)
     app.router.add_get("/api/readiness", api_readiness)
+    app.router.add_get("/api/services", api_household_services)
+    app.router.add_post("/api/services", api_household_services)
+    app.router.add_post("/api/services/{action:endpoint|provider}", api_household_services)
     app.router.add_post("/api/readiness/{action}", api_readiness_action)
     app.router.add_get("/api/installation", api_installation)
     app.router.add_post("/api/installation/{action}", api_installation_action)

@@ -425,3 +425,38 @@ async def test_bins_do_not_displace_an_immediate_household_commitment(make_env, 
     )
     view = await runtime.inspect(env.core, store, house["surfaces"][0], now=now)
     assert [row["title"] for row in view["briefing"]][:2] == ["Immediate commitment", "Bins tonight"]
+
+
+async def test_multiple_calendars_merge_overlap_and_map_only_explicit_person(make_env, monkeypatch):
+    from homestarter import household_services
+
+    env, store, house, saved, source = await configured(make_env)
+    second = "calendar.example_school"
+    env.mock.entity_registry.append({"entity_id": second, "platform": "local_calendar", "name": "Example school", "device_id": None})
+    env.mock.activity_states[second] = {"entity_id": second, "state": "off", "attributes": {}}
+    env.mock.calendar_events[second] = [*copy.deepcopy(env.mock.calendar_events[source]), event("School activity", datetime.now(UTC) + timedelta(hours=4))]
+    house["people"] = [{"id": "example_a", "name": "Example child", "audience": "everyone"}]
+    house = store.save(house)
+    saved["choices"]["calendars"]["sources"].append(second)
+    saved["members"] = {"example_a": {"kind": "child", "rooms": [], "devices": [], "presence": ["person.example_a"], "access": "no"}}
+    inv = await collect_inventory(env.core)
+    saved["verified"]["calendars"]["signature"] = r.selection_signature(saved["choices"]["calendars"], inv)
+    store.write(store.readiness_path, saved)
+    services = household_services.empty(house["epoch"])
+    services["calendars"] = [{"entity_id": second, "category": "school", "people": ["example_a"]}]
+    household_services.save(store, house, services)
+    states = await env.core.states()
+    states.append({"entity_id": "person.example_a", "state": "home", "attributes": {"id": "native_example_a"}})
+    native = [{"id": "native_example_a", "name": "Example child", "confirmed": True, "role": "child"}]
+    policy = r.policy_for(saved, house, inv, states)
+    policy.update(presence=["person.example_a"], presence_screens=["example_wall"])
+    monkeypatch.setattr(r, "policy_for", lambda *args: policy)
+    inputs = (house, saved, inv, states, ZONE, native)
+    shared = await runtime.inspect(env.core, store, house["surfaces"][0], inputs=inputs)
+    personal = await runtime.inspect(env.core, store, house["surfaces"][0], person_id="example_a", inputs=inputs)
+    assert [e["title"] for e in shared["events"]] == ["Example commitment", "School activity"]
+    assert [e["title"] for e in personal["events"]] == ["Example commitment", "School activity"]
+    services = household_services.load(store, house)
+    services["calendars"][0]["people"] = []
+    household_services.save(store, house, services)
+    assert not (await runtime.inspect(env.core, store, house["surfaces"][0], person_id="example_a", inputs=inputs))["events"]

@@ -15,7 +15,10 @@ The authenticated API reads actual music providers and configured metadata witho
 configuration values. Music providers, disabled/unavailable configurations, built-in
 URLs, and player/plugin providers are distinguished. If configuration access is
 denied, Home Starter explicitly reports a loaded-only view. Add/repair guidance
-opens MA; Home Starter never adds, removes, enables or changes provider accounts.
+opens MA; provider account authentication remains in MA. The explicit administrator
+catalogue action can add native zero-login ABC Radio and iTunes Podcasts sources;
+it cannot create Spotify accounts or accept provider passwords. See
+[Household services](HOUSEHOLD_SERVICES.md) for commissioning boundaries and gaps.
 
 Choose a connected source and an available, single ungrouped speaker. Play one item
 from that source on that speaker in MA, then **Check selected speaker playback**.

@@ -183,6 +183,21 @@ def test_catalog_records_expose_no_stream_or_credentials():
     }
 
 
+async def test_child_can_play_shared_favourites_without_search_or_mutating_house(setup):
+    item = await book(setup)
+    await act(setup, None, "favorite", item=item)
+    setup[3]["members"]["two"] = {"kind": "child", "rooms": [], "devices": ["a"]}
+    view = await setup[0].view("admin", "panel", "two")
+    assert [row["id"] for row in view["shared"]] == [item]
+    assert not view["browse"] and not view["library"]
+    await act(setup, "two", "favorite", item=item)
+    await act(setup, "two", "unfavorite", item=item)
+    assert (await setup[0].view("admin", "panel", None))["favorites"][0]["id"] == item
+    await act(setup, "two", "play_item", item=item)
+    assert setup[1].calls[0][1]["queue_id"] == "a"
+    assert setup[1].calls[-1] == ("player_queues/seek", {"queue_id": "a", "position": 0})
+
+
 async def test_only_current_bound_control_account_can_use_ingress(setup, monkeypatch):
     runtime, _, house, _ = setup
     runtime.core.is_admin.return_value = False

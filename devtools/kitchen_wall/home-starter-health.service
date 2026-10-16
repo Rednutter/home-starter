@@ -1,0 +1,15 @@
+[Unit]
+Description=Home Starter read-only endpoint health
+After=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart=%h/.local/share/home-starter/venv/bin/python %h/.local/share/home-starter/health.py
+Restart=always
+RestartSec=10
+NoNewPrivileges=true
+UMask=0077
+
+[Install]
+WantedBy=default.target

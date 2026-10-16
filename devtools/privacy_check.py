@@ -14,6 +14,10 @@ from detect_secrets import SecretsCollection
 from detect_secrets.settings import default_settings
 
 RUNTIME = {
+    "household-services.json",
+    "household-services.tmp",
+    "endpoint-connections.json",
+    "endpoint-connections.tmp",
     "household.json",
     "activity.json",
     "publications.json",

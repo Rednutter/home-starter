@@ -20,6 +20,31 @@ async def runtime_for(make_env):
     return runtime, env
 
 
+async def test_catalogue_setup_is_idempotent_and_cannot_create_login_accounts(make_env, monkeypatch):
+    runtime, _ = await runtime_for(make_env)
+    calls, records = [], []
+
+    async def request(endpoint, connection, command, **args):
+        calls.append((command, args))
+        if command == "config/providers":
+            return records
+        if command == "config/providers/setup":
+            records.append({"domain": args["provider_domain"], "instance_id": "fixture-podcasts"})
+            return {"type": "finish", "result": {"instance_id": "fixture-podcasts"}}
+        return {}
+
+    monkeypatch.setattr(runtime, "_request", request)
+    from unittest.mock import AsyncMock
+
+    monkeypatch.setattr(runtime, "snapshot", AsyncMock(return_value={"connected": True}))
+    await runtime.add_catalogue("itunes_podcasts", "AU")
+    await runtime.add_catalogue("itunes_podcasts", "AU")
+    assert sum(command == "config/providers/setup" for command, _ in calls) == 1
+    assert calls[-1][1]["values"] == {"locale": "au", "explicit": False}
+    with pytest.raises(ValueError):
+        await runtime.add_catalogue("spotify")
+
+
 async def test_discovery_distinguishes_library_plugins_disabled_and_builtin(make_env):
     runtime, env = await runtime_for(make_env)
     result = await runtime.snapshot()

@@ -138,10 +138,10 @@ class ListeningRuntime:
             self.catalog = {r["id"]: r for r in result}
         return result
 
-    async def item(self, identifier, profile):
+    async def item(self, identifier, profile, shared=()):
         value = self.catalog.get(identifier)
         if value is None:
-            value = next((r for r in [*profile["favorites"], *profile["recent"], *profile["books"].values()] if r["id"] == identifier), None)
+            value = next((r for r in [*profile["favorites"], *profile["recent"], *profile["books"].values(), *shared] if r["id"] == identifier), None)
         if value is None or value.get("folder"):
             raise ValueError("Choose an item from this listening library.")
         return value
@@ -227,6 +227,7 @@ class ListeningRuntime:
                 "browse": not child,
                 "library": [public(r) for r in library],
                 "favorites": [public(r) for r in profile["favorites"]],
+                "shared": [public(r) for r in self.profile(data, None)["favorites"]] if person else [],
                 "recent": [public(r) for r in profile["recent"]],
                 "books": [{**public(r), "position": r["position"], "duration": r["duration"]} for r in books],
                 "session": next(
@@ -250,6 +251,7 @@ class ListeningRuntime:
                 raise MusicRuntimeError("Connect Music Assistant in Home Starter.")
             data = self.load(house, connection)
             profile = self.profile(data, person)
+            shared = self.profile(data, None)["favorites"] if person else []
             if expected_job is not None and profile.get("delayed") != expected_job:
                 return
             players, child = await self.players(house, surface, saved, person, snapshot)
@@ -262,8 +264,8 @@ class ListeningRuntime:
                 body = {**body, "player": job["player"], "item": job["item"]["id"]}
                 action = "play_item"
             if action in {"favorite", "unfavorite"}:
-                item = await self.item(body.get("item"), profile)
-                if child and item["id"] not in {r["id"] for r in [*profile["favorites"], *profile["recent"]]}:
+                item = await self.item(body.get("item"), profile, shared)
+                if child and item["id"] not in {r["id"] for r in [*profile["favorites"], *profile["recent"], *shared]}:
                     raise PermissionError("Choose permitted listening content.")
                 profile["favorites"] = [r for r in profile["favorites"] if r["id"] != item["id"]]
                 if action == "favorite":
@@ -284,8 +286,8 @@ class ListeningRuntime:
                 return
             lease = data["leases"].get(pid)
             if action in {"play_item", "resume", "delay"}:
-                item = await self.item(body.get("item"), profile)
-                if child and item["id"] not in {r["id"] for r in [*profile["favorites"], *profile["recent"], *profile["books"].values()]}:
+                item = await self.item(body.get("item"), profile, shared)
+                if child and item["id"] not in {r["id"] for r in [*profile["favorites"], *profile["recent"], *profile["books"].values(), *shared]}:
                     raise PermissionError("Choose permitted listening content.")
                 if action == "delay":
                     if type(body.get("value")) is not int or body["value"] not in {300, 600, 900}:

@@ -1,0 +1,17 @@
+[Unit]
+Description=Home Starter ambient wall browser
+After=graphical-session.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Environment=WAYLAND_DISPLAY=wayland-0
+ExecStartPre=/usr/bin/test -S %t/wayland-0
+ExecStart=/usr/bin/python3 %h/.local/share/home-starter/display.py
+Restart=always
+RestartSec=10
+TimeoutStopSec=20
+KillMode=control-group
+
+[Install]
+WantedBy=default.target

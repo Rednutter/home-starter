@@ -1,5 +1,8 @@
 # Home Starter
 
+For calendar mappings, household service identities, Pi endpoint commissioning,
+internal calling and recovery boundaries, see [Household services](HOUSEHOLD_SERVICES.md).
+
 ## How to use it
 
 1. Start the app and open it from the sidebar (**Home Starter**) or with

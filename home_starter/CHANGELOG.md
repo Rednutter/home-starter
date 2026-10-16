@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.20
+
+- Add private household service relationships and actionable setup checks, keeping people, provider identities, endpoints and extensions separate.
+- Support multiple verified calendar sources, overlapping-event deduplication and explicit personal calendar mappings.
+- Let children use approved House favourites on their permitted speakers while retaining private listener progress.
+- Add explicit administrator setup for native ABC Radio and Australian podcast catalogues without provider passwords.
+- Add reproducible Pi kiosk and authenticated health services, plus a tested compatibility repair for SIP Core credential disclosure.
+
 ## 0.8.19
 
 - Disable button-card’s outer keyboard action handling on focused pages so native form inputs and buttons retain Enter/Space behavior. Verify search submission in live Home Assistant.

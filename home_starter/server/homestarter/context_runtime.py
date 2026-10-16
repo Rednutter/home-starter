@@ -3,7 +3,7 @@
 from datetime import UTC, datetime, timedelta
 from urllib.parse import urlencode
 
-from . import context, readiness, this_house, waste
+from . import context, household_services, readiness, this_house, waste
 from .core import CoreError
 from .inventory import collect_inventory
 from .surfaces import admitted, classify, fingerprint, preferences
@@ -23,6 +23,8 @@ async def inspect(core, store, surface=None, now=None, *, person_id=None, inputs
     now = now or datetime.now(UTC)
     house, saved, inventory, states, zone, members = inputs or await snapshot(core, store)
     settings = saved["context"]
+    service_map = household_services.load(store, house)
+    calendars = {row["entity_id"]: row for row in service_map["calendars"]}
     people = {p["id"]: p["name"] for p in members if p["confirmed"] and p["role"] in {"adult", "child"}}
     policy = readiness.policy_for(saved, house, inventory, states)
     linked_person = None
@@ -76,23 +78,28 @@ async def inspect(core, store, surface=None, now=None, *, person_id=None, inputs
         if not inventory["complete"] or not readiness.proof_valid(saved, key, inventory, now):
             issues.append(("Calendar" if key == "calendars" else "Collection source") + " needs verification")
             continue
-        source = choice["sources"][0]
-        if source not in policy.get(key, []) or admitted_ids is not None and source not in admitted_ids:
-            issues.append(("Calendar" if key == "calendars" else "Collection source") + " unavailable or excluded")
-            continue
-        try:
-            raw = await core.rest_get("/calendars/" + source + "?" + query)
-            if key == "waste" and isinstance(raw, list):
-                raw = [e for e in raw if isinstance(e, dict) and readiness.collection_event(e, source, inventory)]
-            parsed, invalid = context.parse_events(raw, readiness.selection_signature({"sources": [source]}, inventory), zone)
-            # A selected collection source is already admitted by the existing verifier.
-            events.extend(e for e in parsed if person_id is None or e["key"] in settings["events"])
-            if invalid:
-                issues.append("Some calendar entries could not be read")
-            expiries.append(datetime.fromisoformat(saved["verified"][key]["at"]) + timedelta(days=1))
-        except (CoreError, ValueError, KeyError, TypeError):
-            issues.append(("Calendar" if key == "calendars" else "Collection source") + " temporarily unavailable")
-    events = sorted({e["key"]: e for e in events}.values(), key=lambda e: e["start"].astimezone(UTC))
+        for source in choice["sources"]:
+            if source not in policy.get(key, []) or admitted_ids is not None and source not in admitted_ids:
+                issues.append(("Calendar" if key == "calendars" else "Collection source") + " unavailable or excluded")
+                continue
+            try:
+                raw = await core.rest_get("/calendars/" + source + "?" + query)
+                if key == "waste" and isinstance(raw, list):
+                    raw = [e for e in raw if isinstance(e, dict) and readiness.collection_event(e, source, inventory)]
+                parsed, invalid = context.parse_events(raw, readiness.selection_signature({"sources": [source]}, inventory), zone)
+                mapped = bool(linked_person and person_id in calendars.get(source, {}).get("people", []))
+                events.extend(e for e in parsed if person_id is None or mapped or e["key"] in settings["events"])
+                if invalid:
+                    issues.append("Some calendar entries could not be read")
+                expiries.append(datetime.fromisoformat(saved["verified"][key]["at"]) + timedelta(days=1))
+            except (CoreError, ValueError, KeyError, TypeError):
+                issues.append(("Calendar" if key == "calendars" else "Collection source") + " temporarily unavailable")
+    # Keep source-specific event keys for existing annotations; deduplicate overlapping upstream feeds.
+    unique = {}
+    for e in events:
+        duplicate = (" ".join(e["title"].casefold().split()), e["start"].astimezone(UTC), e["end"].astimezone(UTC), e["all_day"])
+        unique.setdefault(duplicate, e)
+    events = sorted(unique.values(), key=lambda e: e["start"].astimezone(UTC))
     content = context.build(events, now, zone, settings, people)
     if person_id is not None and not linked_person:
         issues.append("Personal context not linked")
@@ -103,7 +110,7 @@ async def inspect(core, store, surface=None, now=None, *, person_id=None, inputs
             content["ahead"] = (
                 "Upcoming calendar context unavailable"
                 if any("unavailable" in s or "verification" in s for s in issues)
-                else "Choose and verify one consolidated calendar in Home Readiness"
+                else "Choose and verify calendars from your consolidated account in Home Readiness"
             )
     result.update(content, issues=issues, checked_at=now.isoformat(), valid_until=min([now + timedelta(seconds=150), *expiries]).isoformat())
     try:

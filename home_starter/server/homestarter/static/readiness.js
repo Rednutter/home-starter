@@ -42,7 +42,8 @@ export function initReadiness({ h, api, navigateHA }) {
       row.provider_service ? h("p",{},"Check and confirm the Council service in Waste collection. Previous calendar-source choices are preserved; no synthetic calendar events are created.") : choice.intent === "wanted" && h("div", {},
         h("p", { class: "small muted" }, "Sources and displays are choices, not proof of working configuration. Existing dashboards change only after a reviewed publication."),
         checks("Sources for " + row.title, row.sources.map(s => [s.id, s.name + (s.available ? "" : " · unavailable")]), choice.sources, v => update("sources", v)),
-        ["calendars", "waste"].includes(row.id) && h("p", {}, "Choose one source. Waste collection requires a collection event from that source; a calendar name alone is insufficient."),
+        row.id === "waste" && h("p", {}, "Choose one source with a dated collection event; a calendar name alone is insufficient."),
+        row.id === "calendars" && h("p", {}, "Choose the individual calendars beneath your consolidated account. Map their household/person purposes in service setup."),
         checks("Displays for " + row.title, data.screens.map(s => [s.id, s.name]), choice.screens, v => update("screens", v)),
         Object.entries(data.answer_options[row.id] || {}).map(([key, options]) => {
           const label = key.replaceAll("_", " ") + " for " + row.title;
@@ -77,6 +78,9 @@ export function initReadiness({ h, api, navigateHA }) {
     root.replaceChildren(
       h("p", { class: "small muted" }, "Only relevant questions are offered. Open another item to express interest. Not wanted and Not now are saved decisions. No credentials belong in this page."),
       ...data.rows.map(detail),
+      data.service_checks?.length ? h("section", {}, h("h3", {}, "Household services"),
+        ...data.service_checks.map(row => h("p", {}, h("strong", {}, row.name + " — " + row.status),
+          h("span", {class:"small muted"}, " · " + row.detail), " ", button("Review " + row.name, () => route(row.route))))) : null,
       button("Save readiness choices", save, busy),
     );
     root.querySelectorAll("input, select, button").forEach(node => { if (busy) node.disabled = true; });

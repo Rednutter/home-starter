@@ -7,6 +7,7 @@ import hashlib
 import json
 import math
 import os
+import re
 import secrets
 import time
 from datetime import UTC, datetime, timedelta
@@ -132,7 +133,38 @@ class MusicRuntime:
             raise ValueError("Unsupported Music control.")
         return await self._request(endpoint, connection, command, **args)
 
-    async def _request(self, endpoint, connection, command, **args):
+    async def add_catalogue(self, domain, country="AU"):
+        """Only zero-login household catalogue sources; never Spotify/OAuth credentials."""
+        if domain not in {"abc_radio_network", "itunes_podcasts"} or not re.fullmatch(r"[A-Z]{2}", country):
+            raise ValueError("Choose a supported household catalogue and country.")
+        async with self.lock:
+            connection, endpoint = self.connection(), await self.endpoint()
+            if not connection:
+                raise MusicRuntimeError("Connect Music Assistant first.")
+            records = await self.command(endpoint, connection, "config/providers", provider_type="music", include_values=False)
+            existing = next((r for r in records if r.get("domain") == domain), None)
+            if existing is None:
+                step = await self._request(
+                    endpoint, connection, "config/providers/setup", request_timeout=aiohttp.ClientTimeout(total=120), provider_domain=domain
+                )
+                if step.get("type") != "finish":
+                    raise MusicRuntimeError("This source needs its native Music Assistant setup flow. Existing providers are preserved.")
+                instance = (step.get("result") or {}).get("instance_id")
+            else:
+                instance = existing["instance_id"]
+            if domain == "itunes_podcasts" and instance:
+                await self._request(
+                    endpoint,
+                    connection,
+                    "config/providers/save",
+                    request_timeout=aiohttp.ClientTimeout(total=120),
+                    provider_domain=domain,
+                    instance_id=instance,
+                    values={"locale": country.lower(), "explicit": False},
+                )
+        return await self.snapshot()
+
+    async def _request(self, endpoint, connection, command, *, request_timeout=TIMEOUT, **args):
         if any(endpoint[k] != connection[k] for k in ("server_id", "app")):
             raise MusicRuntimeError("Music Assistant identity changed. Reconnect before sending credentials.")
         try:
@@ -140,7 +172,7 @@ class MusicRuntime:
                 endpoint["address"] + "/api",
                 json={"message_id": "home-starter", "command": command, "args": args},
                 headers={"Authorization": "Bearer " + connection["token"].reveal()},
-                timeout=TIMEOUT,
+                timeout=request_timeout,
                 allow_redirects=False,
             ) as response:
                 if response.status in (401, 403):

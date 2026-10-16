@@ -88,7 +88,7 @@ class CoreClient:
         """Only owned household context projections; never hardware service calls."""
         import re
 
-        if not re.fullmatch(r"sensor\.home_starter_context_[a-f0-9]{12}", entity_id) and entity_id != "sensor.home_starter_bin_source":
+        if not re.fullmatch(r"sensor\.home_starter_(?:context|endpoint)_[a-f0-9]{12}", entity_id) and entity_id != "sensor.home_starter_bin_source":
             raise ValueError("Context sensor namespace required.")
         try:
             async with self._session.post(

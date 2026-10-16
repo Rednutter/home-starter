@@ -32,6 +32,10 @@ music-connection.json
 music-connection.tmp
 music-playback.json
 music-playback.tmp
+household-services.json
+household-services.tmp
+endpoint-connections.json
+endpoint-connections.tmp
 reset-history.json
 *-token.txt
 *-credentials.json
