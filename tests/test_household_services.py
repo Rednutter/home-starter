@@ -124,3 +124,43 @@ async def test_service_api_requires_admin(make_env):
         data = await response.json()
         assert data["endpoint_keys_configured"] == []
         assert data["configuration"]["media_identities"] == []
+        assert "setup" in data
+
+
+def test_setup_choices_exclude_events_and_credentials(configured):
+    _, house, _ = configured
+    inventory = {"integrations": [{"entry_id": "google-hub", "title": "Calendar hub", "domain": "google", "state": "loaded", "secret": "not-public"}]}
+    states = [{"entity_id": "calendar.family", "attributes": {"friendly_name": "Family", "message": "private event"}}]
+    music = {"providers": [{"id": "spotify-one", "name": "Shared", "domain": "spotify", "status": "connected", "values": {"token": "not-public"}}]}
+    options = services.setup_options(house, inventory, states, music)
+    assert options["calendars"] == [{"id": "calendar.family", "name": "Family"}]
+    assert "private event" not in str(options) and "not-public" not in str(options)
+
+
+def test_new_provider_bindings_require_matching_discovered_instances(configured):
+    _, house, previous = configured
+    value = deepcopy(previous)
+    value["media_identities"][0]["provider_id"] = "fabricated"
+    with pytest.raises(ValueError, match="matching"):
+        services.check_new_bindings(value, previous, {"google": [], "calendars": [], "providers": []})
+    options = {"google": [], "calendars": [], "providers": [{"id": "fabricated", "domain": "audiobookshelf"}]}
+    with pytest.raises(ValueError, match="matching"):
+        services.check_new_bindings(value, previous, options)
+    options["providers"][0]["domain"] = "spotify"
+    services.check_new_bindings(value, previous, options)
+    # An outage must not force users to delete their saved identities.
+    services.check_new_bindings(value, value, {"google": [], "calendars": [], "providers": []})
+
+
+def test_calendar_bindings_require_native_choices(configured):
+    _, house, previous = configured
+    value = deepcopy(previous)
+    value.update(calendar_hub="invented", calendars=[{"entity_id": "calendar.new", "category": "person", "people": ["child"]}])
+    options = {"google": [], "calendars": [], "providers": []}
+    with pytest.raises(ValueError, match="Google"):
+        services.check_new_bindings(value, previous, options)
+    options["google"] = [{"id": "invented"}]
+    with pytest.raises(ValueError, match="calendar"):
+        services.check_new_bindings(value, previous, options)
+    options["calendars"] = [{"id": "calendar.new"}]
+    services.check_new_bindings(value, previous, options)

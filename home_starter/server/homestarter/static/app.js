@@ -9,6 +9,7 @@ import { initInstallation } from "./installation.js";
 import { initReadiness } from "./readiness.js";
 import { initCommissioning } from "./commissioning.js";
 import { musicRuntime } from "./music-runtime.js";
+import { initServices } from "./services.js";
 
 const OUTCOMES = [
   { id: "music", title: "Music around the house", text: "Whole-home music, radio and podcasts with Music Assistant.", available: true },
@@ -357,6 +358,7 @@ async function init() {
   initWaste({ h, api });
   initScreenIdentity({ h, api, navigateHA });
   initReadiness({ h, api, navigateHA });
+  initServices({ h, api, navigateHA });
   renderOutcomes();
   document.getElementById("rescan").addEventListener("click", async () => {
     await scan(true);

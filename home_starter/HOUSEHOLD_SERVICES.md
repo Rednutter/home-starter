@@ -17,6 +17,19 @@ require current household revision/epoch and confirmed native people. The Readin
 page displays service checks and native review links. A provider being available
 does not establish playback, account ownership, registration or audible proof.
 
+Administrators can return to **Home Starter → Service setup** at any time. The
+Google section opens native HA setup, then offers the discovered integration and
+calendar entities with purpose/person mappings. The Spotify section links to
+native MA setup and matches planned account identities to distinct real provider
+instances. The audiobook section can save a pending library name and intended
+users before a provider exists. Addresses, storage locations, OAuth and passwords
+are entered in the native provider setup, never in Home Starter.
+
+Refresh preserves unsaved edits; save conflicts preserve the draft. Changed
+bindings must match discovered service types, while an unavailable existing
+binding is retained. These relationships are plans, not provider access grants or
+verified account routing. Children retain the approved-favourites boundary.
+
 The commissioning installation has exactly four intended Spotify identities:
 two personal adult identities and two distinct shared household identities.
 Children use the shared identities; they are not assigned personal Spotify accounts.

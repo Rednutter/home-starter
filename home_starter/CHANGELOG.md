@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.23
+
+- Add administrator Service setup for finishing Google calendar mappings, matching
+  Spotify identities and preparing audiobook libraries later through native HA/MA
+  login flows. No provider credentials are copied into Home Starter.
+- Preserve drafts across refresh/conflict errors, offer explicit reload recovery,
+  and validate changed bindings against discovered native service instances.
+
 ## 0.8.22
 
 - Wait for real player acknowledgement and allow native stream resolution time before confirming playback.

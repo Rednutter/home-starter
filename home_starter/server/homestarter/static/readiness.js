@@ -79,6 +79,7 @@ export function initReadiness({ h, api, navigateHA }) {
       h("p", { class: "small muted" }, "Only relevant questions are offered. Open another item to express interest. Not wanted and Not now are saved decisions. No credentials belong in this page."),
       ...data.rows.map(detail),
       data.service_checks?.length ? h("section", {}, h("h3", {}, "Household services"),
+        button("Set up accounts and libraries", () => route("#household-services")),
         ...data.service_checks.map(row => h("p", {}, h("strong", {}, row.name + " — " + row.status),
           h("span", {class:"small muted"}, " · " + row.detail), " ", button("Review " + row.name, () => route(row.route))))) : null,
       button("Save readiness choices", save, busy),
@@ -111,5 +112,6 @@ export function initReadiness({ h, api, navigateHA }) {
   }
   document.getElementById("readiness-check").addEventListener("click", refresh);
   document.addEventListener("home-starter-saved", refresh);
+  document.addEventListener("home-starter-services-saved", refresh);
   refresh();
 }

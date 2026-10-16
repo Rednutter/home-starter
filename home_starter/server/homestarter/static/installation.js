@@ -30,7 +30,7 @@ export async function initInstallation({ h, api, navigateHA }) {
     if (previous !== mode) setup.open = mode === "first-run";
     document.querySelector(".house-nav").replaceChildren(...[
       ["this-house", "This House"], ["house-status", "House status"], ["home-readiness", "Home Readiness"], ["house-changes", "New / changed things"], ["surfaces", "Screens"],
-      ["this-house-people", "People"], ["music", "Music"], ["house-climate", "Climate"],
+      ["this-house-people", "People"], ["music", "Music"], ["household-services", "Service setup"], ["house-climate", "Climate"],
       ["household-activities", "Activities"], ["review-setup", "Review setup"],
     ].map(([id, label]) => h("a", { href: "#" + id, onclick: () => {
       const target = document.getElementById(id);

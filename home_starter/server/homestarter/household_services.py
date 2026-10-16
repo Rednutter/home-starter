@@ -34,6 +34,37 @@ def empty(epoch):
     }
 
 
+def setup_options(house, inventory, states, music):
+    """Admin-only choices: names/IDs, never provider values or calendar events."""
+    return {
+        "people": [{k: p[k] for k in ("id", "name", "audience")} for p in house["people"]],
+        "google": [{"id": e["entry_id"], "name": e["title"], "state": e["state"]} for e in inventory["integrations"] if e["domain"] == "google"],
+        "calendars": [
+            {"id": s["entity_id"], "name": s.get("attributes", {}).get("friendly_name") or s["entity_id"]}
+            for s in states
+            if s["entity_id"].startswith("calendar.")
+        ],
+        "providers": [{k: p[k] for k in ("id", "name", "domain", "status")} for p in (music or {}).get("providers", [])],
+        "music_path": (music or {}).get("open_path"),
+    }
+
+
+def check_new_bindings(value, previous, options):
+    """Reject fabricated choices; retain existing mappings during service outages."""
+    if value["calendar_hub"] and value["calendar_hub"] != previous["calendar_hub"] and value["calendar_hub"] not in {e["id"] for e in options["google"]}:
+        raise ValueError("Refresh and choose an existing Google integration.")
+    calendars = {r["id"] for r in options["calendars"]} | {r["entity_id"] for r in previous["calendars"]}
+    if any(r["entity_id"] not in calendars for r in value["calendars"]):
+        raise ValueError("Refresh and choose an existing calendar entity.")
+    providers = {p["id"]: p for p in options["providers"]}
+    for key, domains in [("media_identities", {"spotify"}), ("libraries", {"audiobookshelf", "audible", "storytel"})]:
+        old = {r["id"]: r["provider_id"] for r in previous[key]}
+        for row in value[key]:
+            provider = row["provider_id"]
+            if provider and provider != old.get(row["id"]) and providers.get(provider, {}).get("domain") not in domains:
+                raise ValueError("Refresh and choose a matching Music Assistant provider.")
+
+
 def validate(value, house):
     if (
         not isinstance(value, dict)

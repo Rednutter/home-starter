@@ -843,6 +843,13 @@ async def api_household_services(request: web.Request) -> web.Response:
                     native = {p["id"] for p in view["people"] if p["confirmed"] and p["role"] in {"adult", "child"}}
                     if not view["complete"] or not set(config["person_links"].values()) <= native:
                         raise ValueError("Link only current confirmed household members.")
+                    inventory = await collect_inventory(state.core)
+                    try:
+                        music = await state.music_runtime.snapshot()
+                    except (MusicRuntimeError, CoreError, SupervisorError):
+                        music = None
+                    options = household_services.setup_options(house, inventory, await state.core.states(), music)
+                    household_services.check_new_bindings(config, household_services.load(state.household, house), options)
                     household_services.save(state.household, house, config)
             config = household_services.load(state.household, house)
             connected = household_services.connections(state.household)
@@ -851,11 +858,13 @@ async def api_household_services(request: web.Request) -> web.Response:
             music = await state.music_runtime.snapshot()
         except (MusicRuntimeError, CoreError, SupervisorError):
             music = None
+        states = await state.core.states()
         return _json(
             {
                 "configuration": config,
                 "endpoint_keys_configured": sorted(connected),
-                "checks": household_services.status(config, inventory["integrations"], await state.core.states(), music),
+                "checks": household_services.status(config, inventory["integrations"], states, music),
+                "setup": household_services.setup_options(house, inventory, states, music),
             }
         )
     except ValueError as error:
