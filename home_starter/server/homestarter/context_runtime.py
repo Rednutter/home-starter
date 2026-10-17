@@ -163,6 +163,14 @@ async def inspect(core, store, surface=None, now=None, *, person_id=None, inputs
 
 async def update(core, store, sessions=None):
     house = store.load()
+    if sessions is not None:
+        from .wall_composer import moment
+
+        walls = {s["id"] for s in house["surfaces"] if s["profile"] == "wall"}
+        for key, pending in list(sessions.items()):
+            expiry = moment(pending.get("content", {}).get("expires_at"))
+            if key not in walls or pending.get("epoch") != house["epoch"] or not expiry or expiry <= datetime.now(UTC):
+                sessions.pop(key, None)
     records = store.read(store.publication_path, {})
     targets = [
         s
@@ -176,13 +184,6 @@ async def update(core, store, sessions=None):
     inputs = await snapshot(core, store)
     states = {s["entity_id"]: s for s in await core.states()}
     for surface in targets:
-        if sessions is not None and surface["id"] in sessions:
-            from .wall_composer import moment
-
-            pending = sessions[surface["id"]]
-            expiry = moment(pending.get("content", {}).get("expires_at"))
-            if pending.get("epoch") != house["epoch"] or not expiry or expiry <= datetime.now(UTC):
-                sessions.pop(surface["id"], None)
         entity = context.entity_id(surface["id"])
         old = states.get(entity)
         owner = {"surface": surface["id"], "epoch": house["epoch"]}

@@ -234,6 +234,19 @@ async def test_wall_sessions_require_admin_current_epoch_and_remain_ephemeral(ma
     assert not any("Roast vegetables" in p.read_text() for p in store.path.parent.glob("*.json"))
 
 
+async def test_session_memory_expires_even_without_a_published_wall(make_env):
+    env, store, house, _, _ = await configured(make_env)
+    now = datetime.now(UTC)
+    for key, epoch, expires in (
+        ("example_wall", house["epoch"], now - timedelta(seconds=1)),
+        ("example_wall", house["epoch"] + 1, now + timedelta(seconds=60)),
+        ("removed_wall", house["epoch"], now + timedelta(seconds=60)),
+    ):
+        sessions = {key: {"epoch": epoch, "content": {"expires_at": expires.isoformat(), "body": "Temporary answer"}}}
+        await runtime.update(env.core, store, sessions)
+        assert not sessions
+
+
 async def test_wall_updates_only_after_explicit_publication_and_stops_on_external_edit(make_env):
     env, store, house, _, _ = await configured(make_env)
     await runtime.update(env.core, store)
