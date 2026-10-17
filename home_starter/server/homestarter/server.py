@@ -1011,7 +1011,7 @@ async def api_surface_preview(request: web.Request) -> web.Response:
             async with state.activity_lock:
                 activities = await update_activity(state.core, state.household, house["activities"])
             policy = readiness.policy_for(readiness.load(state.household, house), house, inventory, await state.core.states())
-            if surface["profile"] == "specialist":
+            if surface["profile"] in ("specialist", "wall"):
                 from .panel import resource_ready
 
                 try:
@@ -1021,7 +1021,7 @@ async def api_surface_preview(request: web.Request) -> web.Response:
                 except CoreError:
                     policy["landscape_panel"] = False
                     resources = []
-                if surface.get("kiosk"):
+                if surface["profile"] == "specialist" and surface.get("kiosk"):
                     if not policy["landscape_panel"] or not resource_ready(resources, "kiosk-mode"):
                         raise ValueError("Install button-card and Kiosk Mode through HACS, then generate a fresh preview. Existing dashboard preserved.")
                     record = screen_identity.load(state.household, house)["screens"].get(surface["id"], {})
@@ -1030,6 +1030,11 @@ async def api_surface_preview(request: web.Request) -> web.Response:
                     if not user or sum(u["name"] == user["name"] for u in users) != 1:
                         raise ValueError("Confirm a suitable dedicated panel account with a unique display name under Physical screen commissioning first.")
                     policy["kiosk_user_name"] = user["name"]
+                if surface["profile"] == "wall":
+                    services = household_services.load(state.household, house)
+                    policy["wall_person_links"] = services["person_links"]
+                    endpoint = next((e for e in services["endpoints"] if e["surface_id"] == surface["id"]), None)
+                    policy["wall_endpoint"] = household_services.endpoint_entity(endpoint["id"]) if endpoint else None
             choice = policy.get("features", {}).get("music", {})
             if choice.get("intent") == "wanted" and surface["id"] in choice.get("screens", []) and state.music_runtime.connection():
                 own_info = await state.supervisor.self_info()
@@ -1047,6 +1052,11 @@ async def api_surface_preview(request: web.Request) -> web.Response:
                 )
             if waste_issue:
                 generated["warnings"].append("Bin schedule unavailable; existing screen choices preserved.")
+            if surface["profile"] == "wall" and not policy.get("landscape_panel"):
+                generated["warnings"].append(
+                    "For the family morning wall layout, install button-card through HACS, then generate a fresh preview. "
+                    "The native wall fallback remains available."
+                )
             if surface["profile"] == "wall":
                 generated["context_preview"] = await context_runtime.inspect(state.core, state.household, surface)
             records = state.household.read(state.household.publication_path, {})
@@ -1096,7 +1106,7 @@ async def api_surface_publish(request: web.Request) -> web.Response:
             records = state.household.read(state.household.publication_path, {})
             result = await publish(state.core, preview["generated"], preview["expected"], records)
             if preview["generated"]["surface"]["profile"] == "wall":
-                result["context"] = 1
+                result["context"] = 2 if preview["generated"].get("wall_briefing") else 1
                 result["context_epoch"] = current_house["epoch"]
             elif preview["generated"].get("focused_pages"):
                 result["context"] = 2

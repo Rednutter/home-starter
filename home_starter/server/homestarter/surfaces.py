@@ -558,7 +558,7 @@ def generate(house: dict, surface: dict, items: list[dict], areas: list[dict], a
                 )
     views += details
     config = {"title": surface["name"], "views": views}
-    return {
+    generated = {
         "surface": surface,
         "url_path": path,
         "config": config,
@@ -579,6 +579,11 @@ def generate(house: dict, surface: dict, items: list[dict], areas: list[dict], a
             "Calling, event takeover and music favourites need a supported source and are not installed by this version.",
         ],
     }
+    if profile == "wall" and (policy or {}).get("landscape_panel"):
+        from .wall import apply
+
+        return apply(generated, house, policy)
+    return generated
 
 
 def navigation(name: str, target: str, icon: str = "mdi:arrow-expand") -> dict:

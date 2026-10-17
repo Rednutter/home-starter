@@ -281,6 +281,11 @@ async def poll_endpoints(session, core, store):
                 if type(value.get(field)) is not bool:
                     raise ValueError("Unsupported health status")
                 attrs[field] = value[field]
+            for field in ["voice_connected", "voice_muted"]:
+                if field in value:
+                    if type(value[field]) is not bool:
+                        raise ValueError("Unsupported voice status")
+                    attrs[field] = value[field]
             for field in ["cpu_temperature", "load_1m", "storage_used_percent", "storage_free_gb", "uptime_seconds"]:
                 if not number(value.get(field)) or value[field] < 0:
                     raise ValueError("Unsupported health metric")
@@ -357,13 +362,19 @@ def status(config, integrations, states, music):
         rows.append(
             {
                 "name": endpoint["name"],
-                "status": "Ready"
+                "status": ("Microphone muted" if attrs.get("voice_muted", True) else "Ready")
                 if fresh
                 and state.get("state") == "online"
                 and attrs.get("browser_alive")
+                and attrs.get("dashboard_open")
                 and attrs.get("authenticated_display_verified")
                 and attrs.get("audio_service") == "active"
                 and attrs.get("voice_service") == "active"
+                and attrs.get("voice_connected") is True
+                and str(endpoint.get("player_id") or "").startswith("media_player.")
+                and observed.get(endpoint["player_id"], {}).get("state", "unavailable") not in {"unknown", "unavailable"}
+                and str(endpoint.get("voice_entity") or "").startswith("assist_satellite.")
+                and observed.get(endpoint["voice_entity"], {}).get("state", "unavailable") not in {"unknown", "unavailable"}
                 else "Device offline"
                 if not fresh or state.get("state") == "offline"
                 else "Needs login"
@@ -374,7 +385,9 @@ def status(config, integrations, states, music):
                 + " · audio: "
                 + str(attrs.get("audio_service", "unknown"))
                 + " · voice: "
-                + str(attrs.get("voice_service", "unknown")),
+                + str(attrs.get("voice_service", "unknown"))
+                + (" · microphone muted" if attrs.get("voice_muted", True) else " · microphone enabled")
+                + "; native player and satellite bindings required",
                 "route": "#surfaces",
             }
         )

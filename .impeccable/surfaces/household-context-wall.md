@@ -2,27 +2,21 @@
 version: 1
 slug: household-context-wall
 primary_target: home_starter/server/homestarter/surfaces.py
-related_targets: [home_starter/server/homestarter/static/context.js]
+related_targets: [home_starter/server/homestarter/wall.py, home_starter/server/homestarter/static/wall-content.js, home_starter/server/homestarter/static/wall-layout.css]
 ---
 
-Mode: Operate; code-led extension of existing native HA wall profile.
-The user's pinned direction is restrained, passive, non-touch and information-first.
-Keep native HA Sections/Markdown; no new framework, cards, decorative imagery or
-display power control. The reference images explain prior direction, not real
-household facts or permission to reproduce the AirTouch surface. The explicit
-compact native extension needs no new visual-world seed or concept round.
+Mode: Operate. Follow the owner's Smart Family Morning Dashboard image: panoramic
+dawn landscape, large clock/weather, colored children's plans, Today/Coming up on
+the right and household/camera status along the bottom. This overrides the earlier
+plain native Markdown direction. Keep it passive, non-touch and read-only.
 
-FIRST VIEWPORT: small time/date/current conditions, current commitments and scoped
-morning rules, then a chronological upcoming horizon. Near-term content grows with
-real rows; quiet periods use more of the next three weeks. No fixed-height filler,
-permanent people cards, control widgets or generated navigation. Native HA chrome
-remains a device/kiosk concern and must be disclosed.
+Use the existing native HA button-card resource, with the old native fallback.
+No control widgets or generated navigation. Real household names/data only;
+initials until portraits are provided. Plans require fresh owned context and
+explicit person links. Never copy fictional schedules or camera thumbnails.
+Missing connections remain visibly pending. Decorative AI landscape provenance is
+recorded in wall-imagery.json; it is not live weather or the actual house.
 
-Signature interaction: no wall interaction; content changes as schedule proximity
-changes, with current/elapsed events separated and stale source data expiring.
-Admin settings reuse native forms and disclosures, explicit source/display consent,
-confirmed HA people, date ranges, known travel/margins and conservative leave-by
-times. Preserve unsaved drafts and fail safely on unknown or unavailable evidence.
-
-Finish: eight synthetic states rendered in native HA, scoped review, DESIGN.md;
-real household screenshots and event payloads remain outside Git.
+Verify 1920x1080 on the actual Pi kiosk and a smaller landscape fixture, including
+populated/pending states and overflow checks. Preserve 180-degree output rotation.
+Household screenshots and calendar payloads remain private outside Git.

@@ -125,7 +125,7 @@ def safe(value):
     return re.sub(r"([\\`*_\[\]()#!|])", r"\\\1", html.escape(value, quote=True))
 
 
-def build(events, now, zone, settings, people):
+def build(events, now, zone, settings, people, briefing_limit=7):
     now = now.astimezone(ZoneInfo(zone))
     morning = 5 <= now.hour < 10
     phase = "morning" if morning else "daytime" if 10 <= now.hour < 15 else "afternoon" if 15 <= now.hour < 20 else "night"
@@ -169,7 +169,7 @@ def build(events, now, zone, settings, people):
         "ahead_count": len(next_rows),
         "rule_count": len(notes),
         "scheduled_remaining": len(relevant),
-        "briefing": briefing(relevant, now, settings, people),
+        "briefing": briefing(relevant, now, settings, people, limit=briefing_limit),
     }
 
 
@@ -183,7 +183,7 @@ def proximity(event, now):
     return "later_today" if days == 0 else "tomorrow" if days == 1 else "next_few_days" if days <= 3 else "coming_weeks"
 
 
-def briefing(events, now, settings, people):
+def briefing(events, now, settings, people, limit=7):
     """Bounded actionable rows for touch views, from the existing context engine."""
     rows = []
     for event in events:
@@ -211,15 +211,22 @@ def briefing(events, now, settings, people):
                     "when": when,
                     "detail": "Leave by " + leave.strftime("%H:%M") if leave else "",
                     "proximity": position,
+                    "people": list(link["people"]) if valid else [],
                 },
             )
         )
     if 5 <= now.hour < 10:
         for rule in settings["rules"]:
             if rule["start"] <= now.date().isoformat() <= rule["end"] and now.weekday() in rule["weekdays"] and all(p in people for p in rule["people"]):
-                rows.append((1, now, {"id": rule["id"], "title": rule["text"], "when": "This morning", "detail": "", "proximity": "now"}))
+                rows.append(
+                    (
+                        1,
+                        now,
+                        {"id": rule["id"], "title": rule["text"], "when": "This morning", "detail": "", "proximity": "now", "people": list(rule["people"])},
+                    )
+                )
     rows.sort(key=lambda row: (row[0], row[1]))
-    return [{**row[2], "priority": row[0]} for row in rows[:7]]
+    return [{**row[2], "priority": row[0]} for row in rows[:limit]]
 
 
 def entity_id(surface_id, person_id=None):

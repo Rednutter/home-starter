@@ -100,7 +100,8 @@ async def inspect(core, store, surface=None, now=None, *, person_id=None, inputs
         duplicate = (" ".join(e["title"].casefold().split()), e["start"].astimezone(UTC), e["end"].astimezone(UTC), e["all_day"])
         unique.setdefault(duplicate, e)
     events = sorted(unique.values(), key=lambda e: e["start"].astimezone(UTC))
-    content = context.build(events, now, zone, settings, people)
+    briefing_limit = 20 if surface and surface["profile"] == "wall" else 7
+    content = context.build(events, now, zone, settings, people, briefing_limit=briefing_limit)
     if person_id is not None and not linked_person:
         issues.append("Personal context not linked")
     # No old cached event is retained after a read failure. Accepted rules remain explicit.
@@ -123,7 +124,7 @@ async def inspect(core, store, surface=None, now=None, *, person_id=None, inputs
                     rows = result["briefing"]
                     index = next((n for n, row in enumerate(rows) if row.get("priority", 2) >= 2), len(rows))
                     rows.insert(index, {"id": "bins", "title": bins["summary"], "when": "Household collection", "detail": "", "proximity": "now"})
-                    result["briefing"] = rows[:7]
+                    result["briefing"] = rows[:briefing_limit]
     except (ValueError, OSError, KeyError, TypeError):
         result["issues"].append("Bin schedule needs checking")
     result["events"] = [

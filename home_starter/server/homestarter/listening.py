@@ -195,12 +195,37 @@ class ListeningRuntime:
         item = (queue or {}).get("current_item") or {}
         media = player.get("current_media") or {}
         current_id = item.get("queue_item_id")
+        state = player.get("playback_state", player.get("state"))
+        idle_stamp = [(queue or {}).get("elapsed_time_last_updated"), media.get("elapsed_time_last_updated")]
+        protocols = [p for p in player.get("output_protocols", []) if p.get("available", True)]
+        protocol = next((p for p in protocols if p.get("output_protocol_id") == player.get("active_output_protocol")), None)
+        if protocol is None and player.get("active_output_protocol") is None and len(protocols) == 1:
+            # MA clears active_output_protocol when stopping the Sendspin stream.
+            protocol = protocols[0]
+        idle_ack = {"queue_item_id": lease.get("queue_item_id"), "protocol": (protocol or {}).get("output_protocol_id")}
+        pause_pending = (
+            state == "idle"
+            and (queue or {}).get("state") in {"playing", "paused", "idle"}
+            and (protocol or {}).get("protocol_domain") == "sendspin"
+            and number(lease.get("pause_requested_at"))
+            and 0 <= time.time() - lease["pause_requested_at"] <= 3
+        )
+        idle_pause = (
+            state == "idle"
+            and (queue or {}).get("state") == "idle"
+            and all(number(stamp) for stamp in idle_stamp)
+            and (protocol or {}).get("protocol_domain") == "sendspin"
+            and (lease.get("idle_pause_ack") == idle_ack or number(lease.get("pause_requested_at")) and 0 <= time.time() - lease["pause_requested_at"] <= 15)
+        )
         if lease.get("kind") not in {"audiobook", "podcast_episode"} and current_id in lease.get("queue_items", []):
             lease["queue_item_id"] = current_id
         if (
             not queue
             or not queue.get("active")
-            or player.get("playback_state", player.get("state")) not in {"playing", "paused", "buffering"}
+            or player.get("available") is False
+            or state not in {"playing", "paused", "buffering"}
+            and not idle_pause
+            and not pause_pending
             or queue.get("queue_id") != player_id
             or player.get("active_source") != player_id
             or item.get("queue_item_id") != lease.get("queue_item_id")
@@ -209,16 +234,38 @@ class ListeningRuntime:
         ):
             data["leases"].pop(player_id, None)
             return False
+        if pause_pending and not idle_pause:
+            # Device and queue acknowledgements can arrive in separate updates.
+            # Wait briefly with all identity checks above; never save progress.
+            return False
+        if idle_pause:
+            if lease.get("idle_pause_ack") != idle_ack:
+                candidate = lease.get("idle_pause_candidate", {})
+                if candidate.get("ack") != idle_ack:
+                    lease["idle_pause_candidate"] = {"ack": idle_ack, "at": time.time()}
+                    return False
+                if time.time() - candidate["at"] < 0.2:
+                    return False
+            # Sendspin stops a paused stream. Keep only our explicitly acknowledged
+            # pause with unchanged queue/source/transport IDs, never a generic idle.
+            # Metadata timestamps may change while stopped; they cannot transfer
+            # ownership and never update a listener's saved progress on their own.
+            lease["idle_pause_ack"] = idle_ack
+            lease.pop("idle_pause_candidate", None)
+        elif state == "playing":
+            lease.pop("idle_pause_ack", None)
+            lease.pop("idle_pause_candidate", None)
         # Only raw fresh feedback, never an extrapolated queue clock, owns progress.
         position, stamp = player.get("elapsed_time"), player.get("elapsed_time_last_updated")
         paused_queue = (
-            player.get("playback_state", player.get("state")) == "paused"
-            and queue.get("state") == "paused"
+            (state == "paused" and queue.get("state") == "paused" or idle_pause)
             and number(lease.get("pause_requested_at"))
             and 0 <= time.time() - lease["pause_requested_at"] <= 15
             and number(queue.get("elapsed_time_last_updated"))
             and queue["elapsed_time_last_updated"] >= lease["pause_requested_at"]
         )
+        if lease.get("kind") not in {"audiobook", "podcast_episode"} and (state == "paused" or idle_pause):
+            lease.pop("pause_requested_at", None)
         if paused_queue:
             # Cast may report only its initial anchor. After an explicit pause
             # acknowledged by this device, MA's frozen owned queue is canonical.
@@ -258,16 +305,13 @@ class ListeningRuntime:
         return True
 
     async def pause_owned(self, endpoint, connection, data, pid, lease):
-        long_form = lease.get("kind") in {"audiobook", "podcast_episode"}
-        if long_form:
-            lease["pause_requested_at"] = time.time()
+        lease["pause_requested_at"] = time.time()
         await self.runtime.control(endpoint, connection, "player_queues/pause", queue_id=pid)
-        if long_form:
-            for _ in range(10):
-                await self.sample(endpoint, connection, data, pid, lease)
-                if pid not in data["leases"] or "pause_requested_at" not in lease:
-                    break
-                await asyncio.sleep(0.25)
+        for _ in range(10):
+            await self.sample(endpoint, connection, data, pid, lease)
+            if pid not in data["leases"] or "pause_requested_at" not in lease:
+                break
+            await asyncio.sleep(0.25)
 
     async def view(self, user, surface_id, person=None, folder=None, query=None):
         async with self.lock:
@@ -414,6 +458,8 @@ class ListeningRuntime:
                             await self.runtime.control(endpoint, connection, "player_queues/stop", queue_id=pid)
                     else:
                         await self.runtime.control(endpoint, connection, "player_queues/" + action, queue_id=pid)
+                    if action in {"play", "stop", "next", "previous"}:
+                        lease.pop("idle_pause_ack", None)
                 else:
                     raise ValueError("Unsupported listening action.")
             profile["destination"] = player["entity_id"]

@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.8.26
+
+- Match the approved family morning wall reference with a panoramic backdrop,
+  large clock/current weather, children's plans, Today/Coming up and household
+  status strip. Use the existing native HA button-card; retain the native fallback.
+- Show only fresh, owned context and explicitly linked personal plans. Keep
+  calendar, security and camera setup gaps visible without invented household facts.
+- Report verified Pi voice connectivity and microphone state, and require real
+  media/Assist bindings before declaring an endpoint ready. Add persistent Pi
+  audio/voice service templates, a scoped voice firewall and 180-degree rotation.
+- Retain exact listening ownership when Sendspin acknowledges an explicit pause
+  as idle; preserve separate listener progress and reject unrelated idle playback.
+
 ## 0.8.25
 
 - Omit the discard-edits control cleanly when there is no draft, without rendering

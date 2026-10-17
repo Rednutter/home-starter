@@ -53,6 +53,20 @@ def service(name):
     return result.stdout.strip() or "unknown"
 
 
+def voice_status():
+    """Keep only connection/mute booleans from the loopback peripheral snapshot."""
+    try:
+        with connect("ws://127.0.0.1:6055", open_timeout=2, close_timeout=1, max_size=65536) as socket:
+            value = json.loads(socket.recv(timeout=2))
+        if value.get("event") == "snapshot":
+            data = value.get("data", {})
+            if type(data.get("ha_connected")) is bool and type(data.get("muted")) is bool:
+                return data["ha_connected"], data["muted"]
+    except (OSError, ValueError, TimeoutError, WebSocketException):
+        pass
+    return False, True
+
+
 def health(config):
     boot = Path("/proc/sys/kernel/random/boot_id").read_text().strip()
     uptime = float(Path("/proc/uptime").read_text().split()[0])
@@ -69,6 +83,7 @@ def health(config):
         authenticated = display_authenticated(config, tabs)
     except (OSError, ValueError):
         pass
+    voice_connected, voice_muted = voice_status()
     return {
         "version": 1,
         "online": True,
@@ -86,6 +101,8 @@ def health(config):
         "display_service": service("home-starter-display.service"),
         "audio_service": service("home-starter-audio.service"),
         "voice_service": service("home-starter-voice.service"),
+        "voice_connected": voice_connected,
+        "voice_muted": voice_muted,
         "updates_check": "needs_privileged_refresh",
     }
 

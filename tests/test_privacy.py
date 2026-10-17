@@ -86,6 +86,15 @@ def test_contacts_and_non_neutral_fixture_coordinates_are_rejected_without_value
     assert contact not in str(issues)
 
 
+def test_reviewed_wall_asset_and_systemd_unit_do_not_admit_private_artifacts():
+    assert not forbidden_path("home_starter/server/homestarter/static/wall-morning.jpg")
+    assert forbidden_path("home_starter/server/homestarter/static/household-photo.jpg")
+    script = "devtools/kitchen_wall/install-voice-firewall.sh"
+    assert not inspect_text(script, "Before=user@1000.service")
+    assert inspect_text("other.sh", "Before=user@1000.service")
+    assert inspect_text(script, "Contact=person@private.invalid")
+
+
 def test_nested_known_secrets_and_log_arguments_are_redacted():
     sentinel = "fixture-" + "private-value"
     value = {"password": sentinel, "nested": {"access_token": sentinel}, "message": sentinel}

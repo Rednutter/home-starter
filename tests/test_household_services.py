@@ -96,9 +96,12 @@ def test_endpoint_status_needs_fresh_authenticated_display_and_all_services(conf
         "home_starter_endpoint": {"id": "endpoint", "epoch": house["epoch"]},
         "valid_until": (datetime.now(UTC) + timedelta(seconds=60)).isoformat(),
         "browser_alive": True,
+        "dashboard_open": True,
         "authenticated_display_verified": False,
         "audio_service": "inactive",
         "voice_service": "inactive",
+        "voice_connected": True,
+        "voice_muted": False,
     }
     state = {"entity_id": services.endpoint_entity("endpoint"), "state": "online", "attributes": attrs}
 
@@ -109,7 +112,22 @@ def test_endpoint_status_needs_fresh_authenticated_display_and_all_services(conf
     attrs["authenticated_display_verified"] = True
     assert status() == "Needs setup"
     attrs.update(audio_service="active", voice_service="active")
-    assert status() == "Ready"
+    assert status() == "Needs setup"
+    value["endpoints"][0].update(player_id="media_player.endpoint", voice_entity="assist_satellite.endpoint")
+    states = [state, {"entity_id": "media_player.endpoint", "state": "idle"}, {"entity_id": "assist_satellite.endpoint", "state": "idle"}]
+    assert next(r["status"] for r in services.status(value, [], states, {}) if r["name"] == "Example endpoint") == "Ready"
+    attrs["voice_muted"] = True
+    assert next(r["status"] for r in services.status(value, [], states, {}) if r["name"] == "Example endpoint") == "Microphone muted"
+    attrs["voice_muted"] = False
+    attrs["voice_connected"] = False
+    assert next(r["status"] for r in services.status(value, [], states, {}) if r["name"] == "Example endpoint") == "Needs setup"
+    attrs["voice_connected"] = True
+    states[1]["state"] = "unavailable"
+    assert next(r["status"] for r in services.status(value, [], states, {}) if r["name"] == "Example endpoint") == "Needs setup"
+    states[1]["state"] = "idle"
+    attrs["dashboard_open"] = False
+    assert next(r["status"] for r in services.status(value, [], states, {}) if r["name"] == "Example endpoint") == "Needs setup"
+    attrs["dashboard_open"] = True
     attrs["valid_until"] = (datetime.now(UTC) - timedelta(seconds=1)).isoformat()
     assert status() == "Device offline"
 

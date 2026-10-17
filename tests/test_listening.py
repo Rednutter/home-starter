@@ -147,6 +147,82 @@ async def test_external_queue_replacement_cannot_update_progress_or_pause(setup)
         await act(setup, "one", "pause")
 
 
+async def test_sendspin_idle_pause_keeps_only_explicit_unchanged_owned_evidence(setup):
+    runtime, music, house, _ = setup
+    item = await book(setup)
+    await act(setup, "one", "play_item", item=item)
+    original = music.control
+
+    async def idle_pause(endpoint, connection, command, **args):
+        await original(endpoint, connection, command, **args)
+        if command == "player_queues/pause":
+            music.raw["a"].update(
+                playback_state="idle",
+                active_output_protocol="fixture-sendspin",
+                output_protocols=[{"protocol_domain": "sendspin", "output_protocol_id": "fixture-sendspin"}],
+            )
+            music.raw["a"]["current_media"]["elapsed_time_last_updated"] = time.time() - 1
+            music.queues["a"].update(state="idle", elapsed_time=12, elapsed_time_last_updated=time.time())
+
+    music.control = idle_pause
+    await act(setup, "one", "pause")
+    data = runtime.load(house, music.conn)
+    assert data["leases"]["a"]["idle_pause_ack"]
+    assert data["profiles"]["person:one"]["books"][item]["position"] == 12
+    assert (await runtime.view("admin", "panel", "one"))["session"]
+    count = len(music.calls)
+    with pytest.raises(ValueError, match="another listening"):
+        await act(setup, "two", "play")
+    assert len(music.calls) == count
+    # Metadata-only feedback does not transfer ownership or update progress.
+    music.queues["a"]["elapsed_time_last_updated"] += 1
+    assert (await runtime.view("admin", "panel", "one"))["session"]
+    music.raw["a"]["output_protocols"][0]["output_protocol_id"] = "external-transport"
+    assert (await runtime.view("admin", "panel", "one"))["session"] is None
+    assert runtime.load(house, music.conn)["profiles"]["person:one"]["books"][item]["position"] == 12
+
+
+async def test_sendspin_idle_without_pause_intent_never_owns_progress(setup):
+    runtime, music, house, _ = setup
+    item = await book(setup)
+    await act(setup, "one", "play_item", item=item)
+    music.raw["a"].update(
+        playback_state="idle",
+        active_output_protocol="fixture-sendspin",
+        output_protocols=[{"protocol_domain": "sendspin", "output_protocol_id": "fixture-sendspin"}],
+    )
+    music.raw["a"]["current_media"]["elapsed_time_last_updated"] = time.time()
+    music.queues["a"].update(state="idle", elapsed_time=120, elapsed_time_last_updated=time.time())
+    assert (await runtime.view("admin", "panel", "one"))["session"] is None
+    assert not runtime.load(house, music.conn)["profiles"]["person:one"]["books"]
+
+
+async def test_sendspin_pause_waits_for_both_acknowledgements_without_importing_progress(setup):
+    runtime, music, house, _ = setup
+    item = await book(setup)
+    await act(setup, "one", "play_item", item=item)
+    data = runtime.load(house, music.conn)
+    lease = data["leases"]["a"]
+    lease["pause_requested_at"] = time.time()
+    music.raw["a"].update(
+        playback_state="idle",
+        active_output_protocol=None,
+        output_protocols=[{"protocol_domain": "sendspin", "output_protocol_id": "fixture-sendspin", "available": True}],
+    )
+    music.raw["a"]["current_media"]["elapsed_time_last_updated"] = time.time()
+    music.queues["a"].update(state="playing", elapsed_time=600, elapsed_time_last_updated=time.time())
+    assert not await runtime.sample({}, music.conn, data, "a", lease)
+    assert "a" in data["leases"] and "idle_pause_ack" not in lease
+    assert not data["profiles"]["person:one"]["books"]
+    music.queues["a"].update(state="idle", elapsed_time_last_updated=lease["pause_requested_at"] - 1)
+    assert not await runtime.sample({}, music.conn, data, "a", lease)
+    assert "a" in data["leases"] and "idle_pause_ack" not in lease
+    lease["pause_requested_at"] -= 4
+    music.queues["a"]["state"] = "playing"
+    assert not await runtime.sample({}, music.conn, data, "a", lease)
+    assert "a" not in data["leases"]
+
+
 async def test_play_waits_for_physical_feedback_and_buffering_does_not_lose_owned_session(setup, monkeypatch):
     item = await book(setup)
     runtime, music, house, _ = setup

@@ -1,0 +1,17 @@
+[Unit]
+Description=Home Starter Music Assistant audio endpoint
+After=pipewire.service pipewire-pulse.service wireplumber.service
+Wants=pipewire.service pipewire-pulse.service wireplumber.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Environment=PYTHONUNBUFFERED=1
+UMask=0077
+ExecStart=%h/.local/share/home-starter/venv/bin/sendspin daemon --url ws://homeassistant.local:8927/sendspin --name "Kitchen Wall Audio" --audio-device plughw:CARD=Headphones,DEV=0 --settings-dir %h/.config/home-starter/sendspin --hardware-volume false --unpaired-access false --disable-mpris
+Restart=always
+RestartSec=10
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=default.target
