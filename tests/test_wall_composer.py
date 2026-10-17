@@ -48,7 +48,9 @@ def test_transients_expire_and_takeover_restores_the_board():
     later = compose(case["view"], [], case["settings"], case["people"], case["now"] + timedelta(minutes=3), ZONE, case["signals"])
     assert not later["display_session"] and not later["household_exception"]
     content = session({"kind": "recipe", "title": "Dinner", "body": "Step one", "seconds": 30}, case["now"], [])
-    assert compose(case["view"], [], case["settings"], {}, case["now"], ZONE, display_session=content)["display_session"]
+    board = compose(case["view"], [], case["settings"], {}, case["now"], ZONE, display_session=content)
+    assert board["display_session"]
+    assert board["valid_until"] > content["expires_at"]
     assert not compose(case["view"], [], case["settings"], {}, case["now"] + timedelta(seconds=31), ZONE, display_session=content)["display_session"]
     assert len(scenario("active_timer_media")["model"]["active_context"]) == 2
 

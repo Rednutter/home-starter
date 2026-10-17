@@ -210,12 +210,8 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
     if baseline == "overnight":
         transient = []  # The infrastructure owns actual monitor dimming, never CSS alone.
     valid_until = now + timedelta(seconds=75)
-    boundaries = [moment(r.get("ends_at")) for r in rows] + [moment(r.get("expires_at")) for r in exceptions + transient]
-    if active_session:
-        boundaries.append(moment(active_session["expires_at"]))
-    for boundary in boundaries:
-        if boundary and now < boundary < valid_until:
-            valid_until = boundary
+    # Row/session deadlines expire independently in the renderer. Expiring a
+    # transient must not invalidate the underlying board until the next poll.
     return {
         "version": 1,
         "day_state": state,

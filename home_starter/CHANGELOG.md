@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.28
+
+- Expire temporary sessions and contextual rows independently of the underlying
+  board's freshness window, so returning from a takeover never flashes the
+  disconnected state while waiting for the next context refresh.
+
 ## 0.8.27
 
 - Add an inspectable adaptive wall composer using the existing household context:
