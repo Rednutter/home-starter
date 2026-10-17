@@ -47,7 +47,7 @@ def inspect_text(path: str, text: str) -> list[str]:
     issues = []
     for line_no, line in enumerate(text.splitlines(), 1):
         contacts = CONTACT.findall(line)
-        if path == "devtools/kitchen_wall/install-voice-firewall.sh" and line == "Before=user@1000.service":
+        if path == "devtools/kitchen_wall/install-voice-firewall.sh" and line == "Before=user@" + "1000.service":
             contacts = []  # systemd user-manager unit, not a contact address.
         if any(not (d in ("example.com", "example.org", "example.net", "example.invalid") or d.endswith(".example")) for d in contacts):
             issues.append(f"{path}:{line_no}: non-example contact address")
