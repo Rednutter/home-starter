@@ -1,0 +1,390 @@
+LiSTNR live stream resolution investigation
+
+Observed 18 October 2026, Australia/Sydney (17 October UTC).
+Scope: public playback reconnaissance and an independent Python experiment.
+No Home Starter production changes, MA imports, catalogue sync or provider changes
+were made for this investigation. Earlier commissioning edits remain separate.
+
+Finding
+
+Store LiSTNR's opaque catalogue station ID as listnr:<id>, plus the last known
+slug and display metadata. Resolve the current audioStreams[0].url through the
+anonymous GraphQL endpoint https://api.listnr.com/v2. For the five tested SCA
+stations, that URL is an audio-only HLS master that an ordinary HLS-capable radio
+client can consume. Preserve the API-provided URL, including dist=listnr-web.
+Do not store a generated session playlist or individual AAC segment as identity.
+
+This establishes a reusable resolution mechanism, rather than a guessed mount
+name or a single hard-coded URL. It is an observed web-player API, with no public
+catalogue compatibility/SLA guarantee found. Short anonymous playback succeeds;
+unlimited anonymous access and permission for redistribution are not established.
+
+1. Frontend and request sequence
+
+The public page uses React and the Next.js Pages Router. HTML includes a JSON
+script named __NEXT_DATA__, with pageProps containing id, name, slug, stationCode,
+stationType, network, state, audioStreams, artwork, categories and related content.
+It is server-rendered station data, not just a generic player shell.
+
+Observed build: gjjXh0jMFfyy_I1dmoNQ0. Build IDs and JS filenames are deployment
+details and must never become configuration. The _app bundle contains Apollo
+GraphQL queries, including GetStationBySlug and GetStationForStreaming. The former
+matches the server-rendered metadata shape; server-side API requests themselves
+are not visible in the browser capture.
+
+On page load the browser requests HTML, Next.js bundles, images, navigation JSON
+prefetches, GetApplicationPage and a CampaignVotes request. CampaignVotes returned
+GraphQL data plus errors in the anonymous context; it did not prevent radio.
+Now-playing information uses a separate WebSocket subscription, not playback URL
+resolution. Advertising, analytics and identity scripts also load; none supplied
+a required credential to the independent resolver.
+
+On pressing the page's actual unlabeled triangular Play button:
+  1. GET https://api.listnr.com/v2 with operationName=GetStationForStreaming,
+     variables containing the slug, and extensions containing an Apollo persisted
+     query descriptor.
+  2. GET the same endpoint with GetOnlyNetworkById, enriching network metadata.
+  3. Request the returned audioStreams[0].url, with browser-added player/ad
+     attribution and cache-busting query parameters.
+  4. Read the HLS master, its generated child media playlist, and AAC segments.
+
+The same sequence was observed in fresh anonymous Chromium contexts for regional
+Triple M The Border, metropolitan Triple M Melbourne, and Chill House music.
+There was no separate authenticated playback-token API in these traces. Browser
+code consumes the first audioStreams entry. Catalogue entries can have multiple
+entries; a later importer must retain alternatives and their call signs.
+
+The browser added aw_0_1st.playerId and cb. Independent HTTP validation omitted
+both, as well as Origin, Referer, Authorization and Cookie, and still succeeded.
+The SCA master response can set cookies; they were not replayed by the standalone
+client. This is evidence that these short public plays do not require cookies,
+not a promise that every LiSTNR content type has the same access policy.
+
+2. Triple M The Border complete trace
+
+https://play.listnr.com/station/mmm-theborder
+  -> structured page data and GraphQL station(where:{slug:"mmm-theborder"})
+  -> station ID a5997b28-6502-4fb4-8d6f-7f9388102ca9
+  -> stationCode theborder; callSign RIVER_FM; stationType Regional; state NSW
+  -> Triple M network ID 9e4db450-08f9-4d6a-ae7f-1d79f1b78fe6
+  -> audioStreams[0].url:
+     https://sa47.scastream.com.au/live/2bdr_128.stream/playlist.m3u8?dist=listnr-web
+  -> HTTP 200 audio-only HLS master, no HTTP redirect in the independent trace
+  -> single variant: BANDWIDTH=130000, CODECS="mp4a.40.2"
+  -> generated media playlist on the same station endpoint, with
+     listeningSessionID and downloadSessionID parameter names
+     (values deliberately omitted)
+  -> HLS v3 media playlist: target duration 6 seconds, three approximately
+     4.992-5.013 second segments, programme date/time, no ENDLIST
+  -> HTTPS AAC segment URLs on a selected edge such as
+     lax-sa47.scastream.com.au, with opaque, changing path components
+  -> HTTP 200 audio/aac, two consecutive valid ADTS frames recognized;
+     AAC core sample rate 48000 Hz, two channels
+  -> refresh the SAME media playlist after 12 seconds: new segment URLs appear;
+     a newly listed segment also contains valid AAC frames.
+
+Some new sessions initially use sequence 0. Creating a new session and comparing
+only its sequence number is a bad liveness test. The experiment follows the same
+child playlist and checks the segment set advances.
+
+The public browser player's detached Audio element was also observed directly:
+currentTime advanced from 3.834907 to 15.840682, readyState stayed 4, paused was
+false and media error was null. This proves decoded browser playback for the
+target, in addition to the independent HTTP/ADTS checks.
+
+3. API and endpoint inventory
+
+A. Public station page
+   GET https://play.listnr.com/station/{slug}
+   No account/cookie needed for the tested page. Returns HTML with __NEXT_DATA__.
+   Useful fallback for station lookup, artwork and build discovery. More coupled
+   to the frontend than GraphQL. An invalid page was not separately tested;
+   invalid lookup was tested directly at the catalogue API.
+
+B. Next.js page data
+   GET https://play.listnr.com/_next/data/{buildId}/station/{slug}.json?slug={slug}
+   Browser-observed HTTP 200; returns pageProps station data. Navigation JSON
+   prefetches also occur. Anonymous, but build-bound. Obtain buildId from current
+   HTML if using this fallback; do not retain the observed build ID.
+
+C. Catalogue, lookup, artwork and stream metadata
+   POST https://api.listnr.com/v2
+   Content-Type: application/json
+   Body: {"query":"...", "variables":{...}}
+   No API key, Authorization, cookies, Origin or Referer required in the tests.
+   The browser uses GET persisted queries with operationName, variables and
+   extensions; an ordinary POST with the full query works independently and
+   avoids coupling to a deployment's persisted-query hash.
+
+   Slug lookup, tested:
+     query ResolveStation($slug:String!) {
+       station(where:{slug:$slug}) {
+         id slug name stationCode stationType state network
+         audioStreams { callSign url vast }
+         images { logoLarge }
+         categories { id name }
+         genres { id name slug }
+       }
+     }
+     variables: {"slug":"mmm-theborder"}
+     Response: {"data":{"station":{"id":"...","slug":"...",
+                "audioStreams":[{"callSign":"RIVER_FM","url":"...",
+                                 "vast":null}], ...}}}
+
+   Stable ID lookup, tested:
+     query ResolveStationId($ids:[ID!]) {
+       stations(ids:$ids) { id slug name audioStreams { callSign url vast } }
+     }
+     variables: {"ids":["a5997b28-6502-4fb4-8d6f-7f9388102ca9"]}
+     Response: {"data":{"stations":[...]}}. This returns the same master URL.
+     IDs are opaque GraphQL IDs, not necessarily UUIDs: music IDs include
+     Contentful-style alphanumeric strings. Do not require UUID formatting.
+
+   Enumeration, tested (single naturally returned array, no sync implemented):
+     query { stations { id slug name stationType stationCode network state
+                        audioStreams { callSign url vast }
+                        images { logoLarge } } }
+     Returned 241 stations: 123 Music, 95 Regional, 17 Metro, 6 Digital.
+     There were 287 stream entries, all ending in .m3u8 in this response.
+     This is the catalogue exposed to this query, not proof of hidden content
+     completeness. A later client should verify pagination/schema policy.
+
+   Networks and categories, tested:
+     query { networks { id name slug } }
+     query { categories { id name slug } }
+     Network references join to names/slugs such as mmm, hit and listnr.
+     Station objects include categories and genres where available. The bundle
+     also contains GetAllGenres, GetCategoryStationsBySlug, GetNearMeStations,
+     GetNetworkStationsBySlug and GetShowSchedule; those additional query
+     contracts were not independently exercised. Location-aware frontend queries
+     can append postcode to /v2; the resolver does not need a household postcode.
+
+   Session/account state: catalogue requests above behaved anonymously. Do not
+   generalize to GraphQL mutations, favourites, user data or premium content.
+   Invalid slug returned HTTP 200 with {"data":{"station":null}}. Unknown ID
+   returned an empty stations array. GraphQL errors must be checked even on 200.
+   No rate-limit event occurred in this small investigation. API rate-limit
+   headers and an authoritative quota were not established; no stress test ran.
+
+D. Audio HLS
+   GET the exact audioStreams[].url. For SCA examples:
+     https://{sa46|sa47}.scastream.com.au/live/{mount}/playlist.m3u8?dist=listnr-web
+   Do not derive {mount} from slug: light-rain uses lightrain_128; mmm-theborder
+   uses 2bdr_128. The API is the authoritative mapping.
+   No required account headers/cookies in independent tests. Master regenerates
+   child playback session URLs. Do not copy the browser's per-session parameters.
+   Tested masters had Cache-Control: no-cache and no encrypted EXT-X-KEY.
+   HLS variant/segment URLs are audio delivery, not catalogue identities.
+
+E. Current track and programme metadata
+   WebSocket wss://ws.nowplaying.listnr.com/station
+   Send JSON:
+     {"action":"Subscribe",
+      "payload":{"callSign":"river_fm","initialise":true}}
+   Anonymous subscription independently tested; no cookies/authentication needed.
+   Ignore initial connection notices. Subsequent payload shape:
+     {"data":{"type":"nowPlaying","stations":[{
+       "station":"river_fm","currentTrack":{...},"currentShow":{...},
+       "previousTracks":[...]}]}}
+   Track fields include id, dateUtc, durationSeconds, title, artistName,
+   albumName, imageUrl and status. The target's current track was empty with an
+   epoch timestamp during the sample, while previousTracks contained songs.
+   Treat missing/current-stale metadata as unavailable, not as playback failure.
+   currentShow was empty then; programme titles are not guaranteed.
+   Reconnect with bounded backoff and resubscribe if implementing this later.
+
+F. Artwork
+   Station logo URL: API images.logoLarge, served by images.ctfassets.net, with
+   resize parameters. Track art: metadata imageUrl, including
+   https://api.nowplaying.listnr.com/img/{image-id}.jpg?station={callSign}.
+   These image GETs were browser-observed. They are separate from audio auth.
+   Do not construct an artwork hash or confuse an image ID with a station ID.
+
+4. Cross-station comparison
+
+All five passed anonymous GraphQL -> master -> child -> AAC -> live advancement.
+All use the same station object fields and the same /v2 endpoint. No required
+cookies, account token, separate protected playback API, DASH or video was found
+in these five paths. The table's bitrate is manifest BANDWIDTH, not a measured
+average audio bitrate.
+
+Station                Slug             Type      Codec        Bandwidth
+Triple M The Border    mmm-theborder    Regional  mp4a.40.2     130000 bit/s
+Triple M Melbourne     mmm-melbourne    Metro     mp4a.40.2     130000 bit/s
+Hit The Border         hit-theborder   Regional  mp4a.40.2     130000 bit/s
+Chill House            chill-house     Music     mp4a.40.5      63000-64000 bit/s
+Light Rain             light-rain      Music     mp4a.40.2     130000 bit/s
+
+Chill House advertised 64000 in the five-station run and 63000 on a later ID-based
+CLI validation. Read current manifest attributes; do not hard-code a bitrate.
+Music is not an on-demand song/playlist endpoint here: it is continuous radio.
+Chill House is HE-AAC; its ADTS core rate was 22050 Hz. That core rate is not a
+measurement of decoded output rate with spectral band replication. Others showed
+48000 Hz AAC core rates. All sampled headers indicated two channels.
+
+Ambient/background entries naturally exposed include Light Rain, Cooling Fan
+(White Noise), Rainforest, Sleep and Deep Calm. Light Rain was validated. They
+are classified Music by LiSTNR, not a separate ambient API. Do not invent a new
+upstream station type based on a display category.
+
+The catalogue also includes partner hosts (StreamGuys, StreamTheWorld and scahw)
+and sports.scastream.com.au. They were not stream-validated. The experiment's
+validator deliberately accepts reviewed SCA HTTPS hosts only; this does not mean
+every partner or sports station has identical access or playback requirements.
+
+5. URL lifetime and cache policy
+
+The API-provided master URLs remained unchanged on independent repeated lookup
+and continued to work in fresh cookie-free requests. Their only observed query
+parameter was dist; no OAuth token, signature or expiry timestamp was advertised.
+Call them reusable entry points, rather than guaranteed permanent static URLs.
+
+Child playlists are dynamically generated playback sessions. Segment paths have
+opaque changing components. There was no visible query-string signature on the
+sampled AAC segment URLs; a path can still be opaque or signed. Cryptographic
+construction, session lifetime and segment retention TTL were not established.
+Do not infer an expiry duration from the approximately 15-second playlist window.
+
+Recommended later client policy (an engineering choice, not an upstream promise):
+  - Cache ID/slug/display metadata for up to 24 hours, with normal catalogue
+    refresh/backoff; preserve last-known-good metadata during outages.
+  - Resolve the current master URL at each playback start; optionally reuse a
+    just-resolved value for at most five minutes to coalesce bursts.
+  - Set expires_at=null when no expiry is advertised; this means unknown.
+  - Never persist/cache child sessions or segment URLs. Let the HLS client follow
+    the master and refresh live playlists according to their own target duration.
+  - On stream failure, discard the resolver cache and re-resolve once. If fresh
+    resolution still denies access, report that denial; do not loop new sessions
+    to evade authentication, a quota or geographic restrictions.
+
+6. Music Assistant compatibility
+
+Yes, the five tested SCA master URLs have ordinary audio-only HLS/AAC delivery
+that can be handed to MA's built-in Radio URL mechanism. For the requested target,
+use exactly:
+https://sa47.scastream.com.au/live/2bdr_128.stream/playlist.m3u8?dist=listnr-web
+
+Do not hand MA the LiSTNR webpage, Next.js JSON URL, session child playlist or AAC
+segment. No browser JavaScript is needed after API resolution. MA's documented
+built-in provider supports manually supplied radio URLs and the UI supports Add
+item from URL. No custom MA provider is required just to consume this HLS audio.
+
+This is a format/access compatibility assessment backed by live HTTP and browser
+checks; no station was added to MA and no MA player was commandeered. Actual MA
+radio import and decoder/player acceptance are reserved for the next phase.
+MA docs also say an imported item's URI cannot be edited, so a future importer
+must account for a changed master URL without confusing it with stable identity.
+
+HLS EXTINF entries contained title/artist attributes and sometimes artwork URLs.
+Some Triple M entries were internal 'Asset Stop' labels, while Hit/music entries
+contained useful programme/song labels. ICY headers were not needed/observed for
+this HLS path. Separate leading ID3 bytes were present on some AAC samples, but
+their complete schema was not decoded. Do not promise accurate MA now-playing
+metadata from audio alone; the independent WebSocket is the better rich source.
+
+7. Resolver contract and failure categories
+
+Suggested later interface:
+  resolve(station_id=<opaque ID>, slug_hint=<optional last-known slug>)
+  -> station_id, slug, name, stream_url, stream_type, expires_at, expiry_status,
+     codec, bitrate, bitrate_kind, artwork_url, call_sign, network_id,
+     station_type, categories, resolved_at
+
+ID lookup should lead; a slug is a discovery convenience and diagnostic hint.
+Names and slugs can be editorially changed. ID stability across an upstream
+delete/recreate is not guaranteed: a replacement may legitimately get a new ID.
+No permanent identity should depend on name, stationCode, CDN hostname or mount.
+
+Observed failure: invalid slug -> station:null; unknown ID -> []. Both map to
+station_not_found. A removed station is indistinguishable from an unknown one
+unless a previous catalogue snapshot establishes that it formerly existed.
+
+Recommended distinctions, also exercised with offline fault tests where noted:
+  station_not_found              Missing catalogue object (live tested).
+  catalogue_unavailable          Timeout/5xx, invalid JSON/schema, GraphQL errors.
+  stream_resolution_failed       Missing audio URL, bad manifest or delivery error.
+  authentication_required        Explicit upstream authentication requirement/401.
+  access_denied                  Generic 403; do not guess geo or expiry from it.
+  geo_restricted                 Explicit geo error/451, not merely a selected edge.
+  rate_limited                   429; honor Retry-After when supplied.
+  stream_expired                 Only explicit expiry evidence; not generic 403/404.
+  unsupported_protected_content  Protected/encrypted stream not supported by the
+                                 experiment; it does not attempt keys or DRM.
+  live_progress_not_observed     Valid-looking playlist that fails to advance.
+
+Actual geo denial, protected content, removed-station history, expired-session
+errors and upstream outages were not induced. Tests of error handling are not
+evidence of LiSTNR's exact production error bodies. No restrictions were bypassed.
+
+LiSTNR's own support pages conflict: one says the app is Australia-only while
+most web radio is available internationally; another says web radio is restricted
+to Australia. The validation connection's physical egress country was not
+established. Edge prefixes such as lax or syd do not establish user location or
+prove a station is globally unrestricted. Preserve upstream access controls.
+
+8. Fragility ranking and risks
+
+1. A documented supported catalogue/playback API would be preferable. The public
+   docs portal currently lists a Token Provider, but no supported live-station
+   catalogue/playback contract was found there. Do not confuse listnr.ai's
+   unrelated AI/TTS products with SCA LiSTNR.
+2. The observed structured /v2 GraphQL API is the recommended mechanism. It works
+   independently of the frontend build and accepts full queries without APQ
+   hashes. Schema, anonymous policy, fields or routing could still change.
+3. Embedded __NEXT_DATA__ is a useful fallback but couples to the page's data
+   shape and can disappear in a Next.js/router redesign.
+4. Next.js build-specific data endpoints add build discovery coupling.
+5. HTML text scraping is less reliable and loses structured identifiers.
+6. JavaScript bundle parsing was useful for reconnaissance, but hashed filenames,
+   minification and implementation changes make it unsuitable at runtime.
+
+Other likely breakpoints: upstream station renames/replacements; first-stream
+ordering changes; partner hosts; public access policy; ads/session generation;
+HLS codec changes; stale/empty metadata; undocumented quotas and geo policy.
+Do not strip ad parameters to avoid advertisements or manufacture a different
+distribution identity. There is no demonstrated need to proxy audio or retain
+browser cookies, profiles, passwords, refresh tokens or client secrets.
+
+9. Reproduce the isolated experiment
+
+Files:
+  resolve_listnr.py  Standard-library-only resolver, no production imports.
+  test_resolver.py   Fourteen offline contract/header/failure tests.
+  evidence.json     Selected public metadata and measured results; no cookies,
+                    session URLs, segment names, request headers or audio.
+
+From the repository root:
+  python research/listnr/resolve_listnr.py mmm-theborder --validate
+  python research/listnr/resolve_listnr.py listnr:a5997b28-6502-4fb4-8d6f-7f9388102ca9
+  python research/listnr/resolve_listnr.py --id 4pWAEorebtq9H0FNKX9NeK --validate
+  python -m unittest discover -s research/listnr -p test_resolver.py -v
+
+Use .venv/Scripts/python.exe on this workspace if python is not configured.
+The script emits a JSON record or a fixed error category, and exits nonzero on
+failure. Without --validate it resolves metadata only. With --validate it samples
+at most 32 KiB from each of two AAC segments and holds no audio on disk. It checks
+two consecutive AAC frame headers and live playlist movement; it is not an audio
+decoder. The separate browser decode observation is in evidence.json.
+
+No automated tests or fields establish an access policy for untested stations.
+The optional validator refuses unreviewed partner hosts and encrypted playlists.
+It is a proof of concept, not a finished resilient catalogue client/importer.
+
+10. Primary references
+
+Public target and structured data:
+https://play.listnr.com/station/mmm-theborder
+Public metadata API exercised above:
+https://api.listnr.com/v2
+Public API documentation portal and current service list:
+https://docs.api.listnr.com/
+https://docs.api.listnr.com/services
+LiSTNR international availability articles, with conflicting scope:
+https://support.listnr.com/support/solutions/articles/51000312960-is-listnr-available-outside-of-australia-
+https://support.listnr.com/support/solutions/articles/51000299207-can-i-listen-from-a-country-outside-of-australia-
+Music Assistant built-in provider and Radio UI:
+https://www.music-assistant.io/music-providers/builtin/
+https://www.music-assistant.io/ui/
+
+The report's measured API/HLS/browser claims come from this investigation and
+the sanitized evidence.json, rather than third-party stream directories.

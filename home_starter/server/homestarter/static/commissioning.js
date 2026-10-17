@@ -1,3 +1,4 @@
+import { connectionSetup } from "./connections.js";
 import { PREPARATION } from "./house.js";
 import { musicRuntime } from "./music-runtime.js";
 
@@ -9,6 +10,14 @@ const emptyChoice = () => ({ intent: "later", sources: [], screens: [], answers:
 export async function initCommissioning({ h, api, navigateHA }) {
   const root = document.getElementById("commissioning-body"), panel = document.getElementById("commissioning"), notice = document.getElementById("commissioning-status");
   let data, state, draft, discovery, step = 0, busy = false, timer;
+  let connectionView;
+  const connectionsPanel = () => {
+    if (!connectionView?.isConnected) connectionView = connectionSetup({ h, api, navigateHA });
+    return connectionView;
+  };
+  document.addEventListener("home-starter-connections-checked", event => {
+    if (state?.phase === "verification_incomplete" && !busy && event.detail.commissioning_revision !== state.revision) poll();
+  });
   const btn = (text, run, primary = false) => h("button", { type: "button", class: "btn " + (primary ? "primary" : "ghost"), disabled: busy, onclick: run }, text);
   const field = (label, node) => h("label", { class: "screen-field" }, h("span", {}, label), node);
   const input = (label, value, set) => h("input", { "aria-label": label, value, maxlength: 80, oninput: e => set(e.target.value) });
@@ -106,6 +115,7 @@ export async function initCommissioning({ h, api, navigateHA }) {
 
   function configure() {
     return h("div", {}, h("h2", {}, "Set up your choices"), h("p", {}, "Answers are staged in this plan. The review comes before installation or dashboard publication. Keep passwords and account details in the linked service."),
+      draft.selected.some(k => ["music", "calendars"].includes(k)) && connectionsPanel(),
       !draft.selected.length && h("p", {}, "No optional capabilities selected. You can save a minimal household and add things later."),
       draft.selected.includes("displays") && screens(),
       draft.selected.filter(key => key !== "displays").map(key => {
@@ -163,6 +173,7 @@ export async function initCommissioning({ h, api, navigateHA }) {
     const done = state.phase === "commissioned";
     return h("div", {}, h("h2", {}, done ? "Setup review complete" : state.phase === "executing" ? "Setting up your home" : "Finish verification"),
       h("p", {}, done ? "Verified items and deliberate skips are listed separately. Home Readiness is where you return as the house changes." : "Saved configuration and working checks are separate. Fix, retry or deliberately skip an optional item."),
+      draft.selected.some(k => ["music", "calendars"].includes(k)) && connectionsPanel(),
       h("ul", { class: "plain" }, Object.entries(state.results).map(([key, result]) => h("li", { class: "commission-result" },
         h("strong", {}, (TITLES[key] || (key.startsWith("display:") ? "Display" : key === "household" ? "Household" : "Execution")) + " — " + result.status), h("p", {}, result.detail),
         result.url_path && btn("Open published screen", () => navigateHA("/" + result.url_path + "/home")),

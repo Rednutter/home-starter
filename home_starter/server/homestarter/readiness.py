@@ -279,11 +279,16 @@ def allowed(item, surface, house, policy):
     if not policy:
         return False
     if item["domain"] == "calendar":
+        if "calendar_access" in policy:
+            from .calendar_access import permitted
+
+            if not permitted(policy["calendar_access"], item["id"], person=surface.get("person_id"), mappings=policy.get("calendar_mappings", [])):
+                return False
         return any(item["id"] in policy.get(key, []) and surface["id"] in policy.get(key + "_screens", []) for key in ("calendars", "waste"))
     return item["id"] in policy.get("presence", []) and surface["id"] in policy.get("presence_screens", [])
 
 
-def policy_for(value, house, inventory, states):
+def policy_for(value, house, inventory, states, store=None):
     candidates = discover(inventory, states, house["activities"])
     result = {"excluded_devices": list(value["devices"]), "features": value["choices"], "members": value["members"]}
     for key in ("calendars", "waste", "presence", "cameras"):
@@ -298,6 +303,11 @@ def policy_for(value, house, inventory, states):
             continue
         result[key] = [s for s in choice["sources"] if s in available]
         result[key + "_screens"] = choice["screens"]
+    if store is not None:
+        from . import calendar_access, household_services
+
+        result["calendar_access"] = calendar_access.load(store, house)["calendars"]
+        result["calendar_mappings"] = household_services.load(store, house)["calendars"]
     return result
 
 

@@ -6,6 +6,7 @@ import copy
 import secrets
 from datetime import UTC, datetime, timedelta
 
+from . import calendar_access
 from . import readiness as r
 from .core import CoreError
 from .household import validate_household
@@ -175,7 +176,7 @@ async def make_review(store, value, core, inventory, states, music):
                 screen,
                 classify(inventory, states, draft["house"]["overrides"]),
                 inventory["areas"],
-                policy=r.policy_for(rd, draft["house"], inventory, states),
+                policy=r.policy_for(rd, draft["house"], inventory, states, store),
             ),
             "expected": records.get("home-starter-" + screen["id"].replace("_", "-"), {}).get("fingerprint"),
         }
@@ -199,6 +200,7 @@ async def make_review(store, value, core, inventory, states, music):
             "draft_hash": r.digest(draft),
             "house_revision": store.load()["revision"],
             "readiness_revision": r.load(store, store.load())["revision"],
+            "calendar_revision": calendar_access.load(store, store.load())["revision"],
             "source_signature": source_signature(inventory, states),
             "checks": checks,
             "proofs": rd["verified"],
@@ -247,6 +249,7 @@ def check_go(store, value, token, inventory, states):
         review["draft_hash"] != r.digest(value["draft"])
         or house["revision"] != review["house_revision"]
         or r.load(store, house)["revision"] != review["readiness_revision"]
+        or calendar_access.load(store, house)["revision"] != review.get("calendar_revision", 0)
     ):
         raise ValueError("Saved settings changed. Review again before applying changes.")
 
@@ -330,6 +333,8 @@ async def execute(store, value, core, setup, user, music_runtime=None):
                 continue
             try:
                 records = store.read(store.publication_path, {})
+                if calendar_access.load(store, store.load())["revision"] != value["review"].get("calendar_revision", 0):
+                    raise ValueError("Calendar consent changed. Review the screen with the saved choices before publication.")
                 # If an event check failed after review, do not publish stale calendar content.
                 if any(results.get(k, {}).get("status") != "verified" for k in ("calendars", "waste") if k in value["draft"]["selected"]):
                     raise ValueError("Repair or skip the failed calendar source and review the screens again.")

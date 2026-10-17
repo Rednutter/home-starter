@@ -20,6 +20,30 @@ async def runtime_for(make_env):
     return runtime, env
 
 
+async def test_a_failed_household_spotify_path_does_not_complete_commissioning(make_env, monkeypatch):
+    from unittest.mock import AsyncMock
+
+    runtime, _ = await runtime_for(make_env)
+    proof = {"provider_id": "fixture_spotify"}
+    monkeypatch.setattr(runtime, "snapshot", AsyncMock(return_value={"proof": proof, "providers": [{"id": "fixture_spotify", "domain": "spotify"}]}))
+    guard = {"playback_checks": [{"name": "House #2", "state": "connected_but_incomplete"}]}
+    monkeypatch.setattr(runtime, "account_guard", AsyncMock(return_value=guard))
+    assert await runtime.verified() is None
+    guard["playback_checks"][0]["state"] = "connected"
+    assert await runtime.verified() == proof
+
+
+async def test_household_auth_handoff_uses_the_discovered_app_route(make_env, monkeypatch):
+    from unittest.mock import AsyncMock
+
+    runtime, _ = await runtime_for(make_env)
+    snapshot = await runtime.snapshot()
+    monkeypatch.setattr(runtime, "_request", AsyncMock(return_value=[]))
+    result = await runtime.household()
+    assert result["route"] == snapshot["open_path"]
+    assert result["route"].startswith("/app/")
+
+
 async def test_catalogue_setup_is_idempotent_and_cannot_create_login_accounts(make_env, monkeypatch):
     runtime, _ = await runtime_for(make_env)
     calls, records = [], []

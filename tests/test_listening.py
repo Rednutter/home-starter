@@ -8,6 +8,7 @@ import pytest
 from homestarter import listening
 from homestarter.household import HouseholdStore, empty_household
 from homestarter.listening import ListeningRuntime, media_record
+from homestarter.music_runtime import MusicRuntimeError
 
 
 class Music:
@@ -83,6 +84,95 @@ async def act(setup, person, action, **extra):
 async def book(setup):
     view = await setup[0].view("admin", "panel", "one")
     return view["library"][0]["id"]
+
+
+async def test_spotify_never_uses_unprotected_playback_or_pauses_when_guard_missing(setup, monkeypatch):
+    runtime, music, house, _ = setup
+    item = media_record({"uri": "fixture_spotify://track/example", "media_type": "track", "name": "Synthetic track"})
+    monkeypatch.setattr(music, "snapshot", AsyncMock(return_value={"providers": [{"id": "fixture_spotify", "domain": "spotify"}]}))
+    monkeypatch.setattr(music, "account_guard", AsyncMock(side_effect=MusicRuntimeError("Protection unavailable")), raising=False)
+    data = runtime.load(house, music.conn)
+    with pytest.raises(MusicRuntimeError, match="Protection unavailable"):
+        await runtime.play("fixture", music.conn, data, runtime.profile(data, "one"), "person:one", {"player_id": "a"}, item, "admin", "panel")
+    assert not music.calls
+
+
+async def test_failed_catalogue_reseed_preserves_controls_for_unchanged_owned_playback(setup, monkeypatch):
+    runtime, music, house, _ = setup
+    snapshot = await music.snapshot()
+    snapshot["providers"] = [{"id": "fixture_spotify", "domain": "spotify"}]
+    monkeypatch.setattr(music, "snapshot", AsyncMock(return_value=snapshot))
+    monkeypatch.setattr(music, "account_guard", AsyncMock(return_value={"isolated": True}), raising=False)
+    monkeypatch.setattr(runtime, "sample", AsyncMock(return_value=True))
+    item = media_record({"uri": "fixture_spotify://track/example", "media_type": "track", "name": "Synthetic track"})
+    data = runtime.load(house, music.conn)
+    lease = {"scope": "house", "kind": "track", "item": item, "queue_item_id": "old", "generation": 1, "native_session": "owned"}
+    data["leases"]["a"] = deepcopy(lease)
+    music.raw["a"].update(playback_state="playing", current_media={"queue_item_id": "old"})
+    music.queues["a"]["state"] = "playing"
+    original = music.control
+
+    async def control(endpoint, connection, name, **args):
+        if name == "homestarter/media_play":
+            raise MusicRuntimeError("Catalogue temporarily unavailable")
+        return await original(endpoint, connection, name, **args)
+
+    monkeypatch.setattr(music, "control", control)
+    with pytest.raises(MusicRuntimeError, match="temporarily unavailable"):
+        await runtime.play("fixture", music.conn, data, runtime.profile(data, None), "house", {"player_id": "a"}, item, "admin", "panel", discovery={})
+    assert runtime.load(house, music.conn)["leases"]["a"] == lease
+    assert music.raw["a"]["playback_state"] == "playing"
+    await act(setup, None, "stop")
+    assert any(name == "player_queues/stop" for name, _ in music.calls)
+
+
+async def test_provider_continuation_keeps_listener_lease_but_foreign_session_drops_it(setup, monkeypatch):
+    runtime, music, house, _ = setup
+    data = runtime.load(house, music.conn)
+    lease = {"scope": "house", "kind": "track", "queue_item_id": "old", "queue_items": ["old"], "generation": 1, "native_session": "owned"}
+    data["leases"]["a"] = lease
+    music.queues["a"].update(state="playing", current_item={"queue_item_id": "continued"})
+    music.raw["a"].update(playback_state="playing", current_media={"queue_item_id": "continued"})
+    original = music.command
+    context = {"session": "owned", "item": "continued"}
+
+    async def command(endpoint, connection, name, **args):
+        return context if name == "homestarter/queue_context" else await original(endpoint, connection, name, **args)
+
+    monkeypatch.setattr(music, "command", command)
+    await runtime.sample("fixture", music.conn, data, "a", lease)
+    assert data["leases"]["a"]["queue_item_id"] == "continued"
+    lease["logical_session"] = "logical-owned"
+    context.update(session="reseeded-native", logical_session="logical-owned")
+    await runtime.sample("fixture", music.conn, data, "a", lease)
+    assert data["leases"]["a"]["native_session"] == "reseeded-native"
+    context["session"] = "someone-else"
+    context["logical_session"] = None
+    await runtime.sample("fixture", music.conn, data, "a", lease)
+    assert not data["leases"]
+
+
+async def test_ambient_playback_uses_no_spotify_account_and_loops_native_audio(setup):
+    runtime, music, house, _ = setup
+    item = media_record({"uri": "fixture_ambient://sound_effect/rain", "media_type": "sound_effect", "name": "Rain"})
+    item["category"] = "ambient"
+    data = runtime.load(house, music.conn)
+    await runtime.play("fixture", music.conn, data, runtime.profile(data, None), "house", {"player_id": "a"}, item, "admin", "panel")
+    assert not any(name.startswith("homestarter/") for name, _ in music.calls)
+    assert ("player_queues/repeat", {"queue_id": "a", "repeat_mode": "one"}) in music.calls
+
+
+async def test_pending_personal_identity_does_not_claim_busy_or_touch_other_playback(setup, monkeypatch):
+    runtime, music, house, _ = setup
+    house["people"][0]["name"] = "Renae"
+    monkeypatch.setattr(runtime.store, "load", lambda: house)
+    monkeypatch.setattr(music, "snapshot", AsyncMock(return_value={"providers": [{"id": "shared", "domain": "spotify", "name": "House"}]}))
+    monkeypatch.setattr(music, "account_guard", AsyncMock(return_value={}), raising=False)
+    item = media_record({"uri": "spotify://track/example", "media_type": "track", "name": "Example catalogue track"})
+    data = runtime.load(house, music.conn)
+    with pytest.raises(MusicRuntimeError, match="Connect Spotify — Renae"):
+        await runtime.play("fixture", music.conn, data, runtime.profile(data, "one"), "person:one", {"player_id": "a"}, item, "admin", "panel")
+    assert not music.calls
 
 
 async def test_listener_progress_survives_restart_and_does_not_follow_speaker(setup):
@@ -324,6 +414,7 @@ def test_catalog_records_expose_no_stream_or_credentials():
         "kind": "track",
         "uri": "fixture://one",
         "folder": False,
+        "sources": ["fixture"],
     }
 
 

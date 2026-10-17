@@ -24,7 +24,20 @@ from typing import Any
 import aiohttp
 from aiohttp import web
 
-from . import __version__, commissioning, context, context_runtime, household_services, readiness, screen_identity, this_house, waste, waste_runtime
+from . import (
+    __version__,
+    calendar_access,
+    commissioning,
+    connections,
+    context,
+    context_runtime,
+    household_services,
+    readiness,
+    screen_identity,
+    this_house,
+    waste,
+    waste_runtime,
+)
 from .activity import update_activity
 from .core import CoreClient, CoreError
 from .household import PROFILES, HouseholdStore, validate_household
@@ -56,6 +69,8 @@ STATIC_FILES = {
     "readiness.js": "text/javascript",
     "services.js": "text/javascript",
     "commissioning.js": "text/javascript",
+    "connections.js": "text/javascript",
+    "media-setup.js": "text/javascript",
     "music-runtime.js": "text/javascript",
     "styles.css": "text/css",
     "icon.svg": "image/svg+xml",
@@ -103,7 +118,8 @@ class State:
         while True:
             try:
                 await household_services.poll_endpoints(self.session, self.core, self.household)
-            except (CoreError, OSError, ValueError, KeyError, TypeError):
+                await self.listening.media.tick()
+            except (CoreError, MusicRuntimeError, SupervisorError, OSError, ValueError, KeyError, TypeError):
                 _LOGGER.warning("Endpoint health unavailable; saved service relationships are preserved.")
             await asyncio.sleep(20)
 
@@ -237,9 +253,11 @@ async def harden(request: web.Request, handler):
             request.method == "POST"
             and request.path.startswith("/api/")
             and not request.path.startswith("/api/commissioning/")
+            and not request.path.startswith("/api/connections")
             and request.path != "/api/installation/reset"
             and not request.path.startswith("/api/music/runtime")
             and not request.path.startswith("/api/listening/")
+            and not request.path.startswith("/api/media")
         ):
             await household_admin(request)
             try:
@@ -377,6 +395,46 @@ async def api_listening(request):
         return _json({"error": str(error)}, 409)
     except (CoreError, SupervisorError, OSError, KeyError, TypeError):
         return _json({"error": "Listening is unavailable. Saved progress is preserved; check Music Assistant and retry."}, 503)
+
+
+async def api_media(request):
+    await household_admin(request)
+    state = request.app[K_STATE]
+    try:
+        runtime = state.music_runtime
+        connection, endpoint = runtime.connection(), await runtime.endpoint()
+        if not connection:
+            raise MusicRuntimeError("Connect Music Assistant first.")
+        if request.method == "POST":
+            if request.content_type != "application/json":
+                raise ValueError("Use a media setup action.")
+            body = await request.json()
+            if not isinstance(body, dict) or set(body) - {"action", "selected", "epoch"}:
+                raise ValueError("Choose a supported media setup action.")
+            action = body.get("action")
+            if action in {"select", "allow_local_lookup", "disable_local_lookup", "cleanup"} and body.get("epoch") != state.household.load()["epoch"]:
+                raise ValueError("Refresh media setup before changing this household.")
+            if action == "select" and not isinstance(body.get("selected"), list):
+                raise ValueError("Choose the stations to save.")
+            if action in {"allow_local_lookup", "disable_local_lookup"}:
+                await state.listening.media.consent(action == "allow_local_lookup")
+                await state.listening.media.sync(force=True)
+            elif action in {"prepare", "select"}:
+                from . import media_surfaces
+
+                await runtime.control(endpoint, connection, "homestarter/media_prepare")
+                await state.listening.media.sync(selected=body.get("selected") if action == "select" else None, force=True)
+                async with state.household_lock:
+                    issues = await media_surfaces.refresh(state.core, state.household)
+                if issues:
+                    return _json({"error": " ".join(issues)}, 409)
+            elif action in {"cleanup_preview", "cleanup"}:
+                return _json(await runtime.control(endpoint, connection, "homestarter/library_cleanup", apply=action == "cleanup"))
+            else:
+                raise ValueError("Choose a supported media setup action.")
+        return _json({"catalogue": state.listening.media.view(admin=True), "engine": await runtime.command(endpoint, connection, "homestarter/media_status")})
+    except (MusicRuntimeError, ValueError, KeyError, TypeError, OSError):
+        return _json({"error": "Media setup could not be completed. Saved stations are preserved; check Music Assistant and retry."}, 409)
 
 
 async def api_inventory(request: web.Request) -> web.Response:
@@ -668,6 +726,40 @@ async def commissioning_payload(state, value, discovery=False):
         result["discovery"] = readiness.report(value["draft"]["house"], value["draft"]["readiness"], inventory, states, music)
         result["music"] = {k: music.get(k) for k in ("state", "title", "open_path", "handoff_path")}
     return result
+
+
+async def api_connections(request):
+    state = await household_admin(request)
+    try:
+        verification = None
+        async with state.household_lock:
+            if request.method == "POST":
+                body = await household_body(request)
+                action = request.match_info["action"]
+                if action == "preview":
+                    if set(body) != {"source"}:
+                        raise ValueError("Choose one calendar to preview.")
+                    return _json(await connections.calendar_preview(state.core, body["source"]))
+                if action == "calendars":
+                    calendar_access.save(state.household, state.household.load(), await state.core.states(), body)
+                    state.previews.clear()
+                elif action == "music":
+                    if set(body) != {"identity"}:
+                        raise ValueError("Choose one household music account to connect.")
+                    await state.music_runtime.begin_identity_auth(body["identity"])
+                elif action != "prepare" or body != {}:
+                    raise ValueError("Choose a supported connection step.")
+            result = await connections.inspect(state, prepare=request.method == "POST")
+            if request.method == "POST":
+                verification = await connections.continue_setup(state, result["music"])
+            if verification:
+                result["verification"] = verification
+            result["commissioning_revision"] = commissioning.load(state.household)["revision"]
+            return _json(result)
+    except ValueError as error:
+        return _json({"error": str(error)}, 409)
+    except (CoreError, SupervisorError, MusicRuntimeError, OSError, KeyError, TypeError):
+        return _json({"error": "Connection checks are unavailable. Saved choices are preserved; retry when Home Assistant is reachable."}, 503)
 
 
 async def api_commissioning(request):
@@ -1011,7 +1103,7 @@ async def api_surface_preview(request: web.Request) -> web.Response:
             items = classify(inventory, await state.core.states(), house["overrides"])
             async with state.activity_lock:
                 activities = await update_activity(state.core, state.household, house["activities"])
-            policy = readiness.policy_for(readiness.load(state.household, house), house, inventory, await state.core.states())
+            policy = readiness.policy_for(readiness.load(state.household, house), house, inventory, await state.core.states(), state.household)
             if surface["profile"] in ("specialist", "wall"):
                 from .panel import resource_ready
 
@@ -1268,6 +1360,8 @@ def create_app(settings: Settings, session: aiohttp.ClientSession | None = None)
     app.router.add_post("/api/house/{action}", api_this_house)
     app.router.add_get("/api/household", api_household)
     app.router.add_get("/api/commissioning", api_commissioning)
+    app.router.add_get("/api/connections", api_connections)
+    app.router.add_post("/api/connections/{action}", api_connections)
     app.router.add_post("/api/commissioning/{action}", api_commissioning_action)
     app.router.add_get("/api/readiness", api_readiness)
     app.router.add_get("/api/services", api_household_services)
@@ -1282,6 +1376,8 @@ def create_app(settings: Settings, session: aiohttp.ClientSession | None = None)
     app.router.add_post("/api/inventory/area", api_assign_area)
     app.router.add_get("/api/listening/{surface}", api_listening)
     app.router.add_post("/api/listening/{surface}", api_listening)
+    app.router.add_get("/api/media", api_media)
+    app.router.add_post("/api/media", api_media)
     app.router.add_get("/api/music", api_music)
     app.router.add_get("/api/music/runtime", api_music_runtime)
     app.router.add_post("/api/music/runtime/{action}", api_music_runtime)

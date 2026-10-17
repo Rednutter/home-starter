@@ -14,6 +14,20 @@ from detect_secrets import SecretsCollection
 from detect_secrets.settings import default_settings
 
 RUNTIME = {
+    "media-catalogue.json",
+    "media-catalogue.tmp",
+    "home-starter-radio.json",
+    "home-starter-radio.tmp",
+    "home-starter-spotify-leases.json",
+    "home-starter-spotify-leases.tmp",
+    "home-starter-spotify-checks.json",
+    "home-starter-spotify-checks.tmp",
+    "home-starter-spotify-identities.json",
+    "home-starter-spotify-identities.tmp",
+    "music-identity-auth.json",
+    "music-identity-auth.tmp",
+    "calendar-access.json",
+    "calendar-access.tmp",
     "household-services.json",
     "household-services.tmp",
     "endpoint-connections.json",
@@ -129,7 +143,10 @@ def main() -> int:
     allowed = {
         (path.replace("\\", "/"), s["type"], s["hashed_secret"]) for path, rows in baseline["results"].items() for s in rows if s.get("is_secret") is False
     }
-    paths = subprocess.check_output([git, "ls-files", "-z"]).decode().split("\0")  # noqa: S603 -- fixed Git command, no shell
+    listing = [git, "ls-files", "-z"]
+    if not args.staged:
+        listing += ["--cached", "--others", "--exclude-standard"]
+    paths = sorted(set(subprocess.check_output(listing).decode().split("\0")))  # noqa: S603 -- fixed Git command, no shell
     issues = []
     with default_settings():
         for path in filter(None, paths):
@@ -145,7 +162,7 @@ def main() -> int:
                 issues.extend(secret_findings(path, text, allowed))
     for issue in sorted(set(issues)):
         print(issue)
-    print(f"Privacy check: {'FAILED' if issues else 'OK'} ({len(list(filter(None, paths)))} tracked files; values withheld).")
+    print(f"Privacy check: {'FAILED' if issues else 'OK'} ({len(list(filter(None, paths)))} source files; values withheld).")
     return bool(issues)
 
 

@@ -48,3 +48,19 @@ reset-history.json
 *.har
 /credentials.json
 /cookies.json
+
+calendar-access.json
+calendar-access.tmp
+home-starter-spotify-leases.json
+home-starter-spotify-leases.tmp
+home-starter-spotify-checks.json
+home-starter-spotify-checks.tmp
+home-starter-spotify-identities.json
+home-starter-spotify-identities.tmp
+music-identity-auth.json
+music-identity-auth.tmp
+# Household media selections and MA-local importer state are runtime data.
+**/media-catalogue.json
+**/media-catalogue.tmp
+**/home-starter-radio.json
+**/home-starter-radio.tmp

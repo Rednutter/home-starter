@@ -24,6 +24,7 @@ READ_COMMANDS = {
     "music/podcasts/podcast_episodes",
     "player_queues/items",
     "providers",
+    "auth/users",
     "config/providers",
     "players/all",
     "players/get",
@@ -31,6 +32,10 @@ READ_COMMANDS = {
     "music/browse",
     "music/search",
     "music/item_by_uri",
+    "music/sound_effects",
+    "homestarter/account_status",
+    "homestarter/media_status",
+    "homestarter/queue_context",
 }
 CONTROL_COMMANDS = {
     "player_queues/play_media",
@@ -39,8 +44,15 @@ CONTROL_COMMANDS = {
     "player_queues/stop",
     "player_queues/next",
     "player_queues/previous",
+    "player_queues/repeat",
     "player_queues/seek",
     "players/cmd/volume_set",
+    "homestarter/play",
+    "homestarter/media_play",
+    "homestarter/keep_going",
+    "homestarter/media_prepare",
+    "homestarter/radio_upsert",
+    "homestarter/library_cleanup",
 }
 TIMEOUT = aiohttp.ClientTimeout(total=6)
 
@@ -133,8 +145,65 @@ class MusicRuntime:
     async def control(self, endpoint, connection, command, **args):
         if command not in CONTROL_COMMANDS:
             raise ValueError("Unsupported Music control.")
-        timeout = aiohttp.ClientTimeout(total=90) if command == "player_queues/play_media" else TIMEOUT
-        return await self._request(endpoint, connection, command, request_timeout=timeout, **args)
+        timeout = aiohttp.ClientTimeout(total=120) if command.startswith("homestarter/") or command == "player_queues/play_media" else TIMEOUT
+        result = await self._request(endpoint, connection, command, request_timeout=timeout, **args)
+        if command in {"homestarter/play", "homestarter/media_play", "homestarter/keep_going"}:
+            if isinstance(result, dict) and result.get("state") == "busy":
+                raise MusicRuntimeError("Music accounts are busy. Wait for playback to finish or choose another source.")
+            if not isinstance(result, dict) or result.get("state") != "requested":
+                raise MusicRuntimeError("Spotify could not supply this selection or related music. Choose another source or retry.")
+        return result
+
+    async def account_guard(self, endpoint, connection):
+        try:
+            status = await self.command(endpoint, connection, "homestarter/account_status")
+        except MusicRuntimeError:
+            status = None
+        if not isinstance(status, dict) or status.get("protocol") != 1 or status.get("isolated") is not True:
+            raise MusicRuntimeError("Household Spotify account protection needs administrator attention. Other music sources remain available.")
+        return status
+
+    async def household(self, *, prepare=False):
+        from .household_music import reconcile, user_status
+        from .music_identity_auth import decorate, resume
+
+        async with self.lock:
+            names = tuple(dict.fromkeys([p["name"] for p in self.store.load()["people"]] + ["House"]))
+            snapshot = await self.snapshot()
+            if not snapshot["connected"]:
+                return {"state": "ready_for_authentication", "summary": "Connect Music Assistant", "users": 0, "connected": 0, "pending": 4, "spotify": []}
+            connection, endpoint = self.connection(), await self.endpoint()
+            if prepare and resume(self.store, self.store.load(), snapshot["providers"]):
+                snapshot["providers"] = decorate(self.store, self.store.load(), snapshot["providers"])
+
+            async def command(name, **args):
+                return await self._request(endpoint, connection, name, **args)
+
+            result = (
+                await reconcile(command, snapshot["providers"], names) if prepare else user_status(await command("auth/users"), snapshot["providers"], names)
+            )
+            result["route"] = snapshot["open_path"]
+            try:
+                if prepare:
+                    from .household_music import providers_by_identity
+
+                    identities = {n: p["id"] for n, p in providers_by_identity(snapshot["providers"]).items()}
+                    await self._request(endpoint, connection, "homestarter/configure_accounts", identities=identities)
+                guard = await self.account_guard(endpoint, connection)
+                result["allocator"] = {"state": "connected", "detail": "Household music account protection is active"}
+                result["playback_checks"] = guard.get("playback_checks", [])
+            except MusicRuntimeError as error:
+                result["allocator"] = {"state": "connected_but_incomplete", "detail": str(error)}
+            return result
+
+    async def begin_identity_auth(self, name):
+        from .music_identity_auth import begin
+
+        async with self.lock:
+            snapshot = await self.snapshot()
+            if not snapshot["connected"]:
+                raise MusicRuntimeError("Connect Music Assistant before adding a household music account.")
+            begin(self.store, self.store.load(), snapshot["providers"], name)
 
     async def add_catalogue(self, domain, country="AU"):
         """Only zero-login household catalogue sources; never Spotify/OAuth credentials."""
@@ -182,7 +251,10 @@ class MusicRuntime:
                     raise MusicRuntimeError("Music Assistant denied API access. Check the token and its permissions.")
                 if response.status != 200:
                     raise MusicRuntimeError("Music Assistant could not complete this read. Check the service and retry.")
-                return await response.json(content_type=None)
+                result = await response.json(content_type=None)
+                if isinstance(result, dict) and ("error_code" in result or "error" in result):
+                    raise MusicRuntimeError("Music Assistant refused the operation. Check API permissions and retry; existing settings are preserved.")
+                return result
         except (aiohttp.ClientError, TimeoutError, ValueError, OSError):
             raise MusicRuntimeError("Music Assistant API could not be read. Saved settings are preserved.") from None
 
@@ -231,11 +303,18 @@ class MusicRuntime:
                 "domain": p.get("domain"),
                 "enabled": p.get("enabled", True) is True,
                 "available": loaded.get(key, {}).get("available") is True,
+                "requires_auth": any(
+                    code in str(p.get("last_error") or "").casefold() for code in ("auth_required", "loginfailed", "login_failed", "invalid_credentials")
+                ),
+                "has_error": bool(p.get("last_error")),
                 "status": "disabled" if p.get("enabled") is False else "connected" if loaded.get(key, {}).get("available") is True else "unavailable",
                 "builtin": p.get("domain") == "builtin",
             }
             for key, p in records.items()
         ]
+        from .music_identity_auth import decorate
+
+        providers = decorate(self.store, self.store.load(), providers)
         safe_players = [
             {
                 "id": p["player_id"],
@@ -270,7 +349,13 @@ class MusicRuntime:
 
     async def verified(self):
         try:
-            return (await self.snapshot()).get("proof")
+            snapshot = await self.snapshot()
+            proof = snapshot.get("proof")
+            if proof and any(p["id"] == proof["provider_id"] and p.get("domain") == "spotify" for p in snapshot["providers"]):
+                guard = await self.account_guard(await self.endpoint(), self.connection())
+                if any(row.get("state") != "connected" for row in guard.get("playback_checks", [])):
+                    return None
+            return proof
         except (MusicRuntimeError, SupervisorError, OSError, ValueError, KeyError, TypeError):
             return None
 

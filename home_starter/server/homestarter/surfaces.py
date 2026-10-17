@@ -428,7 +428,7 @@ def generate(house: dict, surface: dict, items: list[dict], areas: list[dict], a
     eligible.sort(key=lambda i: (i["level"], i["id"] not in pref["pin"], rank.get(i["id"], 9999), i["name"].casefold(), i["id"]))
     profile = surface["profile"]
     if profile in ("phone", "tablet", "specialist"):
-        generated = touch_dashboard(house, surface, items, eligible, areas, activity or [], policy)
+        generated = touch_dashboard(house, surface, all_items, eligible, areas, activity or [], policy)
         if profile == "specialist" and (policy or {}).get("landscape_panel"):
             from .panel import apply
 
@@ -721,7 +721,8 @@ def touch_dashboard(
         selected = [
             i
             for i in items
-            if admitted(i, surface, house, preferences(house, {**surface, "person_id": None}))
+            if allowed(i, personal, house, policy)
+            and admitted(i, surface, house, preferences(house, {**surface, "person_id": None}))
             and admitted(i, personal, house, personal_pref)
             and (person["audience"] == "adult" or i["level"] == 0 or i["scope"] == "whole_house" or i["area_id"] in own_rooms)
         ]

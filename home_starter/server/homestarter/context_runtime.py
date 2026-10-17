@@ -39,7 +39,7 @@ async def inspect(core, store, surface=None, now=None, *, person_id=None, inputs
     service_map = household_services.load(store, house)
     calendars = {row["entity_id"]: row for row in service_map["calendars"]}
     people = {p["id"]: p["name"] for p in members if p["confirmed"] and p["role"] in {"adult", "child"}}
-    policy = readiness.policy_for(saved, house, inventory, states)
+    policy = readiness.policy_for(saved, house, inventory, states, store)
     linked_person = None
     if person_id is not None:
         member = saved["members"].get(person_id, {})
@@ -98,6 +98,23 @@ async def inspect(core, store, surface=None, now=None, *, person_id=None, inputs
             issues.append(("Calendar" if key == "calendars" else "Collection source") + " needs verification")
             continue
         for source in choice["sources"]:
+            if key == "waste":
+                from .calendar_access import load as waste_calendar_choices
+
+                if waste_calendar_choices(store, house)["calendars"].get(source) == "ignore":
+                    continue
+            if key == "calendars":
+                from .calendar_access import load as calendar_choices
+                from .calendar_access import permitted
+
+                if not permitted(
+                    calendar_choices(store, house)["calendars"],
+                    source,
+                    context=surface is None and person_id is None,
+                    person=person_id,
+                    mappings=service_map["calendars"],
+                ):
+                    continue
             if source not in policy.get(key, []) or admitted_ids is not None and source not in admitted_ids:
                 issues.append(("Calendar" if key == "calendars" else "Collection source") + " unavailable or excluded")
                 continue

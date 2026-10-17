@@ -1,5 +1,57 @@
 # Changelog
 
+## 0.8.29
+
+- Fix the household Spotify authentication/repair link to reuse Music Assistant's
+  discovered app route instead of the removed legacy Supervisor ingress route.
+- Preserve controls for unchanged owned playback when catalogue reseeding fails;
+  discard the previous listening lease only after replacement playback is confirmed.
+- Settle Soloist runs from recorded, revoked native sessions before a replacement
+  opens its single playback slot. Preserve active/paused and unrecognised runs.
+- Add Home Starter Surprise Me catalogue discovery, provider-only Keep It Going,
+  controlled reseeding and short-lived repeat exclusion through the existing
+  authenticated listening API and allocator. Filter MA Infinite Mix choices.
+- Reconcile safe Spotify sync defaults and offer previewed MA-only import cleanup;
+  never remove Spotify saved music or reset the library database.
+- Discover LiSTNR's catalogue, resolve stable IDs and validate public HLS/AAC before
+  ordinary MA Radio imports. Preserve library IDs/favourites across URL changes.
+- Present selected radio/music/ambient sources together with installed native free
+  ambient loops; no Spotify allocation for background sounds. Preserve media
+  sessions across provider continuation and owned automatic reseeds.
+- Add administrator media diagnostics, selection and recovery. Refresh only owned
+  media templates. Postcode-based local discovery requires location consent.
+- Review and support MA 2.10.7 alongside 2.10.6; image replacement still requires
+  reinstalling the reviewed container adapter before scoped Spotify can resume.
+- Live: Surprise Me, Keep It Going, explicit reseeding, Triple M The Border and
+  native Rain pass through Home Starter. Consented postcode lookup ranks nearby
+  stations while retaining selected sources and MA item IDs.
+
+- Reconcile configured household MA users without duplicating existing accounts;
+  accept Grant, House and House #2 connected with Renae pending authentication.
+- Enforce Spotify account selection in MA's stream resolver, cached buffers and
+  audio output. Serialize durable leases, recover abandoned starts and preserve
+  Grant personal precedence. Verify library/playback account identity matches.
+- Remember a requested account across native authentication, bind a single new
+  provider without renaming it, and finish user access and household mappings.
+- Distinguish Spotify audio-key rejection from authentication failures; prepare
+  the supported Soloist recovery path with explicit upstream consent and pairing.
+- Add persistent calendar visibility choices, name-based suggestions requiring
+  confirmation, source/account metadata and ephemeral upcoming-event previews.
+- Resume connection checks on return from native authentication, distinguish
+  OAuth client/consent errors and verify Google calendars with a native feed read.
+- Apply calendar consent to generated screens and shared/personal context;
+  migrate previously explicitly selected calendars without exposing new discovery.
+- Refresh calendar cards on unmodified owned native dashboards after a visibility
+  change; preserve other controls and report external dashboard edits for review.
+- Live: user-confirmed 7 Show / 10 Context / 4 Ignore calendars persisted;
+  three shared displays read only Show feeds and retain their existing touch shells.
+- After user-completed Soloist consent/pairing, live House #2 playback passes.
+  Verify House → House #2 → Grant → busy, personal Grant takeover without
+  interrupting shared accounts, denial of shared requests during personal playback,
+  native-stop lease recovery and concurrent allocation to distinct shared accounts.
+  Repeated commissioning retains six unique MA users and three Spotify providers;
+  Renae remains pending and is never shared overflow. Test sessions are cleaned up.
+
 ## 0.8.28
 
 - Expire temporary sessions and contextual rows independently of the underlying

@@ -7,7 +7,7 @@ import secrets
 import time
 from pathlib import Path
 
-from . import household_services, readiness, screen_identity
+from . import household_music, household_services, readiness, screen_identity
 from .music_runtime import MusicRuntimeError, digest, number, private_write
 
 
@@ -24,7 +24,16 @@ def media_record(value):
     path = value.get("path") if kind == "folder" else uri
     if not isinstance(path, str) or not path or len(path) > 2048:
         return None
-    return {"id": digest(path)[:24], "title": str(value.get("name") or "Untitled")[:240], "kind": value.get("media_type"), "uri": path, "folder": folder}
+    if kind == "playlist" and "builtin" in path.casefold() and "infinite" in path.casefold():
+        return None
+    return {
+        "id": digest(path)[:24],
+        "title": str(value.get("name") or "Untitled")[:240],
+        "kind": value.get("media_type"),
+        "uri": path,
+        "folder": folder,
+        "sources": sorted(household_music.item_sources(value)),
+    }
 
 
 class ListeningRuntime:
@@ -35,6 +44,9 @@ class ListeningRuntime:
         self.catalog = {}
         self.mapping_cache = None
         self.regional_cache = None
+        from .media_catalogue import MediaCatalogue
+
+        self.media = MediaCatalogue(runtime, core, store)
 
     async def regional_radio(self, endpoint, connection, region):
         if not region:
@@ -195,6 +207,15 @@ class ListeningRuntime:
         item = (queue or {}).get("current_item") or {}
         media = player.get("current_media") or {}
         current_id = item.get("queue_item_id")
+        if lease.get("native_session") and lease.get("kind") not in {"audiobook", "podcast_episode"}:
+            context = await self.runtime.command(endpoint, connection, "homestarter/queue_context", queue_id=player_id)
+            owned = (
+                context.get("session") == lease["native_session"] or lease.get("logical_session") and context.get("logical_session") == lease["logical_session"]
+            )
+            if not owned or context.get("item") != current_id:
+                data["leases"].pop(player_id, None)
+                return False
+            lease["native_session"], lease["queue_item_id"] = context["session"], current_id
         state = player.get("playback_state", player.get("state"))
         idle_stamp = [(queue or {}).get("elapsed_time_last_updated"), media.get("elapsed_time_last_updated")]
         protocols = [p for p in player.get("output_protocols", []) if p.get("available", True)]
@@ -326,6 +347,9 @@ class ListeningRuntime:
             if child and (folder or query):
                 raise PermissionError("This view uses its permitted listening choices.")
             library = [] if child else await self.catalog_items(endpoint, connection, folder, query)
+            listener = next((p["name"] for p in house["people"] if p["id"] == person), "House")
+            providers = snapshot.get("providers", [])
+            library = [r for r in library if household_music.visible(r, listener, providers)]
             region = household_services.load(self.store, house)["region"]
             local_radio, radio_issue = [], None
             if not child and not folder and not query and region:
@@ -349,6 +373,19 @@ class ListeningRuntime:
                 return {k: r[k] for k in ("id", "title", "kind", "folder") if k in r}
 
             books = sorted(profile["books"].values(), key=lambda b: b.get("updated_at", 0), reverse=True)
+            channels = []
+            for row in self.media.view()["items"]:
+                record = media_record({"uri": row["uri"], "media_type": row.get("kind") or "radio", "name": row["name"]})
+                if record:
+                    record.update(
+                        id=digest(row["id"])[:24],
+                        catalogue_id=row["id"],
+                        category=row["category"],
+                        subcategory=row["subcategory"],
+                        sources=["ambient" if row["category"] == "ambient" else "listnr"],
+                    )
+                    self.catalog[record["id"]] = record
+                    channels.append({**public(record), "category": row["category"], "subcategory": row["subcategory"]})
             return {
                 "epoch": house["epoch"],
                 "person_id": person,
@@ -356,12 +393,14 @@ class ListeningRuntime:
                 "default_destination": default,
                 "browse": not child,
                 "library": [public(r) for r in library],
+                "channels": channels,
+                "discovery": True,
                 "regional_radio": {"name": region["name"], "items": [public(r) for r in local_radio], "issue": radio_issue}
                 if region and not child and not folder and not query
                 else None,
-                "favorites": [public(r) for r in profile["favorites"]],
-                "shared": [public(r) for r in self.profile(data, None)["favorites"]] if person else [],
-                "recent": [public(r) for r in profile["recent"]],
+                "favorites": [public(r) for r in profile["favorites"] if household_music.visible(r, listener, providers)],
+                "shared": [public(r) for r in self.profile(data, None)["favorites"] if household_music.visible(r, "House", providers)] if person else [],
+                "recent": [public(r) for r in profile["recent"] if household_music.visible(r, listener, providers)],
                 "books": [{**public(r), "position": r["position"], "duration": r["duration"]} for r in books],
                 "session": next(
                     ({"player_id": pid, "title": lease["item"]["title"]} for pid, lease in data["leases"].items() if lease["scope"] == profile_key(person)),
@@ -376,7 +415,7 @@ class ListeningRuntime:
     async def action(self, user, surface_id, person, body, *, expected_job=None):
         async with self.lock:
             house, surface, saved, _ = await self.authorize(user, surface_id, person)
-            if set(body) - {"epoch", "action", "player", "item", "value"} or body.get("epoch") != house["epoch"]:
+            if set(body) - {"epoch", "action", "player", "item", "value", "settings"} or body.get("epoch") != house["epoch"]:
                 raise ValueError("Refresh this listening view before using it.")
             snapshot = await self.runtime.snapshot()
             connection, endpoint = self.runtime.connection(), await self.runtime.endpoint()
@@ -398,6 +437,9 @@ class ListeningRuntime:
                 action = "play_item"
             if action in {"favorite", "unfavorite"}:
                 item = await self.item(body.get("item"), profile, shared)
+                listener = next((p["name"] for p in house["people"] if p["id"] == person), "House")
+                if not household_music.visible(item, listener, snapshot.get("providers", [])):
+                    raise PermissionError("This source is private. Choose from your listening library.")
                 if child and item["id"] not in {r["id"] for r in [*profile["favorites"], *profile["recent"], *shared]}:
                     raise PermissionError("Choose permitted listening content.")
                 profile["favorites"] = [r for r in profile["favorites"] if r["id"] != item["id"]]
@@ -418,9 +460,58 @@ class ListeningRuntime:
                 self.save(data)
                 return
             lease = data["leases"].get(pid)
+            if action in {"play_radio", "play_ambient"}:
+                if not body.get("item"):
+                    row = self.media.choose("radio" if action == "play_radio" else "ambient", body.get("value"))
+                    record = media_record({"uri": row["uri"], "media_type": row.get("kind") or "radio", "name": row["name"]})
+                    record.update(
+                        id=digest(row["id"])[:24],
+                        catalogue_id=row["id"],
+                        category=row["category"],
+                        sources=["ambient" if row["category"] == "ambient" else "listnr"],
+                    )
+                    self.catalog[record["id"]] = record
+                    body = {**body, "item": record["id"]}
+                action = "play_item"
+            if action == "play_playlist":
+                if (await self.item(body.get("item"), profile, shared))["kind"] != "playlist":
+                    raise ValueError("Choose a playlist from your listening choices.")
+                action = "play_item"
+            if action in {"surprise_me", "something_different"}:
+                from .media_discovery import constraints
+
+                options = constraints(body.get("settings", profile.get("discovery_settings", {}) if action == "something_different" else {}))
+                if child:
+                    options["exclude_explicit"] = True
+                if action == "something_different" and (not lease or lease["scope"] != scope):
+                    raise ValueError("Start your listening session before choosing something different.")
+                item = {"id": "discovery", "title": "Surprise Me", "kind": "track", "uri": "spotify://track/discovery", "sources": ["spotify"]}
+                await self.play(endpoint, connection, data, profile, scope, player, item, user, surface_id, discovery=options)
+                profile["discovery_settings"] = options
+                self.save(data)
+                return
+            if action == "keep_it_going":
+                if not lease or lease["scope"] != scope:
+                    raise ValueError("Start your listening session before enabling Keep It Going.")
+                await self.sample(endpoint, connection, data, pid, lease)
+                if pid not in data["leases"]:
+                    raise ValueError("The speaker session changed. Choose your music again.")
+                await self.runtime.control(endpoint, connection, "homestarter/keep_going", queue_id=pid, expected_item=lease["queue_item_id"])
+                return
             if action in {"play_item", "resume", "delay"}:
                 item = await self.item(body.get("item"), profile, shared)
-                if child and item["id"] not in {r["id"] for r in [*profile["favorites"], *profile["recent"], *profile["books"].values(), *shared]}:
+                if item.get("catalogue_id"):
+                    await self.media.sync()
+                    row = self.media.item(item["catalogue_id"])
+                    item = {**item, "uri": row["uri"], "title": row["name"]}
+                listener = next((p["name"] for p in house["people"] if p["id"] == person), "House")
+                if not household_music.visible(item, listener, snapshot.get("providers", [])):
+                    raise PermissionError("This source is private. Choose from your listening library.")
+                if (
+                    child
+                    and not item.get("catalogue_id")
+                    and item["id"] not in {r["id"] for r in [*profile["favorites"], *profile["recent"], *profile["books"].values(), *shared]}
+                ):
                     raise PermissionError("Choose permitted listening content.")
                 if action == "delay":
                     if type(body.get("value")) is not int or body["value"] not in {300, 600, 900}:
@@ -465,8 +556,17 @@ class ListeningRuntime:
             profile["destination"] = player["entity_id"]
             self.save(data)
 
-    async def play(self, endpoint, connection, data, profile, scope, player, item, user, surface_id):
+    async def play(self, endpoint, connection, data, profile, scope, player, item, user, surface_id, *, discovery=None):
         pid = player["player_id"]
+        sources = set(item.get("sources", [])) | household_music.item_sources(item)
+        providers = (await self.runtime.snapshot()).get("providers", [])
+        spotify = bool(sources & ({p["id"] for p in providers if p.get("domain") == "spotify"} | {"spotify"}))
+        if spotify:
+            await self.runtime.account_guard(endpoint, connection)  # Check before pausing/replacing any existing queue.
+            person = scope.removeprefix("person:") if scope.startswith("person:") else None
+            listener = next((p["name"] for p in self.store.load()["people"] if p["id"] == person), "House")
+            if listener in {"Grant", "Renae"} and listener not in household_music.providers_by_identity(providers):
+                raise MusicRuntimeError("Connect Spotify — " + listener + " in household setup before starting personal music.")
         current = await self.runtime.command(endpoint, connection, "players/get", player_id=pid)
         lease = data["leases"].get(pid)
         if lease:
@@ -479,13 +579,40 @@ class ListeningRuntime:
                 await self.sample(endpoint, connection, data, old_pid, old)
                 if old_pid != pid and old_pid in data["leases"]:
                     await self.runtime.control(endpoint, connection, "player_queues/pause", queue_id=old_pid)
-                data["leases"].pop(old_pid, None)
+                if discovery is None:
+                    data["leases"].pop(old_pid, None)
         self.save(data)  # retain the final raw sample before any queue replacement
         previous_queue = await self.runtime.command(endpoint, connection, "player_queues/get_active_queue", player_id=pid)
         previous_item = ((previous_queue or {}).get("current_item") or {}).get("queue_item_id")
-        await self.runtime.control(
-            endpoint, connection, "player_queues/play_media", queue_id=pid, media=item["uri"], option="replace", start_from_beginning=True
-        )
+        if discovery is not None:
+            result = await self.runtime.control(
+                endpoint,
+                connection,
+                "homestarter/media_play",
+                queue_id=pid,
+                listener=listener,
+                options=discovery,
+                expected_session=lease.get("native_session") if lease else None,
+                expected_item=lease["queue_item_id"] if lease else None,
+                idle_only=lease is None,
+            )
+            item = media_record(result.get("item"))
+            if not item:
+                raise MusicRuntimeError("Spotify discovery returned no playable track.")
+            # Public catalogue discovery is independent of whichever account
+            # supplied overflow. It must not become a Grant browsing source.
+            item["sources"] = ["spotify_catalogue"]
+            self.catalog[item["id"]] = item
+        elif spotify:
+            await self.runtime.control(endpoint, connection, "homestarter/play", queue_id=pid, media=item["uri"], listener=listener)
+        else:
+            await self.runtime.control(
+                endpoint, connection, "player_queues/play_media", queue_id=pid, media=item["uri"], option="replace", start_from_beginning=True
+            )
+        if item.get("category") == "ambient" and item["kind"] == "sound_effect":
+            await self.runtime.control(endpoint, connection, "player_queues/repeat", queue_id=pid, repeat_mode="one")
+        elif lease and lease.get("item", {}).get("category") == "ambient" and lease["kind"] == "sound_effect":
+            await self.runtime.control(endpoint, connection, "player_queues/repeat", queue_id=pid, repeat_mode="off")
         queue = None
         for _ in range(15):
             queue = await self.runtime.command(endpoint, connection, "player_queues/get_active_queue", player_id=pid)
@@ -543,6 +670,11 @@ class ListeningRuntime:
                 else:
                     raise MusicRuntimeError("Your saved position was requested but not confirmed. Progress was preserved; check the speaker before retrying.")
                 queue = checked
+        # Catalogue failure may leave the original native queue playing. Keep
+        # its controls/retry ownership until a replacement is actually confirmed.
+        for old_pid, old in list(data["leases"].items()):
+            if old_pid != pid and old["scope"] == scope:
+                data["leases"].pop(old_pid, None)
         data["leases"][pid] = {
             "scope": scope,
             "item": item,
@@ -554,6 +686,11 @@ class ListeningRuntime:
             "surface": surface_id,
             "session": secrets.token_hex(12),
         }
+        if spotify:
+            context = await self.runtime.command(endpoint, connection, "homestarter/queue_context", queue_id=pid)
+            if context.get("item") != queue["current_item"]["queue_item_id"] or not context.get("session"):
+                raise MusicRuntimeError("The music session could not be confirmed. Check the speaker.")
+            data["leases"][pid].update(native_session=context["session"], logical_session=context.get("logical_session"))
         if item["kind"] not in {"audiobook", "podcast_episode"}:
             queued = await self.runtime.command(endpoint, connection, "player_queues/items", queue_id=pid, limit=500)
             if not isinstance(queued, list):

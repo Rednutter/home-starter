@@ -1,0 +1,305 @@
+{
+  "observed_local_date": "2026-10-18",
+  "timezone": "Australia/Sydney",
+  "catalogue": {
+    "station_count": 241,
+    "station_types": {
+      "Music": 123,
+      "Regional": 95,
+      "Metro": 17,
+      "Digital": 6
+    },
+    "audio_stream_objects": 287
+  },
+  "browser": {
+    "mmm-theborder": {
+      "play_graphql_operations": [
+        "GetStationForStreaming",
+        "GetOnlyNetworkById"
+      ],
+      "audio_segment_responses": 7,
+      "master_query_parameter_names": [
+        "dist",
+        "aw_0_1st.playerId",
+        "cb"
+      ]
+    },
+    "mmm-melbourne": {
+      "play_graphql_operations": [
+        "GetStationForStreaming",
+        "GetOnlyNetworkById"
+      ],
+      "audio_segment_responses": 7,
+      "master_query_parameter_names": [
+        "dist",
+        "aw_0_1st.playerId",
+        "cb"
+      ]
+    },
+    "chill-house": {
+      "play_graphql_operations": [
+        "GetStationForStreaming",
+        "GetOnlyNetworkById"
+      ],
+      "audio_segment_responses": 8,
+      "master_query_parameter_names": [
+        "dist",
+        "aw_0_1st.playerId",
+        "cb"
+      ]
+    }
+  },
+  "target_browser_decode": {
+    "first": [
+      {
+        "time": 3.834907,
+        "paused": false,
+        "ready": 4,
+        "error": null
+      }
+    ],
+    "after": [
+      {
+        "time": 15.840682,
+        "paused": false,
+        "ready": 4,
+        "error": null
+      }
+    ],
+    "decoded_playback_advanced": true
+  },
+  "independent_http": [
+    {
+      "station_id": "a5997b28-6502-4fb4-8d6f-7f9388102ca9",
+      "slug": "mmm-theborder",
+      "name": "Triple M The Border 105.7",
+      "station_type": "Regional",
+      "call_sign": "RIVER_FM",
+      "stream_url": "https://sa47.scastream.com.au/live/2bdr_128.stream/playlist.m3u8?dist=listnr-web",
+      "resolved_at": "2026-10-17T14:13:18.134274+00:00",
+      "validation": {
+        "status": "passed",
+        "http_status": 200,
+        "master_variant_count": 1,
+        "master_attributes": {
+          "BANDWIDTH": "130000",
+          "CODECS": "\"mp4a.40.2\""
+        },
+        "target_duration": "6",
+        "segment_durations": [
+          4.992,
+          4.992,
+          5.013
+        ],
+        "audio": {
+          "codec": "aac",
+          "channels": 2,
+          "adts_offset": 189,
+          "adts_core_sample_rate": 48000
+        },
+        "live_playlist_advanced": true,
+        "observation_seconds": 13.58,
+        "audio_bytes_read_maximum": 65536,
+        "audio_retained": false,
+        "cookies_sent": false,
+        "authentication_sent": false,
+        "manifest_cache_control": "no-cache"
+      }
+    },
+    {
+      "station_id": "ae78d060-0710-4c50-bcc3-73c120061909",
+      "slug": "mmm-melbourne",
+      "name": "Triple M Melbourne 105.1",
+      "station_type": "Metro",
+      "call_sign": "3MMM_FM",
+      "stream_url": "https://sa47.scastream.com.au/live/3mmm_128.stream/playlist.m3u8?dist=listnr-web",
+      "resolved_at": "2026-10-17T14:13:18.151026+00:00",
+      "validation": {
+        "status": "passed",
+        "http_status": 200,
+        "master_variant_count": 1,
+        "master_attributes": {
+          "BANDWIDTH": "130000",
+          "CODECS": "\"mp4a.40.2\""
+        },
+        "target_duration": "6",
+        "segment_durations": [
+          4.992,
+          4.992,
+          5.013
+        ],
+        "audio": {
+          "codec": "aac",
+          "channels": 2,
+          "adts_offset": 191,
+          "adts_core_sample_rate": 48000
+        },
+        "live_playlist_advanced": true,
+        "observation_seconds": 13.55,
+        "audio_bytes_read_maximum": 65536,
+        "audio_retained": false,
+        "cookies_sent": false,
+        "authentication_sent": false,
+        "manifest_cache_control": "no-cache"
+      }
+    },
+    {
+      "station_id": "dcd8e655-640d-42f6-b3a6-9e05758687a0",
+      "slug": "hit-theborder",
+      "name": "hit 104.9 The Border",
+      "station_type": "Regional",
+      "call_sign": "2AAY_FM",
+      "stream_url": "https://sa47.scastream.com.au/live/2aay_128.stream/playlist.m3u8?dist=listnr-web",
+      "resolved_at": "2026-10-17T14:13:18.151026+00:00",
+      "validation": {
+        "status": "passed",
+        "http_status": 200,
+        "master_variant_count": 1,
+        "master_attributes": {
+          "BANDWIDTH": "130000",
+          "CODECS": "\"mp4a.40.2\""
+        },
+        "target_duration": "6",
+        "segment_durations": [
+          4.992,
+          4.992,
+          4.992
+        ],
+        "audio": {
+          "codec": "aac",
+          "channels": 2,
+          "adts_offset": 0,
+          "adts_core_sample_rate": 48000
+        },
+        "live_playlist_advanced": true,
+        "observation_seconds": 13.55,
+        "audio_bytes_read_maximum": 65536,
+        "audio_retained": false,
+        "cookies_sent": false,
+        "authentication_sent": false,
+        "manifest_cache_control": "no-cache"
+      }
+    },
+    {
+      "station_id": "4pWAEorebtq9H0FNKX9NeK",
+      "slug": "chill-house",
+      "name": "Chill House",
+      "station_type": "Music",
+      "call_sign": "CHILL-HOUSE",
+      "stream_url": "https://sa46.scastream.com.au/live/chill-house.stream/playlist.m3u8?dist=listnr-web",
+      "resolved_at": "2026-10-17T14:13:35.520266+00:00",
+      "validation": {
+        "status": "passed",
+        "http_status": 200,
+        "master_variant_count": 1,
+        "master_attributes": {
+          "BANDWIDTH": "64000",
+          "CODECS": "\"mp4a.40.5\""
+        },
+        "target_duration": "6",
+        "segment_durations": [
+          5.015,
+          4.969,
+          5.015
+        ],
+        "audio": {
+          "codec": "aac",
+          "channels": 2,
+          "adts_offset": 739,
+          "adts_core_sample_rate": 22050
+        },
+        "live_playlist_advanced": true,
+        "observation_seconds": 13.44,
+        "audio_bytes_read_maximum": 65536,
+        "audio_retained": false,
+        "cookies_sent": false,
+        "authentication_sent": false,
+        "manifest_cache_control": "no-cache"
+      }
+    },
+    {
+      "station_id": "2M7RiOGBWwSfWu12BWM8Cv",
+      "slug": "light-rain",
+      "name": "Light Rain",
+      "station_type": "Music",
+      "call_sign": "LightRain",
+      "stream_url": "https://sa46.scastream.com.au/live/lightrain_128.stream/playlist.m3u8?dist=listnr-web",
+      "resolved_at": "2026-10-17T14:13:35.503578+00:00",
+      "validation": {
+        "status": "passed",
+        "http_status": 200,
+        "master_variant_count": 1,
+        "master_attributes": {
+          "BANDWIDTH": "130000",
+          "CODECS": "\"mp4a.40.2\""
+        },
+        "target_duration": "6",
+        "segment_durations": [
+          5.013,
+          4.992,
+          4.992
+        ],
+        "audio": {
+          "codec": "aac",
+          "channels": 2,
+          "adts_offset": 127,
+          "adts_core_sample_rate": 48000
+        },
+        "live_playlist_advanced": true,
+        "observation_seconds": 13.45,
+        "audio_bytes_read_maximum": 65536,
+        "audio_retained": false,
+        "cookies_sent": false,
+        "authentication_sent": false,
+        "manifest_cache_control": "no-cache"
+      }
+    }
+  ],
+  "stable_id_lookup_matches_slug": true,
+  "invalid_slug_result": "station_not_found",
+  "invalid_id_result": "station_not_found",
+  "final_id_based_cli": {
+    "station_id": "4pWAEorebtq9H0FNKX9NeK",
+    "slug": "chill-house",
+    "codec": "mp4a.40.5",
+    "bitrate": 63000,
+    "resolved_at": "2026-10-17T14:16:28.694674+00:00",
+    "bitrate_kind": "manifest_bandwidth",
+    "validation": {
+      "status": "passed",
+      "http_status": 200,
+      "master_variant_count": 1,
+      "master_attributes": {
+        "BANDWIDTH": "63000",
+        "CODECS": "\"mp4a.40.5\""
+      },
+      "target_duration": "6",
+      "segment_durations": [
+        5.015,
+        5.015,
+        4.969
+      ],
+      "audio": {
+        "codec": "aac",
+        "adts_core_sample_rate": 22050,
+        "channels": 2,
+        "adts_offset": 731
+      },
+      "live_playlist_advanced": true,
+      "observation_seconds": 13.01,
+      "audio_bytes_read_maximum": 65536,
+      "audio_retained": false,
+      "cookies_sent": false,
+      "authentication_sent": false,
+      "manifest_cache_control": "no-cache"
+    }
+  },
+  "sanitization": "Selected public station metadata and numerical validation only; no request headers, cookie values, session URLs, media segment names or audio retained.",
+  "limits": [
+    "No MA library changes or MA playback test",
+    "No measured URL expiry TTL",
+    "No simulated foreign location or geo bypass",
+    "No production resolver or importer",
+    "No partner-host stream validation"
+  ]
+}

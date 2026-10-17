@@ -22,6 +22,18 @@ function projection(feature,owner,value) {
 function binding(feature,owner,actions={}) {return {entity_id:'sensor.example_'+feature,revision:'fixture-v1',actions};}
 const livePlayer={state:'playing',attributes:{supported_features:16437,media_title:'Example track',media_artist:'Example artist',volume_level:.25}};
 
+test('household media presents discovery and free ambient without provider IDs or stream URLs',()=>{
+ const view={epoch:0,person_id:null,players:[{...player,available:true,single:true}],default_destination:player.entity_id,browse:true,library:[],favorites:[],recent:[],books:[],session:{title:'Example music'},discovery:true,channels:[{id:'opaque-selection',title:'Rain',kind:'radio',category:'ambient'}]};
+ const host={style:{setProperty(){}},requestUpdate(){},_hsPage:{path:'media',destination:player.entity_id,music:{view,at:Date.now(),loading:false,query:'',delay:0}}};
+ const output=scene('media',{players:[player]}, {[player.entity_id]:livePlayer},host,{}, {music_backend:'fixture_addon'});
+ assert.match(output.markup,/Surprise Me/);assert.match(output.markup,/Keep It Going/);assert.match(output.markup,/Something different/);
+ assert.match(output.markup,/>Ambient</);assert.match(output.markup,/Background audio without a music account/);assert.match(output.markup,/>Rain</);
+ assert.doesNotMatch(output.markup,/Infinite Mix|scastream|provider_instance|refresh_token/);
+ host._hsPage.music.discoveryChoice='era:1980';
+ scene('media',{players:[player]}, {[player.entity_id]:livePlayer},host,{}, {music_backend:'fixture_addon'});
+ assert.deepEqual(host._hsPage.music.discoveryOptions(),{mode:'era',era:1980});
+});
+
 test('focused setup states stay truthful and belong to the shared shell',()=>{
  for(const [kind,text] of [['today','No verified briefing'],['call','Calling not set up'],['camera','No cameras commissioned'],['media','No speaker selected']]) assert.ok(scene(kind).markup.includes(text));
  assert.match(scene('call').markup,/hs-feature-art hs-call-art/);

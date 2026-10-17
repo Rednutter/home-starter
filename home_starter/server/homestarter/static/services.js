@@ -1,6 +1,8 @@
+import { connectionSetup } from "./connections.js";
 // Relationship setup only. Google and provider credentials stay in their native apps.
 export function initServices({ h, api, navigateHA }) {
   const root = document.getElementById("services-body"), status = document.getElementById("services-status");
+  root.before(connectionSetup({ h, api, navigateHA }));
   let data, draft, busy = false, dirty = false;
   const opened = new Set();
   const changed = () => { dirty = true; root.dataset.dirty = "true"; status.textContent = "Unsaved service mappings. Save to keep them for later."; };
