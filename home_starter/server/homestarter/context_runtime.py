@@ -19,7 +19,20 @@ async def snapshot(core, store):
     return house, saved, inventory, states, zone, members
 
 
-async def inspect(core, store, surface=None, now=None, *, person_id=None, inputs=None):
+def wall_cameras(saved, house, surface, inventory, states, now):
+    if not inventory["complete"]:
+        return []
+    choice = saved["choices"].get("cameras", {})
+    if choice.get("intent") != "wanted" or surface["id"] not in choice.get("screens", []) or not readiness.proof_valid(saved, "cameras", inventory, now):
+        return []
+    hidden = preferences(house, surface)["hide"]
+    excluded = set(saved["devices"])
+    candidates = {e["entity_id"] for e in readiness.entities(inventory) if e.get("device_id") not in excluded}
+    available = {s["entity_id"] for s in states if s.get("state") not in ("unknown", "unavailable")}
+    return [e for e in choice["sources"] if e.startswith("camera.") and e in candidates & available and e not in hidden]
+
+
+async def inspect(core, store, surface=None, now=None, *, person_id=None, inputs=None, display_session=None):
     now = now or datetime.now(UTC)
     house, saved, inventory, states, zone, members = inputs or await snapshot(core, store)
     settings = saved["context"]
@@ -45,6 +58,12 @@ async def inspect(core, store, surface=None, now=None, *, person_id=None, inputs
         # from names or let a personal wall acquire another member's explicit notes.
         settings = {"rules": [r for r in settings["rules"] if not r["people"]], "events": {}}
     result = {"revision": saved["revision"], "epoch": house["epoch"], "settings": settings, "people": people, "events": [], "zone": zone}
+    from .wall_composer import validate_policy
+
+    result["wall_policy"] = validate_policy(settings.get("wall", {}))
+    candidates = readiness.discover(inventory, states)["cameras"]
+    result["wall_camera_sources"] = [s for s in candidates if s["id"] in policy.get("cameras", []) and s["id"].startswith("camera.")]
+    result["wall_doorbell_sources"] = [s for s in candidates if s["id"] in policy.get("cameras", []) and s["id"].startswith("event.")]
     items = classify(inventory, states, house["overrides"])
     admitted_ids = None
     if surface:
@@ -127,6 +146,13 @@ async def inspect(core, store, surface=None, now=None, *, person_id=None, inputs
                     result["briefing"] = rows[:briefing_limit]
     except (ValueError, OSError, KeyError, TypeError):
         result["issues"].append("Bin schedule needs checking")
+    if surface and surface["profile"] == "wall":
+        from .wall_composer import compose
+
+        signals = [{**i, **next((s for s in states if s["entity_id"] == i["entity_id"]), {})} for i in items if i["id"] in admitted_ids]
+        cameras = wall_cameras(saved, house, surface, inventory, states, now)
+        signals.extend({**s, "domain": "camera"} for s in states if s["entity_id"] in cameras)
+        result["wall"] = compose(result, events, settings, people, now, zone, signals, display_session)
     result["events"] = [
         {"key": e["key"], "title": e["title"], "start": e["start"].isoformat(), "all_day": e["all_day"], "proximity": context.proximity(e, now)}
         for e in events
@@ -135,7 +161,7 @@ async def inspect(core, store, surface=None, now=None, *, person_id=None, inputs
     return result
 
 
-async def update(core, store):
+async def update(core, store, sessions=None):
     house = store.load()
     records = store.read(store.publication_path, {})
     targets = [
@@ -150,6 +176,13 @@ async def update(core, store):
     inputs = await snapshot(core, store)
     states = {s["entity_id"]: s for s in await core.states()}
     for surface in targets:
+        if sessions is not None and surface["id"] in sessions:
+            from .wall_composer import moment
+
+            pending = sessions[surface["id"]]
+            expiry = moment(pending.get("content", {}).get("expires_at"))
+            if pending.get("epoch") != house["epoch"] or not expiry or expiry <= datetime.now(UTC):
+                sessions.pop(surface["id"], None)
         entity = context.entity_id(surface["id"])
         old = states.get(entity)
         owner = {"surface": surface["id"], "epoch": house["epoch"]}
@@ -167,10 +200,14 @@ async def update(core, store):
         if fingerprint(live) != records[path]["fingerprint"]:
             # Do not republish an externally edited dashboard, or send it new data.
             continue
-        view = await inspect(core, store, surface, inputs=inputs)
+        pending = (sessions or {}).get(surface["id"], {})
+        active = pending.get("content") if pending.get("epoch") == house["epoch"] else None
+        view = await inspect(core, store, surface, inputs=inputs, display_session=active)
         attributes = {k: view[k] for k in ("near", "ahead", "phase", "today_count", "ahead_count", "checked_at", "valid_until")}
         if records[path].get("context") == 2:
             attributes["briefing"] = view["briefing"]
+            if "wall" in view:
+                attributes["wall"] = view["wall"]
         attributes.update(home_starter_context=owner, friendly_name="Household context")
         current = store.load()
         if current != house or readiness.load(store, current)["revision"] != view["revision"]:

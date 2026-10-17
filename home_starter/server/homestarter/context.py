@@ -18,8 +18,12 @@ def empty():
 
 
 def validate(value):
-    if not isinstance(value, dict) or set(value) != {"rules", "events"}:
+    if not isinstance(value, dict) or set(value) - {"rules", "events", "wall"} or not {"rules", "events"} <= set(value):
         raise ValueError("Unsupported household context settings.")
+    if "wall" in value:
+        from .wall_composer import validate_policy
+
+        validate_policy(value["wall"])
     if not isinstance(value["rules"], list) or len(value["rules"]) > 30 or not isinstance(value["events"], dict) or len(value["events"]) > 100:
         raise ValueError("Too many household context choices.")
 
@@ -51,11 +55,14 @@ def validate(value):
             not isinstance(key, str)
             or not re.fullmatch(r"[a-f0-9]{64}", key)
             or not isinstance(link, dict)
-            or set(link) != {"people", "travel_minutes", "buffer_minutes", "round_minutes", "routine_time"}
+            or set(link) - {"people", "travel_minutes", "buffer_minutes", "round_minutes", "routine_time", "wall_role", "early_attention"}
+            or not {"people", "travel_minutes", "buffer_minutes", "round_minutes", "routine_time"} <= set(link)
         ):
             raise ValueError("Choose an observed event and explicit departure settings.")
         if not people(link["people"]) or link["round_minutes"] not in (5, 10) or type(link["round_minutes"]) is not int:
             raise ValueError("Choose people and a five- or ten-minute departure boundary.")
+        if link.get("wall_role", "commitment") not in ("commitment", "preparation", "holiday") or type(link.get("early_attention", False)) is not bool:
+            raise ValueError("Choose a wall event role and explicit early-attention preference.")
         if link["travel_minutes"] is not None and (type(link["travel_minutes"]) is not int or not 0 <= link["travel_minutes"] <= 720):
             raise ValueError("Travel time must be an explicit number of minutes, or absent.")
         if type(link["buffer_minutes"]) is not int or not 0 <= link["buffer_minutes"] <= 180:
@@ -93,7 +100,17 @@ def parse_events(raw, source, zone):
                 a, b = a.astimezone(tz), b.astimezone(tz)
             if b.astimezone(UTC) <= a.astimezone(UTC):
                 raise ValueError("Invalid event interval")
-            result.append({"key": event_key(source, event), "title": event["summary"], "start": a, "end": b, "all_day": all_day})
+            location = event.get("location", "")
+            result.append(
+                {
+                    "key": event_key(source, event),
+                    "title": event["summary"],
+                    "start": a,
+                    "end": b,
+                    "all_day": all_day,
+                    "location": location if isinstance(location, str) and len(location) <= 200 else "",
+                }
+            )
         except (ValueError, KeyError, TypeError):
             invalid += 1
     # Sources may repeat occurrences; retain distinct intervals, never merge by name.

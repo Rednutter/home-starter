@@ -60,6 +60,29 @@ class CoreClient:
     async def config(self) -> dict[str, Any]:
         return await self.rest_get("/config")
 
+    async def check_camera(self, entity_id: str) -> None:
+        """Read a bounded native snapshot to verify a selected source; retain no pixels/token."""
+        import re
+
+        if not re.fullmatch(r"camera\.[a-z0-9_]+", entity_id):
+            raise ValueError("Choose a native camera entity.")
+        try:
+            async with self._session.get(
+                self._api + "/camera_proxy/" + entity_id,
+                headers={"Authorization": "Bearer " + self._token.reveal()},
+                timeout=REST_TIMEOUT,
+                allow_redirects=False,
+            ) as response:
+                head = await response.content.read(32)
+                if (
+                    response.status != 200
+                    or not response.headers.get("Content-Type", "").startswith("image/")
+                    or not head.startswith((b"\xff\xd8\xff", b"\x89PNG", b"GIF8", b"RIFF"))
+                ):
+                    raise CoreError("api", "The selected camera did not return a native picture.")
+        except (TimeoutError, aiohttp.ClientError, OSError):
+            raise CoreError("unreachable", "The selected camera picture is unavailable.") from None
+
     async def activity_state(self, entity_id: str, payload: dict) -> None:
         """Publish only Home Starter's explicitly configured virtual activity sensors."""
         import re

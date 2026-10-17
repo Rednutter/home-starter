@@ -215,6 +215,25 @@ async def test_context_admin_save_reload_preserves_proofs_and_rejects_stale_writ
     assert not any("/states/sensor.home_starter_context_" in path for _, path in env.mock.calls)
 
 
+async def test_wall_sessions_require_admin_current_epoch_and_remain_ephemeral(make_env):
+    env, store, house, _, _ = await configured(make_env)
+    before = store.read(store.readiness_path, {})
+    async with TestClient(TestServer(create_app(env.settings))) as client:
+        headers = {"X-Remote-User-Id": env.mock.users[0]["id"]}
+        path = "/api/wall/example_wall/session"
+        body = {"epoch": house["epoch"], "session": {"kind": "recipe", "title": "Dinner", "body": "Roast vegetables", "seconds": 30}}
+        assert (await client.post(path, json=body)).status == 403
+        assert (await client.post(path, headers=headers, json={**body, "epoch": house["epoch"] + 1})).status == 409
+        reply = await client.post(path, headers=headers, json=body)
+        assert reply.status == 200
+        assert (await reply.json())["display_session"]["title"] == "Dinner"
+        assert (await (await client.get("/api/wall/example_wall", headers=headers)).json())["display_session"]
+        assert (await client.post(path, headers=headers, json={"epoch": house["epoch"], "session": None})).status == 200
+        assert not (await (await client.get("/api/wall/example_wall", headers=headers)).json())["display_session"]
+    assert store.read(store.readiness_path, {}) == before
+    assert not any("Roast vegetables" in p.read_text() for p in store.path.parent.glob("*.json"))
+
+
 async def test_wall_updates_only_after_explicit_publication_and_stops_on_external_edit(make_env):
     env, store, house, _, _ = await configured(make_env)
     await runtime.update(env.core, store)

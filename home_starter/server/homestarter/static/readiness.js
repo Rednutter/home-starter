@@ -54,7 +54,7 @@ export function initReadiness({ h, api, navigateHA }) {
         }),
         row.id === "communications" && h("div", {}, h("p", {}, "These are a call plan only. Configure and verify permissions in the calling service; no extension or calling permission is enabled here."),
           data.people.map(person => checks("Allowed internal destinations for " + person.name, data.people.filter(p => p.id !== person.id).map(p => [p.id, p.name]), choice.permissions[person.id] || [], v => { choice.permissions[person.id] = v; update("permissions", choice.permissions); }))),
-        ["calendars", "waste"].includes(row.id) && button("Verify " + row.title + " source", () => verify(row.id), busy || dirty),
+        ["calendars", "waste", "cameras"].includes(row.id) && button("Verify " + row.title + " source", () => verify(row.id), busy || dirty),
         !["calendars", "waste"].includes(row.id) && h("p", { class: "small muted" }, "End-to-end testing is not automated here. Use the linked service; this item remains incomplete until supported verification exists.")));
   }
   function detail(row) {

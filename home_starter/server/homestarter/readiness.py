@@ -244,6 +244,13 @@ async def verify(core, value, key, inventory, states):
                 else "No dated upcoming event was returned. Connect or repair the source, then verify again."
             )
         kind = "upcoming_collection" if key == "waste" else "upcoming_event"
+    elif key == "cameras":
+        cameras = [s for s in choice["sources"] if s.startswith("camera.")]
+        if not cameras:
+            raise ValueError("Select a native camera before checking a picture.")
+        for camera in cameras:
+            await core.check_camera(camera)
+        kind = "native_snapshot"
     else:
         raise ValueError(
             "Automatic end-to-end verification is not supported here. Complete the secure service setup and test there; readiness remains incomplete."
@@ -279,7 +286,7 @@ def allowed(item, surface, house, policy):
 def policy_for(value, house, inventory, states):
     candidates = discover(inventory, states, house["activities"])
     result = {"excluded_devices": list(value["devices"]), "features": value["choices"], "members": value["members"]}
-    for key in ("calendars", "waste", "presence"):
+    for key in ("calendars", "waste", "presence", "cameras"):
         choice = value["choices"].get(key, {})
         if choice.get("intent") != "wanted":
             continue
@@ -406,6 +413,8 @@ def report(house, value, inventory, states, music):
                     status = "Verified chosen provider and speaker · other paths untested"
             if key in ("calendars", "waste") and healthy and proof_valid(value, key, inventory):
                 status = "Verified upcoming event" if choice["screens"] else "Verified source · choose displays"
+            if key == "cameras" and healthy and proof_valid(value, key, inventory):
+                status = "Native picture checked · events, recordings and intercom untested"
             if key == "presence":
                 status = "Member links/intent incomplete" if not members_complete or not choice["sources"] else "Linked sources · no automation configured"
         rows.append(
@@ -427,9 +436,9 @@ def report(house, value, inventory, states, music):
                     "discover": bool(detected),
                     "ask": intent is not None,
                     "source_selection": bool(choice.get("sources")),
-                    "configure": key in ("calendars", "waste") and bool(choice.get("screens")) and proof_valid(value, key, inventory),
+                    "configure": key in ("calendars", "waste", "cameras") and bool(choice.get("screens")) and proof_valid(value, key, inventory),
                     "verify": proof_valid(value, key, inventory)
-                    if key in ("calendars", "waste")
+                    if key in ("calendars", "waste", "cameras")
                     else key == "music" and bool(music.get("runtime", {}).get("proof")),
                     "monitor": inventory["complete"],
                 },

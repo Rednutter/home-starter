@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.8.27
+
+- Add an inspectable adaptive wall composer using the existing household context:
+  commitments, practical departures, routine exceptions, selective future planning,
+  active household exceptions and expiring display sessions.
+- Keep one coherent passive board with a compact header. Remove permanent child,
+  camera and device panels; show people with events and media/timers only when active.
+- Add editable wall thresholds and calendar annotations, native camera snapshot
+  checks and explicit event-camera pairings. No calendar/title or travel guessing.
+- Provide twelve reproducible fictional scenarios and stale/ownership/privacy tests.
+  Extend the Pi launcher with a local connection fallback using the same kiosk profile.
+- Physical night dimming and deliberate Assist-to-visual callers remain separate
+  commissioning steps; no live forecast, camera feed or voice-result proof is implied.
+
 ## 0.8.26
 
 - Match the approved family morning wall reference with a panoramic backdrop,

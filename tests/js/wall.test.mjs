@@ -1,48 +1,34 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-
-const source = readFileSync(new URL("../../home_starter/server/homestarter/static/wall-content.js", import.meta.url), "utf8");
-const render = new Function("hass", "variables", "html", "window", source);
-function scene(states={}, changes={}) {
-  const cfg={title:"Example wall",surface_id:"wall",epoch:2,context:"sensor.context",children:[
-    {id:"one",native_id:"native-one",name:"Example A"},{id:"two",native_id:"native-two",name:"Example B"},{id:"three",native_id:"native-three",name:"Example C"}
-  ],climate:"climate.fixture",weather:"weather.fixture",lights:[],security:[],alerts:[],...changes};
-  return render({states,config:{time_zone:"Australia/Sydney"},locale:{language:"en-AU"}},{wall_json:JSON.stringify(cfg)},(_,body)=>body,{location:{search:"?kiosk"}});
+const render=new Function("hass","variables","html","window",readFileSync(new URL("../../home_starter/server/homestarter/static/wall-content.js",import.meta.url),"utf8"));
+function scene(model={},attrs={},extraStates={}) {
+ const until=new Date(Date.now()+60000).toISOString();
+ const config={title:"Example board",surface_id:"wall",epoch:2,context:"sensor.context"};
+ const states={"sensor.context":{attributes:{home_starter_context:{surface:"wall",epoch:2},checked_at:new Date(Date.now()-1000).toISOString(),valid_until:until,wall:{version:1,valid_until:until,day_state:"quiet_daytime",day_summary:"Nothing urgent right now",primary:"quiet",today_items:[],future_attention:[],household_exception:[],active_context:[],issues:[],...model},...attrs}},...extraStates};
+ return render({states,connected:true,config:{time_zone:"Australia/Sydney"},locale:{language:"en-AU"}},{wall_json:JSON.stringify(config)},(_,body)=>body,{innerHeight:1080,location:{search:"?kiosk"}});
 }
-function context(rows, changes={}) {
-  return {state:"ready",attributes:{home_starter_context:{surface:"wall",epoch:2},checked_at:new Date(Date.now()-1000).toISOString(),valid_until:new Date(Date.now()+60000).toISOString(),near:"Shared plans",briefing:rows,...changes}};
-}
-
-test("family wall has the morning reference composition without operating controls or invented facts",()=>{
-  const body=scene();
-  for(const label of ["wall-clock","wall-weather","wall-children","wall-today","wall-later","wall-footer"])assert.ok(body.includes(label));
-  for(const name of ["Example A","Example B","Example C"])assert.ok(body.includes(name));
-  assert.match(body,/Calendar connection pending/);
-  assert.doesNotMatch(body,/href=|onclick=|<button|Year 8|PE UNIFORM|School drop-off|All good|Armed/);
-  assert.match(body,/Camera views aren’t connected yet/);
+test("quiet wall has no permanent child, camera, device or empty Today cards",()=>{
+ const body=scene();assert.match(body,/Nothing urgent right now/);
+ assert.doesNotMatch(body,/class="wall-today|class="wall-upcoming|class="wall-context|class="wall-session|href=|onclick=|<button|wall-child|Lights|Cameras/);
 });
-
-test("wall uses only fresh owned household briefing and explicit person annotations",()=>{
-  const row={title:"Bring sports kit",when:"This morning",detail:"",proximity:"now",people:["native-one"]};
-  const body=scene({"sensor.context":context([row])});
-  const child=name=>body.split(`aria-label="${name} plans"`)[1].split("</article>")[0];
-  assert.match(child("Example A"),/Bring sports kit/);
-  assert.doesNotMatch(child("Example B"),/Bring sports kit/);
-  for(const attrs of [{valid_until:new Date(Date.now()-1).toISOString()},{home_starter_context:{surface:"other",epoch:2}},{home_starter_context:{surface:"wall",epoch:1}}]) {
-    assert.doesNotMatch(scene({"sensor.context":context([row],attrs)}),/Bring sports kit/);
-  }
-  assert.doesNotMatch(scene({"calendar.unselected":{state:"on",attributes:{message:"Unselected private appointment"}}}),/Unselected private appointment/);
+test("stale or foreign context hides plans and sessions instead of a white screen",()=>{
+ for(const attrs of [{valid_until:new Date(0).toISOString()},{home_starter_context:{surface:"other",epoch:2}},{home_starter_context:{surface:"wall",epoch:1}}]){
+  const body=scene({today_items:[{title:"Private plan",when:"Now"}],display_session:{title:"Private answer",kind:"answer"}},attrs);
+  assert.doesNotMatch(body,/Private/);assert.match(body,/Household context unavailable/);
+ }
 });
-
-test("calendar titles, names and reminders remain escaped text on the shared wall",()=>{
-  const row={title:'<img src=x onerror="alert(1)">',when:"Today",detail:"<script>bad</script>",proximity:"now",people:[]};
-  const body=scene({"sensor.context":context([row])},{children:[{id:"one",name:"<b>Example</b>"}]});
-  assert.match(body,/&lt;img/);assert.match(body,/&lt;b&gt;Example/);
-  assert.doesNotMatch(body,/<img|<script>|<b>Example/);
+test("interpreted priorities and names render as escaped data without guessing state",()=>{
+ const body=scene({day_state:"active_movement",primary:"movement",next_movement:{label:"Leave soon",title:'<img src=x onerror="bad()">',people:["Example"],detail:"Leave by 08:30"}});
+ assert.match(body,/data-state="active_movement"/);assert.match(body,/Leave by 08:30/);assert.match(body,/&lt;img/);assert.doesNotMatch(body,/<img/);
 });
-
-test("critical alerts and actual climate readings survive the decorative composition",()=>{
-  const body=scene({"binary_sensor.smoke":{state:"on"},"climate.fixture":{state:"off",attributes:{current_temperature:21.4}}},{alerts:[{entity:"binary_sensor.smoke",name:"Smoke alarm",alarm:false}]});
-  assert.match(body,/role="alert"/);assert.match(body,/Smoke alarm needs attention/);assert.match(body,/21°/);assert.match(body,/>Off</);
+test("expired temporary sessions disappear; current sessions preserve the underlying board",()=>{
+ const model={today_items:[{id:"one",title:"Underlying plan",when:"18:00"}],display_session:{kind:"answer",title:"Answer",body:"Text",expires_at:new Date(Date.now()+30000).toISOString()}};
+ assert.match(scene(model),/Underlying plan/);assert.match(scene(model),/Temporary display session/);
+ model.display_session.expires_at=new Date(0).toISOString();assert.doesNotMatch(scene(model),/Temporary display session/);
+});
+test("camera sessions accept only the named native proxy path",()=>{
+ const model={display_session:{kind:"camera",title:"Door",camera:"camera.fixture",expires_at:new Date(Date.now()+30000).toISOString()}};
+ assert.doesNotMatch(scene(model,{}, {"camera.fixture":{attributes:{entity_picture:"https://example.com/private.jpg"}}}),/<img/);
+ assert.match(scene(model,{}, {"camera.fixture":{attributes:{entity_picture:"/api/camera_proxy/camera.fixture?token=example"}}}),/<img/);
 });

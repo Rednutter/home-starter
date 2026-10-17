@@ -97,6 +97,7 @@ class State:
         self.waste_task: asyncio.Task | None = None
         self.waste_provider = WodongaProvider(session)
         self.waste_previews: dict[str, dict] = {}
+        self.wall_sessions: dict[str, dict] = {}
 
     async def monitor_services(self) -> None:
         while True:
@@ -126,10 +127,10 @@ class State:
     async def monitor_context(self) -> None:
         while True:
             try:
-                await context_runtime.update(self.core, self.household)
+                await context_runtime.update(self.core, self.household, self.wall_sessions)
             except (CoreError, OSError, ValueError, KeyError, TypeError):
                 _LOGGER.warning("Household context could not refresh; wall content expires rather than keeping old events.")
-            await asyncio.sleep(60)
+            await asyncio.sleep(20)
 
     async def monitor_activity(self) -> None:
         while True:
@@ -1166,6 +1167,44 @@ async def api_context(request: web.Request) -> web.Response:
         return _json({"error": "Household context unavailable. Saved choices are preserved."}, 503)
 
 
+async def api_wall(request: web.Request) -> web.Response:
+    state = await household_admin(request)
+    from .wall_composer import moment, session
+
+    try:
+        async with state.household_lock:
+            house = state.household.load()
+            surface = next((s for s in house["surfaces"] if s["id"] == request.match_info["surface"] and s["profile"] == "wall"), None)
+            if not surface:
+                raise ValueError("Choose an existing wall display.")
+            pending = state.wall_sessions.get(surface["id"], {})
+            content = pending.get("content") if pending.get("epoch") == house["epoch"] else None
+            if content and (moment(content.get("expires_at")) or datetime.now(UTC)) <= datetime.now(UTC):
+                state.wall_sessions.pop(surface["id"], None)
+                content = None
+            if request.method == "POST":
+                commissioning.gate(state.household)
+                body = await household_body(request)
+                if set(body) != {"epoch", "session"} or type(body["epoch"]) is not int or body["epoch"] != house["epoch"]:
+                    raise ValueError("Wall settings changed; refresh before sending temporary content.")
+                inputs = await context_runtime.snapshot(state.core, state.household)
+                _, saved, inv, _, _, _ = inputs
+                cameras = context_runtime.wall_cameras(saved, house, surface, inv, inputs[3], datetime.now(UTC))
+                content = session(body["session"], datetime.now(UTC), cameras) if body["session"] is not None else None
+                if content:
+                    state.wall_sessions[surface["id"]] = {"epoch": house["epoch"], "content": content}
+                else:
+                    state.wall_sessions.pop(surface["id"], None)
+            view = await context_runtime.inspect(state.core, state.household, surface, display_session=content)
+        if request.method == "POST":
+            await context_runtime.update(state.core, state.household, state.wall_sessions)
+        return _json(view["wall"])
+    except ValueError as err:
+        return _json({"error": str(err)}, 409)
+    except (CoreError, OSError, KeyError, TypeError):
+        return _json({"error": "Wall context unavailable. Saved settings are preserved."}, 503)
+
+
 def create_app(settings: Settings, session: aiohttp.ClientSession | None = None) -> web.Application:
     app = web.Application(middlewares=[peer_guard, harden])
     app[K_SETTINGS] = settings
@@ -1219,6 +1258,8 @@ def create_app(settings: Settings, session: aiohttp.ClientSession | None = None)
     app.router.add_get("/api/house", api_this_house)
     app.router.add_get("/api/context", api_context)
     app.router.add_post("/api/context", api_context)
+    app.router.add_get("/api/wall/{surface}", api_wall)
+    app.router.add_post("/api/wall/{surface}/session", api_wall)
     app.router.add_get("/api/waste", api_waste)
     app.router.add_post("/api/waste", api_waste)
     app.router.add_get("/api/screens/identity", api_screen_identity)
