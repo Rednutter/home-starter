@@ -10,6 +10,8 @@
 !server/homestarter/static/*.html
 !server/homestarter/static/*.css
 !server/homestarter/static/*.svg
+!server/homestarter/static/wall-morning.jpg
+!server/homestarter/static/wall-imagery.json
 !rootfs/
 !rootfs/etc/
 !rootfs/etc/services.d/

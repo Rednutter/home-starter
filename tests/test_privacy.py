@@ -55,6 +55,9 @@ def test_packaging_uses_deny_by_default_source_allowlist():
         return result
 
     assert included("server/homestarter/household.py")
+    assert included("server/homestarter/static/wall-morning.jpg")
+    assert included("server/homestarter/static/wall-imagery.json")
+    assert not included("server/homestarter/static/household-photo.jpg")
     for path in ("data/household.json", "server/homestarter/household.json", ".env", "screens/capture.png", "runtime.db", "server/homestarter/private.key"):
         assert not included(path)
 
