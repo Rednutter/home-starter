@@ -8,16 +8,14 @@ home-starter-ambient-wall { display:block; }
 .wall-header { grid-column:1; grid-row:1; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.25fr); align-items:center; gap:32px; padding:6px 24px; text-shadow:0 2px 12px #06131c70; }
 .wall-clock time { display:block; font-size:clamp(120px,10.2cqw,194px); font-weight:500; letter-spacing:-.035em; line-height:1; font-variant-numeric:tabular-nums; }
 .wall-clock p { font-size:38px; line-height:1.3; margin-top:12px; }
-.wall-weather { padding:8px 0; align-self:center; }
-.wall-weather-reading { display:flex; align-items:center; gap:18px; }
-.wall-weather-reading svg { width:80px; height:80px; color:#f9d768; stroke-width:1.5; }
-.wall-weather-reading strong { font-size:68px; font-weight:400; }
-.wall-weather-reading > span { font-size:40px; }
-.wall-temperature { display:flex; flex-direction:column; gap:2px; }
+.wall-weather { padding:8px 0; align-self:center; justify-self:center; width:max-content; max-width:100%; }
+.wall-weather-reading { display:flex; align-items:baseline; gap:20px; }
+.wall-weather-reading svg { width:64px; height:64px; color:#f9d768; stroke-width:1.5; }
+.wall-weather-reading strong { font-size:64px; font-weight:400; }
+.wall-temperature { display:flex; align-items:baseline; gap:8px; white-space:nowrap; }
 .wall-temperature > span { font-size:40px; }
 .wall-temperature small { font-size:22px; color:var(--wall-muted); }
-.wall-weather-reading .wall-weather-day { font-size:23px; letter-spacing:.04em; color:var(--wall-muted); }
-.wall-weather h2 { font-size:30px; font-weight:400; margin-top:12px; }
+.wall-weather h2 { font-size:28px; font-weight:400; margin-top:8px; }
 .wall-weather p { color:var(--wall-muted); font-size:24px; margin-top:8px; }
 .wall-weather .wall-weather-impact { color:#f4d4a4; }
 .wall-family { grid-column:1; grid-row:2; display:grid; grid-template-columns:repeat(auto-fit,minmax(min(310px,100%),1fr)); gap:18px; align-items:stretch; min-height:0; }
@@ -147,13 +145,11 @@ home-starter-ambient-wall { display:block; }
  .wall-clock time { font-size:clamp(100px,10.2cqw,146px); }
  .wall-clock p { font-size:28px; margin-top:10px; }
  .wall-weather-reading { gap:12px; }
- .wall-weather-reading svg { width:55px; height:55px; }
+ .wall-weather-reading svg { width:48px; height:48px; }
  .wall-weather-reading strong { font-size:48px; }
- .wall-weather-reading > span { font-size:30px; }
  .wall-temperature > span { font-size:30px; }
  .wall-temperature small { font-size:17px; }
- .wall-weather-reading .wall-weather-day { font-size:19px; }
- .wall-weather h2 { font-size:24px; margin-top:6px; }
+ .wall-weather h2 { font-size:22px; margin-top:6px; }
  .wall-weather p { font-size:19px; margin-top:4px; }
  .wall-family { grid-template-columns:repeat(auto-fit,minmax(min(235px,100%),1fr)); gap:14px; }
  .wall-family-card { padding:18px; }

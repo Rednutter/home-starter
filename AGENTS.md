@@ -18,6 +18,8 @@ Night mode runs 21:00–05:00: three compact people cards, confirmed school/kit/
 commitment and household chronology; hide classes/week detail. At midnight keep
 the upcoming day and relabel Tomorrow to Today; restore full detail at 05:00.
 Weather preview emphasises labelled High/Low; daytime emphasises Now. No arrows.
+Weather stays two lines: balanced icon/inline temperature labels, then one brief
+description. Extra text is reserved for meaningful weather exceptions.
 Pi output power is separate: off 22:00–06:00 Australia/Sydney using wlopm and the
 user screen-power timer. Keep Chromium/audio/voice running; verify off and wake.
 The monitor hotplugs on standby: retain labwc's auto-enable guard and explicit

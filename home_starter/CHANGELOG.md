@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.8.38
+
+- Compact wall weather into an icon/temperature row with inline High/Low or
+  Now/High labels, then one short condition line. Centre the group in its own
+  column; remove repeated dates/current readings and routine rain percentages.
 
 - Schedule Kitchen Wall HDMI output off at 22:00 and on at 06:00 local time using
   native Wayland power control. Reconcile after startup and missed events while

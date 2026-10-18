@@ -66,10 +66,11 @@ const temperature=value=>typeof value==="number"&&Number.isFinite(value)?Math.ro
 const preview=Boolean(model.focus?.preview || night);
 const weatherCondition=preview?weather?.forecast_condition:weather?.condition;
 const condition=weatherCondition?.replace(/partlycloudy/g,"Partly cloudy").replace(/^./,c=>c.toUpperCase());
-const weatherDay=preview&&weather?.focus_date?new Intl.DateTimeFormat("en-AU",{weekday:"long",timeZone:"UTC"}).format(new Date(weather.focus_date+"T12:00:00Z")):"";
 const reading=(value,label,primary=false)=>temperature(value)?`<div class="wall-temperature${primary?" wall-temperature-primary":""}"><${primary?"strong":"span"}>${esc(temperature(value))}</${primary?"strong":"span"}><small>${esc(label)}</small></div>`:"";
-const weatherLabel=preview?(model.focus?.label || "Tomorrow")+(weatherDay?" · "+weatherDay:""):"Weather";
-const weatherPanel=`<section class="wall-weather" aria-label="${esc(weatherLabel)}"><div class="wall-weather-reading">${icon(["sunny","clear night"].includes(weatherCondition)?"sun":"cloud")}${preview?reading(weather?.high,"High",true)+reading(weather?.low,"Low"):reading(weather?.temperature,"Now",true)+reading(weather?.high,"High")}</div><h2>${esc(preview?weatherLabel:condition || "Weather unavailable")}</h2>${preview?`<p>${esc(condition || "Forecast unavailable")}</p>`:""}${weather?.high==null?'<p>Forecast high unavailable</p>':""}${preview&&temperature(weather?.temperature)?`<p>Now ${esc(temperature(weather.temperature))}</p>`:""}${typeof weather?.precipitation_probability==="number"?`<p>${esc(weather.precipitation_probability)}% chance of rain</p>`:""}${exceptions.filter(e=>e.kind==="weather").map(e=>`<p class="wall-weather-impact">${esc(e.title)}</p>`).join("")}</section>`;
+const weatherLabel=preview?(model.focus?.label || "Tomorrow"):"Weather";
+const weatherSummary=[preview?weatherLabel:null,condition,weather?.high==null?"Forecast high unavailable":null].filter(Boolean).join(" · ") || "Weather unavailable";
+const weatherImpact=exceptions.find(e=>e.kind==="weather")?.title || (typeof weather?.precipitation_probability==="number"&&weather.precipitation_probability>=60?`${weather.precipitation_probability}% chance of rain`:"");
+const weatherPanel=`<section class="wall-weather" aria-label="${esc(weatherLabel)}"><div class="wall-weather-reading">${weatherCondition?icon(["sunny","clear night"].includes(weatherCondition)?"sun":"cloud"):""}${preview?reading(weather?.high,"High",true)+reading(weather?.low,"Low"):reading(weather?.temperature,"Now",true)+reading(weather?.high,"High")}</div><h2>${esc(weatherSummary)}</h2>${weatherImpact?`<p class="wall-weather-impact">${esc(weatherImpact)}</p>`:""}</section>`;
 const status=fresh?model.household_status || {}:{};
 const statusCell=(kind,label,value,detail)=>{
  if(night&&(kind==="light"&&value==="All off"||kind==="lock"&&value==="Armed"))return "";

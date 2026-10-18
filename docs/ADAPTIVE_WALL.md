@@ -272,6 +272,12 @@ Live acceptance confirmed three 184px-high cards, all four household timeline
 entries, High 23° / Low 11°, no class/week lists, and no clipping or cursor after
 reload. Boundary regressions cover 20:59, 21:00, midnight, 04:59 and 05:00.
 
+Weather presentation (0.8.38) normally occupies two lines: a balanced icon and
+inline temperature labels, then a short condition/preview label. The group is
+centred within its existing hero column. Preview omits the repeated weekday and
+current observation. Only a weather exception or significant rain probability
+(60% or higher) adds a third line. Missing forecast values remain explicit.
+
 ## Nightly screen power
 
 Kitchen Wall's HDMI-A-1 output sleeps from 22:00 inclusive to 06:00 exclusive in

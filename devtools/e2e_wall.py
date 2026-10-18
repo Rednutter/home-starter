@@ -34,6 +34,13 @@ def main():
                 assert not failures, (name, width, failures)
                 for region in (".wall-weather", ".wall-household", ".wall-bottom"):
                     assert wall.locator(region).is_visible(), (name, region)
+                labels_inline = wall.locator(".wall-temperature").evaluate_all(
+                    """nodes=>nodes.every(e=>{const number=e.firstElementChild.getBoundingClientRect(),label=e.lastElementChild.getBoundingClientRect();
+                    return label.left>=number.right&&label.top<number.bottom&&label.bottom>number.top;})"""
+                )
+                assert labels_inline, (name, width, "temperature label stacked below number")
+                label_tops = wall.locator(".wall-temperature small").evaluate_all("nodes=>nodes.map(e=>e.getBoundingClientRect().top)")
+                assert not label_tops or max(label_tops) - min(label_tops) < 2, (name, width, "weather labels have different baselines")
                 assert not wall.locator(
                     ".wall-family-card:not(:has(.wall-card-fact,.wall-school-periods,.wall-school-fallback,.wall-school-rules,.wall-night-summary,.wall-night-rule))"
                 ).count(), (
