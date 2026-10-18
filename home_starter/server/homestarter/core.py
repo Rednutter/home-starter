@@ -12,6 +12,8 @@ from __future__ import annotations
 import asyncio
 import itertools
 import logging
+import re
+from time import monotonic
 from typing import Any
 
 import aiohttp
@@ -37,6 +39,8 @@ class CoreClient:
         self._api = api_url.rstrip("/")
         self._ws_url = ws_url
         self._token = token
+        self._forecasts = {}
+        self._forecast_lock = asyncio.Lock()
 
     def __repr__(self) -> str:
         return f"CoreClient({self._api!r})"
@@ -59,6 +63,31 @@ class CoreClient:
 
     async def config(self) -> dict[str, Any]:
         return await self.rest_get("/config")
+
+    async def weather_forecast(self, entity_id: str) -> list[dict]:
+        """Read the selected native daily forecast; cache only in process memory."""
+        if not re.fullmatch(r"weather\.[a-z0-9_]+", entity_id):
+            raise ValueError("Choose a native weather source.")
+        async with self._forecast_lock:
+            cached = self._forecasts.get(entity_id)
+            if cached and monotonic() < cached[0]:
+                return cached[1]
+            try:
+                async with self.websocket() as ws:
+                    result = await ws.command(
+                        "call_service",
+                        domain="weather",
+                        service="get_forecasts",
+                        service_data={"type": "daily"},
+                        target={"entity_id": entity_id},
+                        return_response=True,
+                    )
+                rows = result.get("response", {}).get(entity_id, {}).get("forecast", [])
+                rows = [r for r in rows[:10] if isinstance(r, dict)] if isinstance(rows, list) else []
+            except (CoreError, ValueError, TypeError, AttributeError):
+                rows = []
+            self._forecasts[entity_id] = (monotonic() + (600 if rows else 60), rows)
+            return rows
 
     async def check_camera(self, entity_id: str) -> None:
         """Read a bounded native snapshot to verify a selected source; retain no pixels/token."""

@@ -19,7 +19,11 @@ def main():
         value = {"fictional": True, "name": name, "clock": case["now"].isoformat(), "model": case["model"]}
         (output / (name + ".json")).write_text(json.dumps(value, indent=2), encoding="utf-8")
         static = ROOT / "home_starter/server/homestarter/static"
-        source = (static / "wall-content.js").read_text().replace("const now = new Date();", "const now = new Date(" + json.dumps(value["clock"]) + ");")
+        source = (
+            (static / "wall-content.js")
+            .read_text(encoding="utf-8")
+            .replace("const now = new Date();", "const now = new Date(" + json.dumps(value["clock"]) + ");")
+        )
         cfg = {"title": "Fictional wall fixture", "surface_id": "example_wall", "epoch": 0, "context": "sensor.fixture"}
         attrs = {
             "home_starter_context": {"surface": "example_wall", "epoch": 0},
@@ -33,7 +37,7 @@ def main():
             "config": {"time_zone": "Australia/Sydney"},
             "locale": {"language": "en-AU"},
         }
-        css = (static / "wall-layout.css").read_text()
+        css = (static / "wall-layout.css").read_text(encoding="utf-8")
         image = base64.b64encode((static / "wall-morning.jpg").read_bytes()).decode()
         script = (
             "const render = new Function('hass','variables','html','window'," + json.dumps(source) + ");\n"
@@ -41,7 +45,8 @@ def main():
             + json.dumps(hass)
             + ","
             + json.dumps({"wall_json": json.dumps(cfg)})
-            + ",(_,body)=>body,{innerHeight:window.innerHeight,location:{search:'?kiosk'}});"
+            + ",(_,body)=>body,{innerHeight:window.innerHeight,customElements:window.customElements,"
+            + "matchMedia:window.matchMedia.bind(window),location:{search:'?kiosk'}});"
         )
         page = (
             "<!doctype html><html lang='en'><meta charset='utf-8'><meta name='viewport' content='width=device-width'><title>Fictional "

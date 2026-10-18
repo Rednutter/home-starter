@@ -5,14 +5,15 @@ primary_target: home_starter/server/homestarter/surfaces.py
 related_targets: [home_starter/server/homestarter/wall.py, home_starter/server/homestarter/wall_composer.py, home_starter/server/homestarter/static/wall-content.js, home_starter/server/homestarter/static/wall-layout.css]
 ---
 
-Mode: Operate. Apply the latest adaptive Kitchen Wall brief in docs/ADAPTIVE_WALL.md.
-Retain the morning reference's calm landscape palette, large clock, uppercase
-day/date, upper-right weather, dark blue rounded cards and temporary contextual
-content. No permanent children, cameras, presence or device-control panels.
-Quiet Today is a short summary; Tomorrow and nonempty week groups reclaim space.
-Afternoon/evening progressively emphasize Tomorrow. Show confirmed preparation
-only; compact venue labels replace postal addresses. The latest Sunday brief
-supersedes the earlier compact-header/selective-only week restriction.
+Mode: Operate. Retain the supplied weekday reference's information hierarchy
+as a relaxed ambient canvas. Time/date and useful weather are stable anchors;
+adaptive people/context islands, right-side chronology and restrained selected
+household status sit over the photograph. Soft translucent surfaces, optional
+blur, no visible borders or permanent empty rectangles. Typography conveys
+importance. Empty islands disappear and useful neighbours reclaim their space.
+Sunday evening previews Monday people and requirements using normal date logic;
+Monday morning changes Tomorrow to Today with continuity of person placement.
+Never show a generic "Next movement" panel or invented tasks/leave times.
 
 Use the existing native HA button-card and infrastructure. One passive board
 expands/contracts by explicit composer priorities. Departures, routine overrides,
@@ -22,9 +23,13 @@ published to the household. Temporary sessions expire back to the live board.
 Safety exceptions must remain visible above any session. Actual monitor dimming
 is an infrastructure concern, not a CSS claim. Preserve 180-degree output rotation.
 
-For the 21-inch glance display, grow sparse primary facts and budget secondary
-rows for their real detail. Reclaim columns when future content is absent; never
-keep empty cards or reduce all text just to fit more events.
+For the 21-inch glance display, budget secondary rows for their real detail.
+Omit unselected status categories and empty timelines. Separate content/date
+selection, priority, placement and treatment. Respect reduced motion; crossfade
+only composition changes (450ms), never continually animate a polling clock.
+Never invent portraits, camera footage, forecast highs or plans.
 
-Verify fifteen reproducible scenarios in full-HD and smaller landscape; retain
+Verify seventeen reproducible scenarios in full-HD and smaller landscape; retain
 private native HA captures and actual Pi compositor evidence outside Git.
+Verify live production evening selects tomorrow preview, then publish and
+capture the actual restricted Pi display without any development override.

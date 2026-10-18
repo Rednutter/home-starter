@@ -1,6 +1,5 @@
 const cfg = JSON.parse(variables.wall_json);
 const esc = value => String(value ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const icon = name => `<ha-icon icon="${name}" aria-hidden="true"></ha-icon>`;
 const now = new Date();
 const date = options => new Intl.DateTimeFormat(hass.locale?.language || "en-AU", {timeZone:hass.config.time_zone,...options}).format(now);
 const context = hass.states[cfg.context]?.attributes || {}, owner=context.home_starter_context;
@@ -8,45 +7,89 @@ const board=context.wall;
 const fresh=hass.connected !== false && owner?.surface===cfg.surface_id && owner?.epoch===cfg.epoch &&
  now-new Date(context.checked_at)>=0 && now-new Date(context.checked_at)<180000 && new Date(context.valid_until)>now &&
  board?.version===1 && new Date(board.valid_until)>now;
-const model=fresh?board:{day_state:"disconnected",day_summary:"Household context unavailable",layout:"rest",primary:"quiet",today_items:[],future_attention:[],household_exception:[],active_context:[],issues:[]};
+const model=fresh?board:{day_state:"disconnected",phase:"morning",cards:[],timeline:{label:"Today",items:[]},secondary:{label:"Upcoming",items:[]},household_exception:[],active_context:[],issues:[]};
 const alive=r=>!r.ends_at || new Date(r.ends_at)>now;
 const valid=r=>!r.expires_at || new Date(r.expires_at)>now;
 const kiosk=new URLSearchParams(window.location.search).has("kiosk")&&!new URLSearchParams(window.location.search).has("disable_km");
-const height=window.innerHeight-(kiosk?0:56);
-const contentHeight=height-((model.active_context || []).some(valid)?120:0)-(model.issues?.length?32:0), small=contentHeight<850;
-const today=(model.today_items || []).filter(alive).slice(0,small?3:4);
-const future=(model.future_attention || []).filter(alive);
-const preparation=model.phase==="evening"?(model.tomorrow_preparation || []).slice(0,2):[];
-const tomorrow=(model.tomorrow_items || future.filter(r=>r.day_offset===1)).filter(alive).slice(0,contentHeight<700?2:small||preparation.length?3:5);
-const budget=contentHeight<760?3:contentHeight<1000?4:6;
-const available=(model.ahead_groups || (future.length&&!tomorrow.length?[{label:"Coming up",items:future}]:[])).map(g=>({...g,items:g.items.filter(alive)})).filter(g=>g.items.length).slice(0,budget);
-const cost=r=>1+(r.people?.length?0.5:0)+(r.detail?.length?0.5:0)+(r.title.length>(small?28:42)?0.5:0);
-const groups=[];
-let remaining=budget;
-for(const group of available){const units=cost(group.items[0]);if(units>remaining&&groups.length)break;groups.push({...group,items:group.items.slice(0,1)});remaining-=units;}
-for(let n=1;n<3&&remaining>0;n++)for(let i=0;i<groups.length&&remaining>0;i++){const item=available[i].items[n];if(item&&cost(item)<=remaining){groups[i].items.push(item);remaining-=cost(item);}}
-const exceptions=(model.household_exception || []).filter(valid), active=(model.active_context || []).filter(valid);
-const movement=model.next_movement && alive(model.next_movement) ? model.next_movement : null;
-const hasHorizon=tomorrow.length>0||preparation.length>0||groups.length>0;
-const visibleToday=today.filter(r=>!movement||r.id!==movement.id).slice(0,small&&movement&&hasHorizon?1:4);
-const session=model.display_session && valid(model.display_session) ? model.display_session : null;
-const people=r=>Array.isArray(r.people)&&r.people.length?`<span class="wall-people">${esc(r.people.join(" · "))}</span>`:"";
-const row=(r,compact=false)=>`<article class="wall-item${compact?" wall-item-compact":""}${r.when==="This morning"?" wall-item-note":""}${model.phase==="evening"&&r.early_start?" wall-item-early":""}">${r.when==="This morning"?"":`<time>${esc(r.time || r.when)}</time>`}<div><h3>${esc(r.title.replace(/\s+-\s+/g," · "))}</h3><div class="wall-facts">${people(r)}${r.location&&!r.title.toLocaleLowerCase().includes(r.location.toLocaleLowerCase())?`<p>${esc(r.location)}</p>`:""}${r.detail?`<strong class="wall-departure">${esc(r.detail)}</strong>`:""}</div></div></article>`;
+const small=window.innerHeight<850;
+// Authored outline geometry is shared by native HA and isolated previews.
+const shapes={home:'<path d="m3 11 9-8 9 8M5 10v11h5v-7h4v7h5V10"/>',car:'<path d="m5 8 2-4h10l2 4M4 17v3m16-3v3"/><rect x="3" y="8" width="18" height="10" rx="3"/><path d="M6 13h2m8 0h2"/>',calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 11h18"/>',check:'<circle cx="12" cy="12" r="9"/><path d="m7 12 3 3 7-7"/>',sun:'<circle cx="12" cy="12" r="4"/><path d="M12 1v3m0 16v3M1 12h3m16 0h3M4 4l2 2m12 12 2 2M4 20l2-2M18 6l2-2"/>',cloud:'<path d="M6 18a5 5 0 1 1 1-10 6 6 0 0 1 11 2 4 4 0 0 1 0 8Z"/>',thermometer:'<path d="M9 14V5a3 3 0 0 1 6 0v9a5 5 0 1 1-6 0Z"/><path d="M12 8v10"/>',lock:'<rect x="5" y="10" width="14" height="12" rx="2"/><path d="M8 10V6a4 4 0 0 1 8 0v4m-4 5v3"/>',light:'<path d="M8 15a7 7 0 1 1 8 0l-1 4H9ZM9 22h6"/>',camera:'<rect x="2" y="5" width="14" height="14" rx="3"/><path d="m16 10 6-4v12l-6-4"/>',alert:'<path d="m12 2 10 19H2ZM12 8v5m0 3v1"/>'};
+const icon=name=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${shapes[name] || shapes.calendar}</svg>`;
+const nice=value=>String(value || "").replace(/\s+-\s+/g," · ");
+const shortTime=value=>String(value || "").replace(/\s+pm$/i,"");
+const clock=value=>new Intl.DateTimeFormat("en-AU",{timeZone:hass.config.time_zone,hour:"numeric",minute:"2-digit",hour12:true}).format(new Date(value)).replace(/\s?[ap]m$/i,"");
+const location=r=>r.location&&!r.title.toLocaleLowerCase().includes(r.location.toLocaleLowerCase())?r.location:"";
+const rows=(items,limit)=> (items || []).filter(alive).slice(0,limit);
+const exceptions=(model.household_exception || []).filter(valid);
+const active=(model.active_context || []).filter(r=>valid(r)&&r.kind!=="climate").slice(0,2);
+const cards=(model.cards || []).map(c=>({...c,items:rows(c.items,small&&c.title==="This week"?2:3)})).filter(c=>c.items.length).slice(0,3);
+const avatar=card=>{
+ const path=hass.states[card.avatar_entity]?.attributes?.entity_picture;
+ return typeof path==="string"&&/^\/api\/image\/serve\/[a-zA-Z0-9_-]+\/\d+x\d+$/.test(path)?`<img src="${esc(path)}" alt="">`:`<span>${esc(card.title.split(/\s+/).map(n=>n[0]).slice(0,2).join(""))}</span>`;
+};
+const fact=(r,person=false)=>{
+ const leave=person&&r.leave_at&&(r.primary_departure||r.id===model.next_movement?.id);
+ const title=leave?`Leave ${clock(r.leave_at)}`:`${nice(r.title)}${person&&r.time?" · "+shortTime(r.time):""}`;
+ const detail=leave?`${nice(r.title)} · ${shortTime(r.time)}`:r.leave_at?"Leave "+clock(r.leave_at):!person&&r.day_offset>1?"":r.detail || location(r);
+ return `<article class="wall-card-fact${!r.time?" wall-preparation-fact":""}" data-importance="${esc(r.importance || "upcoming")}">${icon(leave?"car":!r.time?"check":"calendar")}<div><h3>${!person&&r.time&&r.day_offset<=1?`<time>${esc(shortTime(r.time))}</time> `:""}${esc(title)}</h3>${detail?`<p>${esc(detail)}</p>`:""}${!person&&r.day_offset>1?`<p>${esc(r.day_label+" · "+shortTime(r.time))}</p>`:""}</div></article>`;
+};
+const family=cards.length?cards.map((card,n)=>`<section class="wall-family-card wall-tone-${n}" data-key="${esc(card.key || card.kind+card.title)}" data-kind="${esc(card.kind)}" data-importance="${esc(card.importance || "upcoming")}"><header>${card.kind==="person"?`<div class="wall-avatar">${avatar(card)}</div>`:""}<div><h2>${esc(card.title)}</h2>${model.focus?.preview&&card.kind==="person"?'<p class="wall-person-day">Tomorrow</p>':""}</div></header><div class="wall-card-facts">${card.items.map(r=>fact(r,card.kind==="person")).join("")}</div></section>`).join(""):!fresh?'<section class="wall-unavailable"><h2>Household context unavailable</h2><p>Waiting for a fresh Home Assistant update</p></section>':"";
+const timeline=(panel,secondary=false)=>{
+ const available=rows(panel?.items,secondary?3:small?4:5),items=[];
+ let capacity=secondary?(small?2:3):small?5:7;
+ for(const r of available){const cost=1+(r.title.length>28?0.5:0)+(!secondary&&(r.detail||location(r))?0.5:0)+(secondary&&r.day_offset>0?0.5:0);if(cost>capacity&&items.length)break;items.push(r);capacity-=cost;}
+ if(!items.length)return "";
+ return `<section class="wall-surface ${secondary?"wall-secondary":"wall-timeline"}"><header><h2>${esc(panel?.label || (secondary?"Upcoming":"Today"))}</h2>${!secondary?`<p>${esc(panel?.date_label || date({weekday:"short",day:"numeric",month:"short"}))}</p>`:""}</header><ol>${items.map((r,n)=>`<li class="wall-line-item wall-tone-${n%3}"><time aria-label="${esc(r.time || r.when)}">${esc(shortTime(r.time || r.when))}</time><span class="wall-dot"></span><div><h3>${esc(nice(r.title))}</h3><div class="wall-line-meta">${secondary?(r.day_offset>0?`<p>${esc(r.day_label)}</p>`:""):`${r.people?.length&&!r.person_title?`<p>${esc(r.people.join(" · "))}</p>`:""}${location(r)?`<p>${esc(location(r))}</p>`:""}${r.detail?`<p class="wall-leave">${icon("car")}${esc(r.leave_at&&r.id!==model.next_movement?.id?"Leave "+clock(r.leave_at):r.detail)}</p>`:""}`}</div></div></li>`).join("")}</ol></section>`;
+};
 const weather=model.weather;
-const weatherIcon={sunny:"mdi:weather-sunny","clear night":"mdi:weather-night",rainy:"mdi:weather-rainy",pouring:"mdi:weather-pouring",cloudy:"mdi:weather-cloudy",partlycloudy:"mdi:weather-partly-cloudy"}[weather?.condition] || "mdi:weather-partly-cloudy";
-const ordinaryWeather=weather&&model.baseline_state!=="overnight"?`<section class="wall-weather" aria-label="Current conditions">${icon(weatherIcon)}<div><strong>${typeof weather.temperature==="number"&&Number.isFinite(weather.temperature)?esc(Math.round(weather.temperature))+" "+esc(weather.unit):esc(weather.condition)}</strong><p>${esc(weather.condition)}</p></div></section>`:"";
-const cue=movement?`<section class="wall-movement wall-surface" aria-label="Next movement"><h2>${esc(movement.label)}</h2><h3>${esc(movement.title)}</h3>${people(movement)}${movement.location?`<p>${esc(movement.location)}</p>`:""}<strong>${esc(movement.detail)}</strong></section>`:"";
-const alerts=exceptions.length?`<section class="wall-exceptions" aria-label="Needs attention">${exceptions.map(r=>`<article><span>${icon(r.kind==="weather"?"mdi:weather-rainy":r.kind==="bins"?"mdi:trash-can-outline":"mdi:alert-circle-outline")}</span><div><h2>${esc(r.title)}</h2><p>${esc(r.detail)}</p></div></article>`).join("")}</section>`:"";
-const current=fresh?(visibleToday.length||!movement&&!exceptions.length?`<section class="wall-today wall-surface${!movement&&visibleToday.length===0?" wall-today-compact":""}" data-count="${visibleToday.length}"><h2>Today</h2>${visibleToday.length?visibleToday.map(r=>row(r,true)).join(""): `<p class="wall-today-summary">${esc(model.today_summary || model.day_summary)}</p>`}</section>`:""):`<section class="wall-unavailable wall-surface"><h2>Household context unavailable</h2><p>Waiting for a fresh Home Assistant update.</p></section>`;
-const next=tomorrow.length||preparation.length?`<section class="wall-tomorrow wall-surface" data-count="${tomorrow.length+preparation.length}"><header><h2>Tomorrow</h2><p>${esc(model.tomorrow_label || "")}</p></header>${tomorrow.map(r=>row(r)).join("")}${preparation.length?`<aside class="wall-preparation"><h3>Get ready for ${esc(model.tomorrow_label)}</h3>${preparation.map(r=>`<p>${esc(r.title)}${r.people.length?` · ${esc(r.people.join(" · "))}`:""}</p>`).join("")}</aside>`:""}</section>`:"";
-const ahead=groups.length?`<section class="wall-ahead wall-surface" data-density="${small||groups.length>4?"dense":"normal"}"><header><h2>${tomorrow.length?"Week ahead":"Coming up"}</h2></header><div class="wall-days">${groups.map(group=>`<section class="wall-day"><h4>${esc(group.label)}</h4>${group.items.map(r=>row(r,true)).join("")}</section>`).join("")}</div></section>`:"";
-const strip=active.length?`<footer class="wall-context" aria-label="Active household context">${active.map(r=>`<section>${icon(r.kind==="timer"?"mdi:timer-outline":r.kind==="media"?"mdi:music-note":"mdi:thermometer")}<div><h3>${esc(r.title)}</h3><p>${esc(r.detail)}</p></div></section>`).join("")}</footer>`:"";
+const temperature=value=>typeof value==="number"&&Number.isFinite(value)?Math.round(value)+"°":null;
+const preview=Boolean(model.focus?.preview);
+const weatherCondition=preview?weather?.forecast_condition:weather?.condition;
+const condition=weatherCondition?.replace(/partlycloudy/g,"Partly cloudy").replace(/^./,c=>c.toUpperCase());
+const weatherDay=preview&&weather?.focus_date?new Intl.DateTimeFormat("en-AU",{weekday:"short",timeZone:"UTC"}).format(new Date(weather.focus_date+"T12:00:00Z")).toUpperCase():"";
+const weatherPanel=`<section class="wall-weather" aria-label="${preview?"Tomorrow's forecast":"Weather"}"><div class="wall-weather-reading">${weatherDay?`<span class="wall-weather-day">${esc(weatherDay)}</span>`:""}${icon(["sunny","clear night"].includes(weatherCondition)?"sun":"cloud")}<strong>${esc(temperature(preview?weather?.low:weather?.temperature) || (preview?"High":"—"))}</strong>${temperature(weather?.high)?`<span>${preview&&weather?.low==null?"":"→ "}${esc(temperature(weather.high))}</span>`:""}</div><h2>${esc(preview?"Tomorrow"+(condition?" · "+condition:weather?.high==null?" · Forecast unavailable":""):condition || "Weather unavailable")}</h2>${!preview&&weather?.high==null?'<p>Forecast high unavailable</p>':""}${preview&&temperature(weather?.temperature)?`<p>Now ${esc(temperature(weather.temperature))}</p>`:""}${typeof weather?.precipitation_probability==="number"?`<p>${esc(weather.precipitation_probability)}% chance of rain</p>`:""}${exceptions.filter(e=>e.kind==="weather").map(e=>`<p class="wall-weather-impact">${esc(e.title)}</p>`).join("")}</section>`;
+const status=fresh?model.household_status || {}:{};
+const statusCell=(kind,label,value,detail)=>label!=="Home"&&(!value||value==="Not selected")?"":`<section class="wall-status-cell"><span class="wall-status-icon">${icon(kind)}</span><div><h3>${esc(label)}</h3><strong>${esc(value || "Status unavailable")}</strong>${detail?`<p>${esc(detail)}</p>`:""}</div></section>`;
+const household=`<section class="wall-household wall-surface" aria-label="Household status">${statusCell("home","Home",status.home)}${statusCell("thermometer","Climate",temperature(status.climate?.temperature)||status.climate?.detail,temperature(status.climate?.temperature)?status.climate?.detail:"")}${statusCell("lock","Security",status.security)}${statusCell("light","Lights",status.lights)}</section>`;
+const cameras=(status.cameras || []).slice(0,3);
+const cameraPicture=c=>{
+ const path=hass.states[c.entity]?.attributes?.entity_picture;
+ return c.available&&typeof path==="string"&&path.split("?")[0]===`/api/camera_proxy/${c.entity}`?`<img src="${esc(path)}" alt="${esc(c.name)} camera view">`:icon("camera");
+};
+const cameraPanel=cameras.length||active.length||model.issues?.length?`<section class="wall-camera-status wall-surface" aria-label="Cameras and active context">${cameras.length?`<div class="wall-camera-heading"><span class="wall-status-icon">${icon("camera")}</span><div><h2>Cameras</h2><p>${esc(cameras.filter(c=>c.available).length+" available")}</p></div></div>`:""}${active.length?`<div class="wall-active-status">${active.map(r=>`<section><h3>${esc(r.title)}</h3><p>${esc(r.detail)}</p></section>`).join("")}</div>`:cameras.length?`<div class="wall-cameras">${cameras.map(c=>`<figure>${cameraPicture(c)}<figcaption>${esc(c.name)}${!c.available?" · Unavailable":""}</figcaption></figure>`).join("")}</div>`:model.issues?.length?`<p class="wall-source-note">${esc(model.issues[0])}</p>`:""}</section>`:"";
+const session=model.display_session && valid(model.display_session) ? model.display_session : null;
 let picture="";
 if(session?.kind==="camera" && /^camera\.[a-z0-9_]+$/.test(session.camera || "")) {
  const path=hass.states[session.camera]?.attributes?.entity_picture;
- if(!["unavailable","unknown"].includes(hass.states[session.camera]?.state) && typeof path==="string" && path.split("?")[0]===`/api/camera_proxy/${session.camera}`)picture=`<img src="${esc(path)}" alt="${esc(session.title)} camera view">`;
+ if(!["unavailable","unknown"].includes(hass.states[session.camera]?.state)&&typeof path==="string"&&path.split("?")[0]===`/api/camera_proxy/${session.camera}`)picture=`<img src="${esc(path)}" alt="${esc(session.title)} camera view">`;
 }
-const overlay=session?`<section class="wall-session" aria-label="Temporary display session"><div><h2>${esc(session.title)}</h2>${picture}${session.kind==="camera"&&!picture?"<p>Camera view unavailable</p>":""}<p class="wall-session-body">${esc(session.body)}</p><p class="wall-session-return">Returns to the family board automatically</p></div></section>`:"";
-const layout=exceptions.length||movement?"current":model.layout || (tomorrow.length?"tomorrow":groups.length?"ahead":today.length?"today":"rest");
-const body=`<main class="hs-wall" data-state="${esc(model.day_state)}" data-baseline="${esc(model.baseline_state || model.day_state)}" data-primary="${esc(model.primary)}" data-layout="${esc(layout)}" data-phase="${esc(model.phase || "morning")}" data-horizon="${hasHorizon?"visible":"hidden"}" data-current="${movement&&visibleToday.length?"paired":"single"}" data-tomorrow="${next?"visible":"hidden"}" data-ahead="${groups.length?"visible":"hidden"}" style="--wall-chrome:${kiosk?0:56}px" aria-label="${esc(cfg.title)} household board"><header class="wall-header"><div class="wall-clock"><time>${esc(date({hour:"numeric",minute:"2-digit",hour12:false}))}</time><div class="wall-date"><p>${esc(date({weekday:"long"}))}</p><p>${esc(date({day:"numeric",month:"long"}))}</p></div></div>${ordinaryWeather}</header><div class="wall-board"><div class="wall-now">${alerts}${cue}${current}</div>${next}${ahead}</div>${strip}${fresh&&model.issues?.length?`<aside class="wall-source-note">${esc(model.issues.join(" · "))}</aside>`:""}${overlay}</main>`;
-return html`<div class="wall-wrapper" .innerHTML=${body}></div>`;
+const overlay=session?`<section class="wall-session" aria-label="Temporary display session"><div><h2>${esc(session.title)}</h2>${picture}${session.kind==="camera"&&!picture?"<p>Camera view unavailable</p>":""}<p class="wall-session-body">${esc(session.body)}</p><p>Returns to the family board automatically</p></div></section>`:"";
+const alerts=exceptions.filter(r=>r.kind!=="weather");
+const primaryAgenda=timeline(model.timeline),secondaryAgenda=timeline(model.secondary,true);
+const body=`<main class="hs-wall" data-fresh="${fresh}" data-state="${esc(model.day_state)}" data-mode="${esc(model.focus?.mode || "today")}" data-phase="${esc(model.phase || "morning")}" data-agenda="${primaryAgenda||secondaryAgenda?"visible":"hidden"}" style="--wall-chrome:${kiosk?0:56}px" aria-label="${esc(cfg.title)} household board">${alerts.length?`<aside class="wall-alerts">${icon("alert")}${esc(alerts.map(r=>r.title+" · "+r.detail).join(" · "))}</aside>`:""}<header class="wall-header"><div class="wall-clock"><time>${esc(date({hour:"numeric",minute:"2-digit",hour12:false}).replace(/^0/,""))}</time><p>${esc(date({weekday:"long"}))}<br>${esc(date({day:"numeric",month:"long"}))}</p></div>${weatherPanel}</header><div class="wall-family" data-count="${cards.length}">${family}</div><aside class="wall-agenda">${primaryAgenda}${secondaryAgenda}</aside><footer class="wall-bottom">${household}${cameraPanel}</footer>${overlay}</main>`;
+if(window.customElements&&typeof HTMLElement!=="undefined"&&!window.customElements.get("home-starter-ambient-wall")) {
+ class AmbientWall extends HTMLElement {
+  set content(value) {
+   if(value===this._content)return;
+   this._content=value;
+   const generation=this._generation=(this._generation || 0)+1;
+   const parsed=document.createElement("template");parsed.innerHTML=value;
+   const next=parsed.content.querySelector(".hs-wall"),old=this.querySelector(".hs-wall");
+   const keys=root=>[...(root?.querySelectorAll("[data-key]") || [])].map(e=>e.dataset.key).join("|");
+   const changed=old&&next&&(keys(old)!==keys(next)||old.dataset.mode!==next.dataset.mode);
+   const update=()=>{if(generation===this._generation)this.innerHTML=value;};
+   this._transition?.skipTransition();
+   if(changed&&old.dataset.fresh==="true"&&next.dataset.fresh==="true"&&document.startViewTransition&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    this._transition=document.startViewTransition(update);
+    this._transition.ready.catch(()=>{});this._transition.finished.catch(()=>{});
+   } else update();
+  }
+ }
+ window.customElements.define("home-starter-ambient-wall",AmbientWall);
+ if(!document.getElementById("home-starter-wall-transition-style")){
+  const style=document.createElement("style");style.id="home-starter-wall-transition-style";
+  style.textContent="::view-transition-old(home-starter-wall),::view-transition-new(home-starter-wall){animation-duration:450ms;animation-timing-function:cubic-bezier(.22,1,.36,1)}";
+  document.head.append(style);
+ }
+}
+return html`<home-starter-ambient-wall .content=${body}></home-starter-ambient-wall>`;

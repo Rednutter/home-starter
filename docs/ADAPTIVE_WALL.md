@@ -10,34 +10,52 @@ This is a passive shared board, not an enlarged AirTouch control surface.
 explicit event/person/departure links and selected household sources. It calls
 `wall_composer.compose`; its `wall` output is reusable by other presentations.
 No title keyword infers school, a holiday, a destination or a travel estimate.
-People explain commitments; no person/location domain is permanently displayed.
+People use explicit event links or confirmed calendar ownership. A unique leading
+confirmed-person label such as `Example · Gym` is also explicit attribution;
+arbitrary mentions or ambiguous names never assign a person. Unassigned events
+stay household commitments. This projection does not rewrite calendars/settings.
 
 The composer exposes `day_state`, `baseline_state`, `primary`, `next_movement`,
 `today_items`, `future_attention`, `household_exception`, `active_context`,
 `display_session`, `spans` and `valid_until`. Named states are busy morning,
 quiet daytime, pre-activity, active movement, evening, overnight, weekend,
 abnormal schedule and exception. Urgent context overrides the clock baseline.
-Quiet Today becomes a short summary; Tomorrow and the coming week reclaim its
-space. Ordinary selected calendar events are eligible for the next seven days;
+The weekday reference's hierarchy remains, with an ambient photographic canvas:
+upper-left time/date beside weather, useful person/context islands, right-hand
+chronology and a restrained bottom status anchor. No visible fixed grid, card
+borders, empty islands or unselected status placeholders. Surfaces are softly
+translucent, with optional blur; importance adjusts opacity/type, not loud alerts.
+Evening selects tomorrow's people, confirmed requirements and forecast. Sunday
+afternoon also brings Monday forward. Imminent commitments override preview.
+Monday naturally returns to Today using the same person keys and placement.
+No generic "Next movement" panel. Ordinary selected events are eligible for seven days;
 later events require explicit preparation/holiday/early-attention annotations,
 up to 21 days. Nonempty days are grouped, including a combined weekend. Capacity
 is shared across days before extra rows from one busy day are added. Locations
 are short venue labels rather than postal addresses.
-The 21-inch wall is a glance surface: sparse primary commitments grow in size,
-and content capacity accounts for people, departures and longer titles. Reduce
-secondary rows before reducing legibility. With no future plans, weekday
-departures and useful Today facts reclaim both columns. Empty Today cards are
-omitted when the departure/exception already explains the current state.
+The 21-inch wall is a glance surface. Content capacity accounts for people,
+departures and longer titles. Reduce secondary rows before reducing legibility;
+empty groups disappear and neighbours expand. Remaining tonight is secondary to
+tomorrow unless imminent. Night suppresses secondary information and density.
 
 `static/wall-content.js` renders these priorities and applies only freshness,
 expiry and viewport-capacity checks. `static/wall-layout.css` retains the approved
-landscape, large clock, uppercase day/date, upper-right weather and dark blue
-rounded cards. Afternoon and evening give Tomorrow progressively more room.
+landscape and stable anchors without rigid containers. Native composition changes
+crossfade for 450ms when supported, respecting reduced motion. Poll/clock updates
+do not animate continuously. Stale/foreign data clears immediately without a fade.
 Evening shows known early starts/departures and confirmed next-day routine rules;
 explicit changed-routine dates/holidays suppress routine preparation. No invented
-kit, travel or forecast claims. No permanent child,
-camera, presence, lighting or media cards. The bottom context strip appears only
-for active timer/media/climate context. Safety exceptions outrank sessions.
+kit, travel or forecast claims. Household status reads only selected native
+sources. Unknown is never "All good". Camera thumbnails require verified selected
+sources and their own native HA proxy; no stock footage. Active timers/media
+share the camera/status region. Safety exceptions outrank sessions.
+
+Current temperature and the focused day's low/high/condition come from the selected source's
+native [daily forecast action](https://www.home-assistant.io/actions/weather.get_forecasts/).
+Forecast reads are cached only in process memory; evening prioritises tomorrow,
+with current conditions secondary. Missing highs are labelled
+unavailable. Native person portraits are used only when a selected Person source
+provides a permitted local image path; otherwise initials appear.
 
 ## Editable household choices
 
@@ -95,14 +113,14 @@ unavailable state, never stock imagery masquerading as a feed.
 Run `python devtools/wall_fixtures.py` for JSON and standalone HTML fixtures in
 ignored `.runtime/wall-adaptive-fixtures`. Open each HTML at 1920×1080 and
 1366×768. Standalone previews retain the real renderer/layout but HA's icon
-elements require native HA for their final appearance. The fifteen fictional
+icons use the same authored geometry as native HA. The seventeen fictional
 scenarios cover school morning, quiet daytime, pre-pickup, leave soon, evening
 finished, weekend planning, pupil-free day, weather exception, bins tonight,
 doorbell takeover, active timer/media and a completely quiet day. They must
 never be written to real HA states or published to the household dashboard.
-Run `python devtools/e2e_wall.py` with Playwright installed for the 30 browser
-checks (both resolutions): no clipping, empty Today cards or overlapping times;
-the weekday morning must keep departure, kit and later plans visible. This uses
+Run `python devtools/e2e_wall.py` with Playwright installed for 34 browser
+checks (both resolutions): no borders, empty islands, clipping or overlapping
+times; preview/morning person continuity and native transition/stale recovery. This uses
 only local fictional data and saves ignored review screenshots.
 
 Tests: `tests/test_wall_composer.py`, `test_wall_cameras.py`, `test_context.py`,

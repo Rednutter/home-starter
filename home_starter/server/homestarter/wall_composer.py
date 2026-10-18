@@ -49,9 +49,9 @@ def short_location(value, title=""):
     return place if len(place) <= 48 else place[:45].rsplit(" ", 1)[0] + "…"
 
 
-def horizon(future, rows, urgent, baseline, local, exceptions):
+def horizon(future, rows, urgent, baseline, local, exceptions, evening_start=18):
     """Weight already selected facts independently of their visual allocation."""
-    phase = "evening" if baseline == "evening" else "afternoon" if local.hour >= 12 else "morning"
+    phase = "night" if baseline == "overnight" else "evening" if local.hour >= evening_start else "afternoon" if local.hour >= 12 else "morning"
     tomorrow = [r for r in future if r["day_offset"] == 1]
     ahead = [r for r in future if r["day_offset"] > 1]
     primary = "current" if urgent or exceptions else "today" if rows else "tomorrow" if tomorrow else "ahead" if ahead else "rest"
@@ -74,6 +74,190 @@ def horizon(future, rows, urgent, baseline, local, exceptions):
     for group in groups:
         group["items"] = group["items"][: 1 if urgent or baseline == "overnight" else 3]
     return {"layout": primary, "phase": phase, "weights": weights, "tomorrow_items": tomorrow, "ahead_groups": groups}
+
+
+def person_attribution(event, link, people):
+    """Explicit links, mapped calendars, or an unambiguous leading name label."""
+    if "people" in link:
+        return link["people"], "event_link", None
+    if event.get("person_ids"):
+        return event["person_ids"], "calendar_mapping", None
+    matches = []
+    for person_id, name in people.items():
+        match = re.fullmatch(re.escape(name) + r"\s*[-–—·:]\s*(\S.*)", event["title"], flags=re.I)
+        if match:
+            matches.append((person_id, match[1]))
+    return ([matches[0][0]], "calendar_label", matches[0][1]) if len(matches) == 1 else ([], None, None)
+
+
+def focus_window(rows, future, local, policy, urgent):
+    """Select a date; priorities and visual placement are separate concerns."""
+    imminent = any(
+        r.get("time") != "All day" and r.get("starts_at") and 0 <= (moment(r["starts_at"]) - local).total_seconds() <= policy["prepare_minutes"] * 60
+        for r in rows
+    )
+    preview = not urgent and not imminent and (local.hour >= policy["evening_start"] or local.weekday() == 6 and local.hour >= 15)
+    return {
+        "mode": "tomorrow_preview" if preview else "today",
+        "preview": preview,
+        "date": (local + timedelta(days=int(preview))).date().isoformat(),
+        "label": "Tomorrow" if preview else "Today",
+    }
+
+
+def importance(row, local, preview=False):
+    stamp = moment(row.get("leave_at") or row.get("starts_at"))
+    minutes = (stamp - local).total_seconds() / 60 if stamp else None
+    return (
+        "upcoming"
+        if preview
+        else "immediate"
+        if minutes is not None and -15 <= minutes <= 15
+        else "soon"
+        if minutes is not None and 0 < minutes <= 90
+        else "context"
+        if row.get("day_offset", 0) > 1
+        else "upcoming"
+    )
+
+
+def reference_panels(rows, future, people, signals, local, cue, issues, exceptions, preparation, focus):
+    """Compose useful islands inside stable time/weather, agenda and status anchors."""
+    tomorrow = [r for r in future if r["day_offset"] == 1]
+    selected = [*preparation, *tomorrow] if focus["preview"] else rows
+    selected = [{**r, "importance": importance(r, local, focus["preview"])} for r in selected]
+    cards = []
+    for person_id, name in people.items():
+        facts = [r for r in selected if person_id in r.get("person_ids", [])]
+        if facts:
+            avatar = next((s["entity_id"] for s in signals if s["domain"] == "person" and s.get("attributes", {}).get("id") == person_id), None)
+            departure_id = next((r["id"] for r in facts if r.get("leave_at")), None)
+            facts = [{**r, "title": r.get("person_title") or r["title"], "primary_departure": r.get("id") == departure_id} for r in facts]
+            weight = max((r["importance"] for r in facts), key={"context": 0, "upcoming": 1, "soon": 2, "immediate": 3}.get)
+            cards.append({"key": "person-" + person_id, "kind": "person", "title": name, "importance": weight, "avatar_entity": avatar, "items": facts[:3]})
+    dated = [r for r in rows if r.get("time")]
+    later = [r for r in future if r["day_offset"] > 1]
+    week_days = {}
+    for row in later:
+        week_days.setdefault(row["date"], row)
+    primary = tomorrow if focus["preview"] else dated or tomorrow or later
+    label = "Tomorrow" if focus["preview"] else "Today" if dated else "Tomorrow" if tomorrow else "Coming up"
+    timeline_cue = next((r for r in primary if r.get("leave_at")), None) if focus["preview"] else cue
+    if timeline_cue:
+        primary = [
+            {
+                **r,
+                "time": moment(r["leave_at"]).astimezone(local.tzinfo).strftime("%I:%M").lstrip("0")
+                + (" pm" if moment(r["leave_at"]).astimezone(local.tzinfo).hour >= 12 else ""),
+                "detail": "Arrive " + r["time"],
+            }
+            if r["id"] == timeline_cue["id"] and r.get("leave_at")
+            else r
+            for r in primary
+        ]
+    secondary = dated if focus["preview"] else dated[1:] if len(dated) > 1 else tomorrow if dated else later
+    secondary_label = "Tonight" if focus["preview"] else "Later today" if len(dated) > 1 else "Tomorrow" if dated and tomorrow else "Week ahead"
+    context_cards = [
+        {
+            "kind": "context",
+            "title": "Today",
+            "summary": "Plans unavailable" if issues and not rows else "Quiet " + local.strftime("%A") if not rows else "Still to come",
+            "items": dated[:3],
+        },
+        {
+            "kind": "context",
+            "title": "Tomorrow",
+            "summary": "Plans unavailable" if issues and not tomorrow else (local + timedelta(days=1)).strftime("%A") if tomorrow else "No shared plans",
+            "items": [*preparation, *tomorrow][:3],
+        },
+        {"kind": "context", "title": "This week", "summary": "No further shared plans" if not later else "", "items": list(week_days.values())[:3]},
+    ]
+    cards = cards[:3]
+    unassigned = [r for r in selected if not r.get("person_ids")]
+    if unassigned:
+        cards.append(
+            {
+                "key": "shared-" + focus["date"],
+                "kind": "context",
+                "title": (local + timedelta(days=int(focus["preview"]))).strftime("%A"),
+                "importance": "upcoming",
+                "items": unassigned[:3],
+            }
+        )
+    if not focus["preview"]:
+        for card in context_cards:
+            if len(cards) >= 3:
+                break
+            if not card["items"] or card["title"] == "Today" or card["title"] == "Tomorrow" and dated:
+                continue
+            if any(r["id"] in {item.get("id") for c in cards for item in c["items"]} for r in card["items"]):
+                continue
+            cards.append({**card, "key": "context-" + card["title"], "importance": "context"})
+    sources = {s["entity_id"]: s for s in signals}
+    climate = next((s for s in sources.values() if s["domain"] == "climate" and s.get("attributes", {}).get("fan_modes")), None)
+    climate = climate or next((s for s in sources.values() if s["domain"] == "climate"), None)
+    alarms = [s for s in sources.values() if s["domain"] == "alarm_control_panel"]
+    lights = [s for s in sources.values() if s["domain"] == "light"]
+
+    def usable(s):
+        return s.get("state") not in (None, "unknown", "unavailable")
+
+    security = (
+        "Not selected"
+        if not alarms
+        else "Needs attention"
+        if any(s["state"] == "triggered" for s in alarms)
+        else "Armed"
+        if all(str(s["state"]).startswith("armed_") for s in alarms)
+        else "Disarmed"
+        if all(s["state"] == "disarmed" for s in alarms)
+        else "Status unavailable"
+    )
+    lighting = (
+        "Not selected"
+        if not lights
+        else "Status unavailable"
+        if not all(usable(s) for s in lights)
+        else str(sum(s["state"] == "on" for s in lights)) + " on"
+        if any(s["state"] == "on" for s in lights)
+        else "All off"
+    )
+    climate_attrs = climate.get("attributes", {}) if climate and usable(climate) else {}
+    temp = climate_attrs.get("current_temperature")
+    selected_status = [*alarms, *lights, *([climate] if climate else [])]
+    status = {
+        "home": "Needs attention"
+        if exceptions
+        else "Status unavailable"
+        if not selected_status
+        else "Status incomplete"
+        if not all(usable(s) for s in selected_status)
+        else "All good",
+        "climate": {
+            "temperature": temp if type(temp) in (int, float) and isfinite(temp) else None,
+            "unit": climate_attrs.get("temperature_unit", "°C"),
+            "detail": " · ".join(str(v).replace("_", " ").capitalize() for v in (climate_attrs.get("hvac_action"), climate_attrs.get("fan_mode")) if v)
+            or ("Not selected" if not climate else "Status unavailable"),
+        },
+        "security": security,
+        "lights": lighting,
+        "cameras": [
+            {"entity": s["entity_id"], "name": s.get("name") or s.get("attributes", {}).get("friendly_name", "Camera"), "available": usable(s)}
+            for s in sources.values()
+            if s["domain"] == "camera"
+        ],
+    }
+    return {
+        "focus": focus,
+        "cards": cards[: 1 if focus.get("restrained") else 3],
+        "timeline": {
+            "label": label,
+            "date_label": (local + timedelta(days=int(label == "Tomorrow"))).strftime("%a %d %b"),
+            "items": primary[: 2 if focus.get("restrained") else 5],
+        },
+        "secondary": {"label": secondary_label, "items": [] if focus.get("restrained") else secondary[:3]},
+        "household_status": status,
+    }
 
 
 def validate_policy(value):
@@ -157,9 +341,10 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
         if e["end"] <= local or e["start"] > local + timedelta(days=policy["horizon_days"]):
             continue
         link = links.get(e["key"], {})
-        valid = all(p in people for p in link.get("people", []))
+        person_ids, attribution, person_title = person_attribution(e, link, people)
+        valid = all(p in people for p in person_ids)
         leave = departure(e["start"], link) if link and valid and not e["all_day"] else None
-        names = [people[p] for p in link.get("people", [])] if valid else []
+        names = [people[p] for p in person_ids] if valid else []
         start = e["start"].astimezone(local.tzinfo)
         day = (start.date() - local.date()).days
         when = "All day" if e["all_day"] else "Now" if e["start"] <= local else e["start"].strftime("%H:%M")
@@ -170,6 +355,9 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
             "title": e["title"],
             "when": when,
             "people": names,
+            "person_ids": person_ids if valid else [],
+            "person_title": person_title,
+            "attribution": attribution,
             "detail": "Leave by " + leave.strftime("%H:%M") if leave else "",
             "location": short_location(e.get("location", ""), e["title"]),
             "date": start.date().isoformat(),
@@ -191,7 +379,7 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
     future.sort(key=lambda r: r["starts_at"])
     rules = [] if abnormal else [r for r in view["briefing"] if r.get("when") == "This morning"]
     for r in rules:
-        rows.insert(0, {**r, "people": [people[p] for p in r.get("people", []) if p in people]})
+        rows.insert(0, {**r, "person_ids": r.get("people", []), "people": [people[p] for p in r.get("people", []) if p in people]})
     movements.sort(key=lambda r: r[0])
     movement = next((m for m in movements if local < m[1]), next(iter(movements), None))
     minutes = (movement[0] - local).total_seconds() / 60 if movement else None
@@ -206,6 +394,7 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
         state = "busy_morning"
     if minutes is not None and minutes <= policy["prepare_minutes"]:
         state = "active_movement" if minutes <= policy["imminent_minutes"] else "busy_morning" if state == "busy_morning" else "pre_activity"
+    focus = focus_window(rows, future, local, policy, state in ("busy_morning", "pre_activity", "active_movement"))
     exceptions, transient, weather = [], [], None
     camera_session = None
     for item in signals:
@@ -215,6 +404,25 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
         label = item.get("name", "Household")
         if domain == "weather":
             weather = {"condition": value.replace("_", " "), "temperature": attrs.get("temperature"), "unit": attrs.get("temperature_unit", "°C")}
+            forecast = next(
+                (
+                    r
+                    for r in attrs.get("forecast", [])
+                    if isinstance(r, dict) and moment(r.get("datetime")) and moment(r["datetime"]).astimezone(local.tzinfo).date().isoformat() == focus["date"]
+                ),
+                {},
+            )
+            high = forecast.get("temperature")
+            weather["high"] = high if type(high) in (int, float) and isfinite(high) else None
+            weather["precipitation_probability"] = forecast.get("precipitation_probability")
+            low = forecast.get("templow")
+            weather.update(
+                preview=focus["preview"],
+                focus_date=focus["date"],
+                focus_label=focus["label"],
+                low=low if type(low) in (int, float) and isfinite(low) else None,
+                forecast_condition=forecast.get("condition"),
+            )
             temp = attrs.get("temperature")
             celsius = (temp - 32) * 5 / 9 if isinstance(temp, (int, float)) and attrs.get("temperature_unit") == "°F" else temp
             if movement and value in ("rainy", "pouring", "lightning", "lightning-rainy", "snowy", "snowy-rainy"):
@@ -249,6 +457,8 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
     if bins.get("configured") and bins.get("attention") not in (None, "quiet") and bins.get("summary"):
         exceptions.append({"title": bins["summary"], "detail": "Household collection", "kind": "bins"})
     baseline = state
+    if baseline == "overnight" and not exceptions:
+        focus["restrained"] = True
     if exceptions:
         state = "exception"
     active_session = display_session if display_session and (moment(display_session.get("expires_at")) or now) > now else camera_session
@@ -257,7 +467,7 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
     urgent = baseline in ("busy_morning", "pre_activity", "active_movement")
     primary = "exception" if exceptions else "movement" if movement and urgent else "today" if rows else "upcoming" if future else "quiet"
     today_limit, future_limit = (4, 1) if urgent else (2, 5) if state != "overnight" else (1, 1)
-    outlook = horizon(future, rows, urgent, baseline, local, exceptions)
+    outlook = horizon(future, rows, urgent, baseline, local, exceptions, policy["evening_start"])
     tomorrow_date = (local + timedelta(days=1)).date()
     tomorrow_changed = tomorrow_date.isoformat() in policy["suppressed_dates"] or any(
         e["start"].astimezone(local.tzinfo).date() <= tomorrow_date < e["end"].astimezone(local.tzinfo).date()
@@ -265,7 +475,8 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
         for e in events
     )
     preparation = []
-    if outlook["phase"] == "evening" and not tomorrow_changed and not urgent and not exceptions:
+    preparation_rows = []
+    if focus["preview"] and not tomorrow_changed:
         for rule in settings.get("rules", []):
             if (
                 rule["start"] <= tomorrow_date.isoformat() <= rule["end"]
@@ -273,6 +484,17 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
                 and all(p in people for p in rule["people"])
             ):
                 preparation.append({"title": rule["text"], "people": [people[p] for p in rule["people"]]})
+                preparation_rows.append(
+                    {
+                        "id": "rule-" + rule.get("id", str(len(preparation_rows))),
+                        "title": rule["text"],
+                        "people": [people[p] for p in rule["people"]],
+                        "person_ids": rule["people"],
+                        "when": "Tomorrow",
+                        "date": tomorrow_date.isoformat(),
+                        "day_offset": 1,
+                    }
+                )
         if preparation and outlook["layout"] in ("ahead", "rest"):
             outlook["layout"] = "tomorrow"
     cue = None
@@ -298,6 +520,7 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
         "baseline_state": baseline,
         "primary": primary,
         **outlook,
+        **reference_panels(rows, future, people, signals, local, cue, view.get("issues", []), exceptions, preparation_rows, focus),
         "today_summary": "Plans unavailable" if view.get("issues") and not rows else "Quiet " + local.strftime("%A") if not rows else "Still to come today",
         "tomorrow_label": (local + timedelta(days=1)).strftime("%A"),
         "tomorrow_preparation": preparation[:2],

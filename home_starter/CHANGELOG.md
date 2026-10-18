@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.8.31
+
+- Retain the weekday reference's hierarchy as a transparent ambient canvas;
+  remove visible card borders, fixed empty regions and unused status placeholders.
+- Evening normally previews tomorrow's people, confirmed preparation, chronology
+  and native forecast. Imminent events override preview; morning continues as Today.
+- Separate date/content selection, importance, placement and visual treatment.
+  Reflow useful islands and crossfade composition changes without constant motion.
+- Use explicit event/calendar ownership or unambiguous leading person labels;
+  preserve unassigned commitments without inventing kit, travel or leave times.
+- Read selected forecast/camera/status evidence, retain freshness/privacy guards,
+  and add 34 viewport/scenario checks plus native transition recovery coverage.
+
 ## 0.8.30
 
 - Reallocate quiet wall space to Tomorrow and nonempty week groups; shorten

@@ -31,7 +31,24 @@ def scenario(name):
         }
         return value
 
-    if name in ("busy_school_morning", "weekday_morning_horizon"):
+    if name in ("canonical_weekday", "canonical_evening"):
+        people = {"example_child": "Casey", "example_jordan": "Jordan", "example_alex": "Alex"}
+        school = event("School", now.replace(hour=8, minute=50), leave="08:30")
+        settings["events"][school["key"]]["people"] = list(people)
+        for person_id, title, hour, minute, leave in (
+            ("example_child", "Training", 17, 30, "16:55"),
+            ("example_jordan", "Dental", 15, 40, "15:10"),
+            ("example_alex", "Swimming", 17, 0, "16:30"),
+        ):
+            item = event(title, now.replace(hour=hour, minute=minute), leave=leave)
+            settings["events"][item["key"]]["people"] = [person_id]
+        settings["rules"] = [
+            {"id": p, "text": note, "people": [p], "start": "2026-10-19", "end": "2026-10-19", "weekdays": [0]}
+            for p, note in zip(people, ("Sports kit + hat", "School · normal day", "School uniform + hat"), strict=True)
+        ]
+        if name == "canonical_evening":
+            now = now.replace(day=18, hour=19, minute=0)
+    elif name in ("busy_school_morning", "weekday_morning_horizon"):
         event("School", now.replace(hour=8, minute=50), leave="08:30")
         event("Training", now.replace(hour=17, minute=30), leave="16:55")
         settings["rules"] = [
@@ -107,6 +124,38 @@ def scenario(name):
         now = now.replace(hour=12)
     else:
         raise ValueError(name)
+    if name in ("canonical_weekday", "canonical_evening", "quiet_sunday", "sunday_evening"):
+        signals.extend(
+            [
+                {
+                    "domain": "weather",
+                    "entity_id": "weather.fixture",
+                    "state": "sunny",
+                    "attributes": {
+                        "temperature": 14,
+                        "temperature_unit": "°C",
+                        "forecast": [
+                            {"datetime": now.isoformat(), "temperature": 20, "condition": "sunny", "precipitation_probability": 0},
+                            {
+                                "datetime": (now + timedelta(days=1)).isoformat(),
+                                "temperature": 20 if name == "canonical_evening" else 21,
+                                "templow": 10,
+                                "condition": "partlycloudy",
+                                "precipitation_probability": 10,
+                            },
+                        ],
+                    },
+                },
+                {
+                    "domain": "climate",
+                    "entity_id": "climate.fixture",
+                    "state": "heat",
+                    "attributes": {"current_temperature": 20, "hvac_action": "heating", "fan_mode": "auto"},
+                },
+                {"domain": "alarm_control_panel", "entity_id": "alarm_control_panel.fixture", "state": "armed_away"},
+                {"domain": "light", "entity_id": "light.fixture", "state": "off"},
+            ]
+        )
     view = build(events, now, ZONE, settings, people, briefing_limit=20)
     view["issues"] = []
     if name == "bins_tonight":
@@ -124,6 +173,8 @@ def scenario(name):
 
 
 SCENARIOS = (
+    "canonical_weekday",
+    "canonical_evening",
     "busy_school_morning",
     "weekday_morning_horizon",
     "quiet_sunday",

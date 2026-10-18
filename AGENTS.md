@@ -3,6 +3,13 @@
 Search before broad reads; use targeted edits and tests. Preserve the touch shell,
 person pages, climate, room navigation, screen identities and activity tracking.
 
+The wall retains the weekday reference's information hierarchy as an ambient
+canvas: time/weather anchors, useful translucent person/context islands, right
+chronology and restrained selected status. No fixed empty cards or visible grid.
+Evening normally previews tomorrow's people/rules/forecast without overrides.
+Explicit event links/calendar ownership win; a unique leading "Name · event"
+calendar label may identify a confirmed person. Never infer school/kit/travel.
+
 Commissioning follows prepare → authenticate/consent → resume → verify. Never
 authenticate personal Google accounts, persist credential/session material in
 source or fixtures, or treat discovery as calendar visibility consent. Calendar

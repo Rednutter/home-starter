@@ -19,7 +19,7 @@ async def snapshot(core, store):
     return house, saved, inventory, states, zone, members
 
 
-def wall_cameras(saved, house, surface, inventory, states, now):
+def wall_cameras(saved, house, surface, inventory, states, now, *, include_unavailable=False):
     if not inventory["complete"]:
         return []
     choice = saved["choices"].get("cameras", {})
@@ -28,7 +28,7 @@ def wall_cameras(saved, house, surface, inventory, states, now):
     hidden = preferences(house, surface)["hide"]
     excluded = set(saved["devices"])
     candidates = {e["entity_id"] for e in readiness.entities(inventory) if e.get("device_id") not in excluded}
-    available = {s["entity_id"] for s in states if s.get("state") not in ("unknown", "unavailable")}
+    available = {s["entity_id"] for s in states if include_unavailable or s.get("state") not in ("unknown", "unavailable")}
     return [e for e in choice["sources"] if e.startswith("camera.") and e in candidates & available and e not in hidden]
 
 
@@ -123,6 +123,10 @@ async def inspect(core, store, surface=None, now=None, *, person_id=None, inputs
                 if key == "waste" and isinstance(raw, list):
                     raw = [e for e in raw if isinstance(e, dict) and readiness.collection_event(e, source, inventory)]
                 parsed, invalid = context.parse_events(raw, readiness.selection_signature({"sources": [source]}, inventory), zone)
+                if key == "calendars":
+                    owners = [service_map["person_links"].get(p) for p in calendars.get(source, {}).get("people", [])]
+                    owners = [p for p in owners if p in people]
+                    parsed = [{**e, "person_ids": owners} for e in parsed]
                 mapped = bool(linked_person and person_id in calendars.get(source, {}).get("people", []))
                 events.extend(e for e in parsed if person_id is None or mapped or e["key"] in settings["events"])
                 if invalid:
@@ -167,8 +171,13 @@ async def inspect(core, store, surface=None, now=None, *, person_id=None, inputs
         from .wall_composer import compose
 
         signals = [{**i, **next((s for s in states if s["entity_id"] == i["entity_id"]), {})} for i in items if i["id"] in admitted_ids]
-        cameras = wall_cameras(saved, house, surface, inventory, states, now)
+        cameras = wall_cameras(saved, house, surface, inventory, states, now, include_unavailable=True)
+        signals = [s for s in signals if s["domain"] != "camera" or s["entity_id"] in cameras]
         signals.extend({**s, "domain": "camera"} for s in states if s["entity_id"] in cameras)
+        weather = next((s for s in signals if s["domain"] == "weather"), None)
+        if weather and hasattr(core, "weather_forecast"):
+            weather["attributes"] = {**weather.get("attributes", {}), "forecast": await core.weather_forecast(weather["entity_id"])}
+        result["person_roles"] = {p["id"]: p["role"] for p in members if p["id"] in people}
         result["wall"] = compose(result, events, settings, people, now, zone, signals, display_session)
     result["events"] = [
         {"key": e["key"], "title": e["title"], "start": e["start"].isoformat(), "all_day": e["all_day"], "proximity": context.proximity(e, now)}

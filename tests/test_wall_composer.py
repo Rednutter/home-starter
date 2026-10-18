@@ -15,6 +15,72 @@ def test_scenarios_use_one_inspectable_wall_contract(name):
     assert all("Finished" not in r["title"] for r in case["model"]["today_items"])
 
 
+def test_canonical_weekday_and_sunday_change_content_inside_the_same_regions():
+    weekday = scenario("canonical_weekday")["model"]
+    sunday = scenario("quiet_sunday")["model"]
+    assert [c["title"] for c in weekday["cards"]] == ["Casey", "Jordan", "Alex"]
+    assert all(c["kind"] == "person" for c in weekday["cards"])
+    assert weekday["timeline"]["label"] == "Today"
+    assert weekday["timeline"]["items"][0]["time"] == "8:30"
+    assert weekday["secondary"]["label"] == "Later today"
+    assert [c["title"] for c in sunday["cards"]] == ["Tomorrow", "This week"]
+    assert sunday["timeline"]["label"] == "Tomorrow" and len(sunday["timeline"]["items"]) == 3
+    assert sunday["secondary"]["label"] == "Week ahead"
+    for model in (weekday, sunday):
+        assert model["weather"]["high"] == 20
+        assert set(model["household_status"]) == {"home", "climate", "security", "lights", "cameras"}
+        assert model["household_status"]["security"] == "Armed"
+
+
+def test_sunday_evening_is_monday_people_preview_with_native_forecast_and_continuity():
+    evening = scenario("canonical_evening")["model"]
+    morning = scenario("canonical_weekday")["model"]
+    assert evening["focus"] == {"mode": "tomorrow_preview", "preview": True, "date": "2026-10-19", "label": "Tomorrow"}
+    assert [c["key"] for c in evening["cards"]] == [c["key"] for c in morning["cards"]]
+    assert [c["title"] for c in evening["cards"]] == ["Casey", "Jordan", "Alex"]
+    assert "Sports kit + hat" in str(evening["cards"]) and "No shared plans" not in str(evening["cards"])
+    assert evening["timeline"]["label"] == "Tomorrow" and evening["timeline"]["items"][0]["time"] == "8:30"
+    assert evening["weather"]["focus_date"] == "2026-10-19"
+    assert evening["weather"]["low"] == 10 and evening["weather"]["high"] == 20
+    assert evening["weather"]["forecast_condition"] == "partlycloudy"
+    assert morning["focus"]["preview"] is False and morning["timeline"]["label"] == "Today"
+    assert any(c["importance"] == "soon" for c in morning["cards"])
+
+
+def test_named_calendar_labels_are_explicit_and_unambiguous_without_guessing_other_events():
+    now, events, settings, view = quiet_week(19)
+    events[0]["title"] = "Example · Gym"
+    events[1]["title"] = "Unassigned work"
+    model = compose(view, events, settings, {"person": "Example"}, now, ZONE)
+    assert [c["title"] for c in model["cards"]] == ["Example", "Monday"]
+    assert model["cards"][0]["items"][0]["title"] == "Gym"
+    assert model["cards"][0]["items"][0]["attribution"] == "calendar_label"
+    assert not model["cards"][1]["items"][0]["person_ids"]
+    assert not any(r["leave_at"] for c in model["cards"] for r in c["items"])
+    duplicate = compose(view, events, settings, {"one": "Example", "two": "Example"}, now, ZONE)
+    assert not any(c["kind"] == "person" for c in duplicate["cards"])
+
+
+def test_imminent_unannotated_event_overrides_evening_preview_and_empty_groups_are_omitted():
+    now, events, settings, view = quiet_week(19)
+    event = {**events[0], "key": "tonight", "start": now + timedelta(minutes=10), "end": now + timedelta(hours=1)}
+    model = compose(view, [event, *events], settings, {}, now, ZONE)
+    assert not model["focus"]["preview"] and model["timeline"]["label"] == "Today"
+    assert model["cards"][0]["items"][0]["importance"] == "immediate"
+    empty = compose(view, [], settings, {}, now, ZONE)
+    assert empty["cards"] == [] and empty["timeline"]["items"] == [] and empty["secondary"]["items"] == []
+
+
+def test_person_cards_require_explicit_links_and_unknown_status_is_not_reported_healthy():
+    case = scenario("canonical_weekday")
+    case["settings"]["events"].clear()
+    case["view"]["briefing"] = []
+    model = compose(case["view"], case["events"], case["settings"], case["people"], case["now"], ZONE)
+    assert not any(c["kind"] == "person" for c in model["cards"])
+    assert model["household_status"]["home"] == "Status unavailable"
+    assert model["household_status"]["security"] == "Not selected"
+
+
 def test_explicit_routine_departure_and_movement_thresholds():
     morning = scenario("busy_school_morning")["model"]
     assert morning["day_state"] == "busy_morning"
@@ -82,6 +148,8 @@ def test_overnight_is_low_information_and_critical_exceptions_override_sessions(
     signals = [{"domain": "media_player", "entity_id": "media_player.fixture", "state": "playing", "name": "Kitchen"}]
     model = compose(case["view"], [], case["settings"], {}, now, ZONE, signals)
     assert model["day_state"] == "overnight" and not model["active_context"]
+    assert model["phase"] == "night" and len(model["cards"]) <= 1
+    assert model["secondary"]["items"] == []
     signals.append({"domain": "binary_sensor", "entity_id": "binary_sensor.fixture", "state": "on", "level": 0, "name": "Smoke alarm"})
     model = compose(case["view"], [], case["settings"], {}, now, ZONE, signals, content)
     assert model["day_state"] == "exception" and not model["display_session"]
