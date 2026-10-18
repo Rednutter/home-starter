@@ -1,4 +1,4 @@
-"""Write the twelve fictional wall-composer scenarios for native browser/dev rendering."""
+"""Write fictional wall-composer scenarios for native browser/dev rendering."""
 
 import base64
 import json

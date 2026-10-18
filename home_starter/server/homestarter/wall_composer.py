@@ -1,5 +1,6 @@
 """Deterministic shared wall interpretation. No title guessing, credentials or UI code."""
 
+import re
 from datetime import date, datetime, timedelta
 from math import isfinite
 from zoneinfo import ZoneInfo
@@ -21,6 +22,58 @@ DEFAULTS = {
     "camera_links": {},
 }
 STATES = ("busy_morning", "quiet_daytime", "pre_activity", "active_movement", "evening", "overnight", "weekend", "abnormal_schedule", "exception")
+
+
+def short_location(value, title=""):
+    """Keep a venue label, never a street/postal address or map URL."""
+    if not isinstance(value, str) or re.search(r"https?://|geo:", value, re.I):
+        return ""
+    place, _, extra = value.partition("(")
+    place = place.split(",", 1)[0].strip()
+    if re.match(r"^\d+[\w/ -]*\s", place) and re.search(r"\b(street|st|road|rd|drive|dr|avenue|ave|lane|ln|highway|hwy)\b", place, re.I):
+        return ""
+    initials = "".join(w[0] for w in place.split() if w.casefold() not in {"the", "of", "and"} and w[0].isalpha()).upper()
+    if 3 <= len(initials) <= 6 and re.search(r"\b" + re.escape(initials) + r"\b", title):
+        return initials
+    parts = extra.rstrip(")").split(",")
+    city = parts[1].strip() if len(parts) > 2 else ""
+    city = re.sub(
+        r"\s+(?:NSW|VIC|QLD|SA|WA|TAS|ACT|NT|New South Wales|Victoria|Queensland|South Australia|Western Australia|Tasmania)\b.*$", "", city, flags=re.I
+    )
+    if city and len(city) < 25 and city.replace(" ", "").isalpha() and place.casefold().endswith(" " + city.casefold()):
+        place = place[: -len(city)].strip()
+        place = re.sub(r"\s+Gym$", "", place, flags=re.I)
+        place += " · " + city
+    place = re.sub(r"\s+FC$", "", place)
+    place = re.sub(r"\s+(?:PTY\.?\s+LTD\.?|LLC|INC\.?|LIMITED)$", "", place, flags=re.I)
+    return place if len(place) <= 48 else place[:45].rsplit(" ", 1)[0] + "…"
+
+
+def horizon(future, rows, urgent, baseline, local, exceptions):
+    """Weight already selected facts independently of their visual allocation."""
+    phase = "evening" if baseline == "evening" else "afternoon" if local.hour >= 12 else "morning"
+    tomorrow = [r for r in future if r["day_offset"] == 1]
+    ahead = [r for r in future if r["day_offset"] > 1]
+    primary = "current" if urgent or exceptions else "today" if rows else "tomorrow" if tomorrow else "ahead" if ahead else "rest"
+    weights = {
+        "now": 5 if urgent or exceptions else 0,
+        "today": 4 if urgent else 2 if rows else 1,
+        "tomorrow": 5 if phase == "evening" else 4 if phase == "afternoon" else 3,
+        "ahead": 1 if urgent else 3,
+    }
+    tomorrow = tomorrow[: 1 if urgent or baseline == "overnight" else 5]
+    groups = []
+    for row in ahead:
+        day = date.fromisoformat(row["date"])
+        weekend = day.weekday() >= 5 and row["day_offset"] <= 7
+        key = (day - timedelta(days=day.weekday() - 5)).isoformat() if weekend else row["date"]
+        if not groups or groups[-1]["date"] != key:
+            groups.append({"date": key, "label": "Weekend" if weekend else row["day_label"], "items": []})
+        groups[-1]["items"].append({**row, "time": day.strftime("%a") + " · " + row["time"]} if weekend else row)
+    groups = groups[: 1 if urgent or baseline == "overnight" else 6]
+    for group in groups:
+        group["items"] = group["items"][: 1 if urgent or baseline == "overnight" else 3]
+    return {"layout": primary, "phase": phase, "weights": weights, "tomorrow_items": tomorrow, "ahead_groups": groups}
 
 
 def validate_policy(value):
@@ -107,7 +160,8 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
         valid = all(p in people for p in link.get("people", []))
         leave = departure(e["start"], link) if link and valid and not e["all_day"] else None
         names = [people[p] for p in link.get("people", [])] if valid else []
-        day = (e["start"].date() - local.date()).days
+        start = e["start"].astimezone(local.tzinfo)
+        day = (start.date() - local.date()).days
         when = "All day" if e["all_day"] else "Now" if e["start"] <= local else e["start"].strftime("%H:%M")
         if day > 0:
             when = ("Tomorrow" if day == 1 else e["start"].strftime("%a %d %b")) + ("" if e["all_day"] else " · " + when)
@@ -117,7 +171,13 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
             "when": when,
             "people": names,
             "detail": "Leave by " + leave.strftime("%H:%M") if leave else "",
-            "location": e.get("location", ""),
+            "location": short_location(e.get("location", ""), e["title"]),
+            "date": start.date().isoformat(),
+            "starts_at": start.isoformat(),
+            "day_offset": day,
+            "day_label": start.strftime("%A") if day <= 7 else start.strftime("%a %d %b"),
+            "time": "All day" if e["all_day"] else start.strftime("%I:%M").lstrip("0") + (" pm" if start.hour >= 12 else ""),
+            "early_start": not e["all_day"] and start.hour < 9,
             "ends_at": e["end"].isoformat(),
             "leave_at": leave.isoformat() if leave else None,
         }
@@ -125,8 +185,10 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
             rows.append(row)
             if leave and e["end"] > local:
                 movements.append((leave, e["start"], row))
-        elif day == 1 or link.get("early_attention") or link.get("wall_role") in ("preparation", "holiday"):
+        elif day <= 7 or link.get("early_attention") or link.get("wall_role") in ("preparation", "holiday"):
             future.append(row)
+    rows.sort(key=lambda r: r["starts_at"])
+    future.sort(key=lambda r: r["starts_at"])
     rules = [] if abnormal else [r for r in view["briefing"] if r.get("when") == "This morning"]
     for r in rules:
         rows.insert(0, {**r, "people": [people[p] for p in r.get("people", []) if p in people]})
@@ -195,6 +257,24 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
     urgent = baseline in ("busy_morning", "pre_activity", "active_movement")
     primary = "exception" if exceptions else "movement" if movement and urgent else "today" if rows else "upcoming" if future else "quiet"
     today_limit, future_limit = (4, 1) if urgent else (2, 5) if state != "overnight" else (1, 1)
+    outlook = horizon(future, rows, urgent, baseline, local, exceptions)
+    tomorrow_date = (local + timedelta(days=1)).date()
+    tomorrow_changed = tomorrow_date.isoformat() in policy["suppressed_dates"] or any(
+        e["start"].astimezone(local.tzinfo).date() <= tomorrow_date < e["end"].astimezone(local.tzinfo).date()
+        and links.get(e["key"], {}).get("wall_role") == "holiday"
+        for e in events
+    )
+    preparation = []
+    if outlook["phase"] == "evening" and not tomorrow_changed and not urgent and not exceptions:
+        for rule in settings.get("rules", []):
+            if (
+                rule["start"] <= tomorrow_date.isoformat() <= rule["end"]
+                and tomorrow_date.weekday() in rule["weekdays"]
+                and all(p in people for p in rule["people"])
+            ):
+                preparation.append({"title": rule["text"], "people": [people[p] for p in rule["people"]]})
+        if preparation and outlook["layout"] in ("ahead", "rest"):
+            outlook["layout"] = "tomorrow"
     cue = None
     if movement and urgent:
         cue = {
@@ -217,16 +297,20 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
         "day_state": state,
         "baseline_state": baseline,
         "primary": primary,
+        **outlook,
+        "today_summary": "Plans unavailable" if view.get("issues") and not rows else "Quiet " + local.strftime("%A") if not rows else "Still to come today",
+        "tomorrow_label": (local + timedelta(days=1)).strftime("%A"),
+        "tomorrow_preparation": preparation[:2],
         "day_summary": "Routine changed today"
         if abnormal
         else "Shared plans unavailable"
         if view.get("issues") and not rows
-        else "Nothing urgent right now"
+        else "Quiet " + local.strftime("%A")
         if not rows
         else "Still to come today",
         "next_movement": cue,
         "today_items": rows[:today_limit],
-        "future_attention": future[:future_limit],
+        "future_attention": future[:future_limit] if urgent or baseline == "overnight" else future[:17],
         "household_exception": exceptions[:2],
         "active_context": transient[:2],
         "weather": weather,

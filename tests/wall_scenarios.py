@@ -31,12 +31,22 @@ def scenario(name):
         }
         return value
 
-    if name == "busy_school_morning":
+    if name in ("busy_school_morning", "weekday_morning_horizon"):
         event("School", now.replace(hour=8, minute=50), leave="08:30")
         event("Training", now.replace(hour=17, minute=30), leave="16:55")
         settings["rules"] = [
             {"id": "sports_kit", "text": "Sports kit and hat", "people": ["example_child"], "start": "2026-10-19", "end": "2026-10-19", "weekdays": [0]}
         ]
+        if name == "weekday_morning_horizon":
+            event("Music lesson", now.replace(hour=16) + timedelta(days=1))
+            event("Weekend match", now.replace(hour=10) + timedelta(days=5))
+    elif name in ("quiet_sunday", "sunday_evening"):
+        now = now.replace(day=18, hour=19 if name == "sunday_evening" else 10, minute=0)
+        event("Exercise", now.replace(hour=7) + timedelta(days=1))
+        event("Work commitment", now.replace(hour=8, minute=30) + timedelta(days=1))
+        event("Practice match", now.replace(hour=17) + timedelta(days=1))
+        for day in (2, 3, 4, 5):
+            event("Later commitment", now.replace(hour=16) + timedelta(days=day))
     elif name == "quiet_weekday_daytime":
         now = now.replace(hour=12, minute=0)
         event("Dental check-up", now + timedelta(days=1), role="preparation")
@@ -115,6 +125,9 @@ def scenario(name):
 
 SCENARIOS = (
     "busy_school_morning",
+    "weekday_morning_horizon",
+    "quiet_sunday",
+    "sunday_evening",
     "quiet_weekday_daytime",
     "pre_pickup",
     "active_movement",

@@ -17,13 +17,25 @@ The composer exposes `day_state`, `baseline_state`, `primary`, `next_movement`,
 `display_session`, `spans` and `valid_until`. Named states are busy morning,
 quiet daytime, pre-activity, active movement, evening, overnight, weekend,
 abnormal schedule and exception. Urgent context overrides the clock baseline.
-Today contracts/vanishes when finished; selective future attention expands.
-Upcoming rows beyond tomorrow require explicit preparation/holiday/early-attention
-annotations. The horizon is at most 21 days, not a full calendar dump.
+Quiet Today becomes a short summary; Tomorrow and the coming week reclaim its
+space. Ordinary selected calendar events are eligible for the next seven days;
+later events require explicit preparation/holiday/early-attention annotations,
+up to 21 days. Nonempty days are grouped, including a combined weekend. Capacity
+is shared across days before extra rows from one busy day are added. Locations
+are short venue labels rather than postal addresses.
+The 21-inch wall is a glance surface: sparse primary commitments grow in size,
+and content capacity accounts for people, departures and longer titles. Reduce
+secondary rows before reducing legibility. With no future plans, weekday
+departures and useful Today facts reclaim both columns. Empty Today cards are
+omitted when the departure/exception already explains the current state.
 
 `static/wall-content.js` renders these priorities and applies only freshness,
-expiry and viewport-capacity checks. `static/wall-layout.css` retains a small
-clock/weather header and the approved landscape palette. No permanent child,
+expiry and viewport-capacity checks. `static/wall-layout.css` retains the approved
+landscape, large clock, uppercase day/date, upper-right weather and dark blue
+rounded cards. Afternoon and evening give Tomorrow progressively more room.
+Evening shows known early starts/departures and confirmed next-day routine rules;
+explicit changed-routine dates/holidays suppress routine preparation. No invented
+kit, travel or forecast claims. No permanent child,
 camera, presence, lighting or media cards. The bottom context strip appears only
 for active timer/media/climate context. Safety exceptions outrank sessions.
 
@@ -83,11 +95,15 @@ unavailable state, never stock imagery masquerading as a feed.
 Run `python devtools/wall_fixtures.py` for JSON and standalone HTML fixtures in
 ignored `.runtime/wall-adaptive-fixtures`. Open each HTML at 1920×1080 and
 1366×768. Standalone previews retain the real renderer/layout but HA's icon
-elements require native HA for their final appearance. The twelve fictional
+elements require native HA for their final appearance. The fifteen fictional
 scenarios cover school morning, quiet daytime, pre-pickup, leave soon, evening
 finished, weekend planning, pupil-free day, weather exception, bins tonight,
 doorbell takeover, active timer/media and a completely quiet day. They must
 never be written to real HA states or published to the household dashboard.
+Run `python devtools/e2e_wall.py` with Playwright installed for the 30 browser
+checks (both resolutions): no clipping, empty Today cards or overlapping times;
+the weekday morning must keep departure, kit and later plans visible. This uses
+only local fictional data and saves ignored review screenshots.
 
 Tests: `tests/test_wall_composer.py`, `test_wall_cameras.py`, `test_context.py`,
 `test_wall_recovery.py` and `tests/js/wall.test.mjs`. Native HA captures and actual

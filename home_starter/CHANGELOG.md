@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.8.30
+
+- Reallocate quiet wall space to Tomorrow and nonempty week groups; shorten
+  calendar venues and retain the approved landscape, clock and card styling.
+- Give weekday departures and confirmed preparation priority. Reclaim unused
+  columns, remove empty Today cards and avoid overlapping routine labels.
+- Size sparse primary text up for the 21-inch wall; budget secondary rows for
+  names, departures and longer titles instead of shrinking everything to fit.
+- Progressively emphasize Tomorrow in afternoon/evening. Show only confirmed
+  next-day preparation and suppress routines on changed-routine dates.
+- Add isolated browser acceptance for fifteen scenarios at both 1920×1080 and
+  1366×768, including weekday school morning with and without future plans.
+
 ## 0.8.29
 
 - Fix the household Spotify authentication/repair link to reuse Music Assistant's
