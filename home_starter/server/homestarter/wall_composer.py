@@ -303,6 +303,8 @@ def validate_policy(value):
 
 def school_placement(panels, school, rows, future, settings, people, local):
     """School facts own the canvas; household chronology is shown once beside it."""
+    from .school_timetable import attendance
+
     panels["school"] = school
     panels["week"] = []
     if not school:
@@ -323,9 +325,23 @@ def school_placement(panels, school, rows, future, settings, people, local):
             for r in settings["rules"]
             if child["person"] in r["people"] and r["start"] <= school["date"] <= r["end"] and day.weekday() in r["weekdays"]
         ]
-        consumed.update(r["id"] for r in dated)
+        consumed.update(r["id"] for r in dated if settings["events"].get(r["id"], {}).get("wall_role") == "preparation")
     for panel in ("timeline", "secondary"):
         panels[panel]["items"] = [r for r in panels[panel]["items"] if r["id"] not in consumed]
+    selected = [r for r in [*rows, *future] if r.get("date") == school["date"] and r["id"] not in consumed]
+    explicit_school = {p for r in selected if settings["events"].get(r["id"], {}).get("wall_role") == "school" for p in r.get("person_ids", [])}
+    # Keep explicit appointments and departure cues; summarise native classes
+    # separately so school attendance appears alongside the whole household.
+    presented = {r["id"]: r for r in panels["timeline"]["items"]}
+    selected = [presented.get(r["id"], r) for r in selected]
+    selected.extend(attendance(school["children"], explicit_school, local))
+    panels["timeline"].update(
+        label=panels["focus"]["label"],
+        date_label=date.fromisoformat(school["date"]).strftime("%a %d %b"),
+        items=sorted(selected, key=lambda r: r.get("leave_at") or r.get("starts_at") or school["date"]),
+    )
+    timeline_ids = {r["id"] for r in panels["timeline"]["items"]}
+    panels["secondary"]["items"] = [r for r in panels["secondary"]["items"] if r["id"] not in timeline_ids]
     # School columns replace generic copies of the same calendar appointments.
     panels["cards"] = []
     used = {r["id"] for panel in ("timeline", "secondary") for r in panels[panel]["items"]} | consumed

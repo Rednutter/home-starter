@@ -17,6 +17,7 @@ def scenario(name):
             case["now"] = case["now"].replace(hour=22, minute=9)
         day = case["now"].replace(day=19, hour=9, minute=0)
         case["view"]["person_roles"] = dict.fromkeys(case["people"], "child")
+        case["events"] = case["events"][1:]  # Native periods supply school attendance in these scenarios.
         case["settings"]["rules"] = []
         case["view"]["briefing"] = []
         case["view"]["school_sources"] = [

@@ -1,6 +1,41 @@
 """Read dated native classes only; subjects never imply clothing or equipment."""
 
-from datetime import date
+from datetime import date, datetime
+
+
+def attendance(children, explicit_people, local):
+    """Summarise dated native periods once per start time, never invent school days."""
+    groups = {}
+    for child in children:
+        if not child["periods"] or child["person"] in explicit_people:
+            continue
+        start = min(datetime.fromisoformat(p["start"]) for p in child["periods"]).astimezone(local.tzinfo)
+        end = max(datetime.fromisoformat(p["end"]) for p in child["periods"])
+        if end <= local:
+            continue
+        key = start.isoformat()
+        row = groups.setdefault(
+            key,
+            {
+                "id": "school-attendance-" + key,
+                "kind": "school_attendance",
+                "title": "School",
+                "people": [],
+                "person_ids": [],
+                "sources": [],
+                "date": start.date().isoformat(),
+                "starts_at": key,
+                "ends_at": end.isoformat(),
+                "day_offset": (start.date() - local.date()).days,
+                "day_label": start.strftime("%A"),
+                "time": start.strftime("%I:%M").lstrip("0") + (" pm" if start.hour >= 12 else ""),
+            },
+        )
+        row["ends_at"] = max(datetime.fromisoformat(row["ends_at"]), end).isoformat()
+        row["people"].append(child["name"])
+        row["person_ids"].append(child["person"])
+        row["sources"].extend(child["sources"])
+    return list(groups.values())
 
 
 def select(sources, people, roles, focus, local, suppressed=False):

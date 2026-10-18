@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.36
+
+- Include children's school attendance in the shared Today/Tomorrow timeline,
+  grouped by native first-period time, alongside household calendar commitments.
+  Keep individual classes in the person cards; explicit school events take
+  precedence and missing native periods never imply attendance.
+
 ## 0.8.35
 
 - Keep tomorrow's mapped school timetable cards, household timeline and week

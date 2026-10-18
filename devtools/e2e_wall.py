@@ -64,6 +64,9 @@ def main():
                     assert abs(boxes[1][0] - reference_boxes[1][0]) < 1 and abs(boxes[1][1] - reference_boxes[1][1]) < 70
                 if name in ("school_sunday", "school_sunday_late", "school_monday"):
                     assert wall.locator(".wall-school-child").count() == 3
+                    school_row = wall.locator(".wall-timeline .wall-line-item").filter(has=page.get_by_role("heading", name="School", exact=True))
+                    assert school_row.count() >= 1
+                    assert "Casey" in school_row.all_inner_texts()[0]
                     assert wall.locator(".wall-school-periods li").count() == 18
                     assert wall.locator(".wall-school-periods li").evaluate_all("nodes=>nodes.reduce((n,e)=>n+Number(e.dataset.periodCount),0)") == 21
                     assert wall.locator(".wall-agenda .wall-week-row").count() >= 4

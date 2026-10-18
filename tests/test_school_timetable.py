@@ -52,7 +52,8 @@ def test_late_evening_keeps_monday_school_cards_and_timeline_until_midnight():
 
 def test_explicit_dated_school_information_then_subjects_then_configured_rules():
     case = scenario("school_sunday")
-    dated = case["events"][0]
+    dated = scenario("canonical_evening")["events"][0]
+    case["events"].insert(0, dated)
     case["settings"]["events"][dated["key"]]["wall_role"] = "school"
     case["settings"]["rules"] = [
         {"id": "hat", "text": "Explicit hat rule", "people": ["example_child"], "start": "2026-10-19", "end": "2026-10-19", "weekdays": [0]}
@@ -60,7 +61,8 @@ def test_explicit_dated_school_information_then_subjects_then_configured_rules()
     model = render(case)
     child = model["school"]["children"][0]
     assert child["dated"][0]["title"] == "School" and child["periods"] and child["rules"] == ["Explicit hat rule"]
-    assert dated["key"] not in {r["id"] for r in model["timeline"]["items"]}
+    assert dated["key"] in {r["id"] for r in model["timeline"]["items"]}
+    assert len([r for r in model["timeline"]["items"] if r["title"] == "School"]) == 1
     assert not model["cards"]
     assert len(model["week"]) == 5 and model["week"][0]["label"] == "Tuesday"
     ids = [r["id"] for panel in (model["timeline"], model["secondary"], *model["week"]) for r in panel["items"]]
@@ -76,3 +78,37 @@ def test_explicit_routine_exception_and_unconfirmed_people_suppress_school():
     assert render(case)["school"] is None
     case = scenario("school_sunday")
     assert all("year" not in c for c in render(case)["school"]["children"])
+
+
+def test_timeline_groups_school_attendance_and_keeps_every_dated_commitment():
+    case = scenario("school_sunday")
+    model = render(case)
+    attendance = [r for r in model["timeline"]["items"] if r.get("kind") == "school_attendance"]
+    assert len(attendance) == 1
+    row = attendance[0]
+    assert row["title"] == "School" and row["time"] == "9:00"
+    assert row["people"] == list(case["people"].values())
+    assert row["person_ids"] == list(case["people"])
+    assert len(row["sources"]) == 3 and not row.get("leave_at")
+    expected = {e["key"] for e in case["events"] if e["start"].date().isoformat() == model["focus"]["date"]}
+    assert expected <= {r["id"] for r in model["timeline"]["items"]}
+    assert not any(p["subject"] == r["title"] for c in model["school"]["children"] for p in c["periods"] for r in model["timeline"]["items"])
+    stamps = [r.get("leave_at") or r["starts_at"] for r in model["timeline"]["items"]]
+    assert stamps == sorted(stamps)
+
+
+def test_attendance_keeps_distinct_times_and_never_invents_missing_school():
+    from homestarter.school_timetable import attendance
+
+    case = scenario("school_sunday")
+    case["view"]["school_sources"][1]["events"] = []
+    for period in case["view"]["school_sources"][2]["events"]:
+        period["start"] += timedelta(minutes=20)
+        period["end"] += timedelta(minutes=20)
+    model = render(case)
+    rows = [r for r in model["timeline"]["items"] if r.get("kind") == "school_attendance"]
+    assert [r["time"] for r in rows] == ["9:00", "9:20"]
+    assert sum(len(r["people"]) for r in rows) == 2
+    children = model["school"]["children"]
+    assert not attendance(children, set(), case["now"] + timedelta(days=2))
+    assert len(attendance(children, {children[0]["person"]}, case["now"])) == 1

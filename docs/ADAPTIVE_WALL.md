@@ -247,3 +247,10 @@ unchanged. Live checks confirmed three selected Cirrus feeds with seven Monday
 periods each, three person cards, all three Monday household commitments and
 four upcoming-day groups, without clipping. Regression scenarios cover late
 Sunday as well as weekday morning at both supported wall sizes.
+
+The shared chronology also includes school attendance (0.8.36). Selected native
+periods supply one School row per first-period time with the attending children's
+names. Classes remain in person cards. An explicit school event takes precedence
+for its linked children; missing periods, suppressed dates and expired attendance
+never create assumed school commitments. Other dated household events stay in
+the timeline in time order. Live Monday has one 8:50 School row for three children.
