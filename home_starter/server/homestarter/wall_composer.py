@@ -12,7 +12,7 @@ DEFAULTS = {
     "morning_start": 5,
     "morning_end": 10,
     "evening_start": 18,
-    "night_start": 22,
+    "night_start": 21,
     "imminent_minutes": 15,
     "prepare_minutes": 90,
     "horizon_days": 21,
@@ -100,6 +100,7 @@ def focus_window(rows, future, local, policy, urgent):
     return {
         "mode": "tomorrow_preview" if preview else "today",
         "preview": preview,
+        "night": local.hour >= policy["night_start"] or local.hour < policy["morning_start"],
         "date": (local + timedelta(days=int(preview))).date().isoformat(),
         "label": "Tomorrow" if preview else "Today",
     }
@@ -249,13 +250,13 @@ def reference_panels(rows, future, people, signals, local, cue, issues, exceptio
     }
     return {
         "focus": focus,
-        "cards": cards[: 1 if focus.get("restrained") else 3],
+        "cards": cards[:3],
         "timeline": {
             "label": label,
             "date_label": (local + timedelta(days=int(label == "Tomorrow"))).strftime("%a %d %b"),
-            "items": primary[: 2 if focus.get("restrained") else 5],
+            "items": primary[:5],
         },
-        "secondary": {"label": secondary_label, "items": [] if focus.get("restrained") else secondary[:3]},
+        "secondary": {"label": secondary_label, "items": [] if focus.get("night") else secondary[:3]},
         "household_status": status,
     }
 
@@ -325,6 +326,9 @@ def school_placement(panels, school, rows, future, settings, people, local):
             for r in settings["rules"]
             if child["person"] in r["people"] and r["start"] <= school["date"] <= r["end"] and day.weekday() in r["weekdays"]
         ]
+        child["commitments"] = [
+            r for r in [*rows, *future] if r.get("date") == school["date"] and child["person"] in r.get("person_ids", []) and r not in dated
+        ][:1]
         consumed.update(r["id"] for r in dated if settings["events"].get(r["id"], {}).get("wall_role") == "preparation")
     for panel in ("timeline", "secondary"):
         panels[panel]["items"] = [r for r in panels[panel]["items"] if r["id"] not in consumed]
@@ -509,10 +513,6 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
     if bins.get("configured") and bins.get("attention") not in (None, "quiet") and bins.get("summary"):
         exceptions.append({"title": bins["summary"], "detail": "Household collection", "kind": "bins"})
     baseline = state
-    # Night presentation must not discard the selected tomorrow preview. Before
-    # midnight, families still need the same school cards and useful chronology.
-    if baseline == "overnight" and not exceptions and not focus["preview"]:
-        focus["restrained"] = True
     if exceptions:
         state = "exception"
     active_session = display_session if display_session and (moment(display_session.get("expires_at")) or now) > now else camera_session
@@ -577,6 +577,8 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
     school = school_select(view.get("school_sources", []), people, view.get("person_roles", {}), focus, local, school_changed)
     panels = reference_panels(rows, future, people, signals, local, cue, view.get("issues", []), exceptions, preparation_rows, focus)
     panels = school_placement(panels, school, rows, future, settings, people, local)
+    if focus["night"]:
+        panels["week"] = []
     # Row/session deadlines expire independently in the renderer. Expiring a
     # transient must not invalidate the underlying board until the next poll.
     return {

@@ -35,7 +35,7 @@ def test_canonical_weekday_and_sunday_change_content_inside_the_same_regions():
 def test_sunday_evening_is_monday_people_preview_with_native_forecast_and_continuity():
     evening = scenario("canonical_evening")["model"]
     morning = scenario("canonical_weekday")["model"]
-    assert evening["focus"] == {"mode": "tomorrow_preview", "preview": True, "date": "2026-10-19", "label": "Tomorrow"}
+    assert evening["focus"] == {"mode": "tomorrow_preview", "preview": True, "night": False, "date": "2026-10-19", "label": "Tomorrow"}
     assert [c["key"] for c in evening["cards"]] == [c["key"] for c in morning["cards"]]
     assert [c["title"] for c in evening["cards"]] == ["Casey", "Jordan", "Alex"]
     assert "Sports kit + hat" in str(evening["cards"]) and "No shared plans" not in str(evening["cards"])
@@ -148,7 +148,7 @@ def test_overnight_is_low_information_and_critical_exceptions_override_sessions(
     signals = [{"domain": "media_player", "entity_id": "media_player.fixture", "state": "playing", "name": "Kitchen"}]
     model = compose(case["view"], [], case["settings"], {}, now, ZONE, signals)
     assert model["day_state"] == "overnight" and not model["active_context"]
-    assert model["phase"] == "night" and len(model["cards"]) <= 1
+    assert model["phase"] == "night" and model["focus"]["night"] and len(model["cards"]) <= 3
     assert model["secondary"]["items"] == []
     signals.append({"domain": "binary_sensor", "entity_id": "binary_sensor.fixture", "state": "on", "level": 0, "name": "Smoke alarm"})
     model = compose(case["view"], [], case["settings"], {}, now, ZONE, signals, content)

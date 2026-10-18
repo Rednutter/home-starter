@@ -25,7 +25,7 @@ test("forecast values are real optional data, never an inferred high",()=>{
  const current=scene({weather:{temperature:14,condition:"sunny"}});
  assert.match(current,/14°/);assert.match(current,/Forecast high unavailable/);assert.doesNotMatch(current,/→/);
  const forecast=scene({weather:{temperature:14,high:20,condition:"sunny"}});
- assert.match(forecast,/→ 20°/);
+ assert.match(forecast,/20°<\/span><small>High/);assert.match(forecast,/14°<\/strong><small>Now/);assert.doesNotMatch(forecast,/→/);
 });
 test("missing status is honest and unselected categories leave no empty containers",()=>{
  const body=scene();assert.match(body,/Home/);assert.doesNotMatch(body,/Climate|Security|Lights|Cameras|wall-family-card/);
@@ -34,7 +34,18 @@ test("missing status is honest and unselected categories leave no empty containe
 
 test("Monday preview weather uses tomorrow's range and keeps current weather secondary",()=>{
  const body=scene({focus:{preview:true,mode:"tomorrow_preview"},weather:{preview:true,focus_date:"2026-10-19",temperature:14,low:10,high:20,condition:"rainy",forecast_condition:"sunny"}});
- assert.match(body,/MON/);assert.match(body,/10°/);assert.match(body,/→ 20°/);assert.match(body,/Tomorrow · Sunny/);assert.match(body,/Now 14°/);
+ assert.match(body,/Tomorrow · Monday/);assert.match(body,/10°<\/span><small>Low/);assert.match(body,/20°<\/strong><small>High/);assert.match(body,/Sunny/);assert.match(body,/Now 14°/);assert.doesNotMatch(body,/→/);
+});
+
+test("night keeps compact identities, confirmed requirements and household chronology without classes or week clutter",()=>{
+ const school={label:"Tomorrow at school",children:[{person:"fixture",name:"Casey",status:"available",periods:[{subject:"Science",start:"2026-10-19T08:50:00+11:00"}],dated:[],rules:["Confirmed hat requirement"],commitments:[{...event,title:"Training"}]}]};
+ const body=scene({focus:{night:true,preview:true,label:"Tomorrow"},school,timeline:{label:"Tomorrow",items:[{title:"School",time:"8:50",people:["Casey"]}]},week:[{label:"Tuesday",items:[event]}]});
+ assert.match(body,/data-night="true"/);assert.match(body,/wall-avatar/);assert.match(body,/School · 8:50/);assert.match(body,/Confirmed hat requirement/);assert.match(body,/Training/);
+ assert.doesNotMatch(body,/Science|wall-school-periods|Week ahead|wall-secondary/);
+ const afterMidnight=scene({focus:{night:true,preview:false,label:"Today"},weather:{focus_date:"2026-10-19",high:23,low:11,temperature:15,forecast_condition:"partlycloudy"}});
+ assert.match(afterMidnight,/Today · Monday/);assert.match(afterMidnight,/23°<\/strong><small>High/);assert.doesNotMatch(afterMidnight,/Tomorrow|→/);
+ const missing=scene({focus:{preview:true},weather:{low:11}});
+ assert.match(missing,/11°<\/span><small>Low/);assert.match(missing,/Forecast high unavailable/);assert.doesNotMatch(missing,/<strong>High<\/strong>|wall-temperature-primary/);
 });
 test("expired calendar rows disappear independently",()=>{
  const body=scene({cards:[{kind:"person",title:"Casey",items:[{...event,title:"Finished",ends_at:new Date(0).toISOString()}]}],timeline:{label:"Today",items:[{...event,title:"Finished",ends_at:new Date(0).toISOString()}]}});

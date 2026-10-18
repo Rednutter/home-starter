@@ -14,8 +14,10 @@ rules must be mounted-wall/route scoped and removed on interactive navigation.
 Kitchen Wall uses labwc/Wayland: use its dedicated transparent cursor theme,
 not an X11 cursor daemon. Preserve original settings and verify after reboot.
 Evening normally previews tomorrow's people/rules/forecast without overrides.
-The night boundary must retain that preview's school cards and full chronology;
-test after 22:00 as well as before it. Restraint applies after midnight.
+Night mode runs 21:00–05:00: three compact people cards, confirmed school/kit/next
+commitment and household chronology; hide classes/week detail. At midnight keep
+the upcoming day and relabel Tomorrow to Today; restore full detail at 05:00.
+Weather preview emphasises labelled High/Low; daytime emphasises Now. No arrows.
 Explicit event links/calendar ownership win; a unique leading "Name · event"
 calendar label may identify a confirmed person. Never infer school/kit/travel.
 School timetables use explicit child/source mappings and dated native periods;

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.37
+
+- Add restrained 21:00–05:00 wall presentation within the reference composition:
+  three compact person cards, confirmed school/requirements/next commitments and
+  household timeline. Hide classes and week detail, retaining meaningful status
+  exceptions. Midnight keeps the coming morning and changes Tomorrow to Today.
+- Label forecast High/Low explicitly, emphasise High in preview and Now during
+  daytime, remove arrows and retain current temperature as secondary context.
+
 ## 0.8.36
 
 - Include children's school attendance in the shared Today/Tomorrow timeline,

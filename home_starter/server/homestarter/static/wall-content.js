@@ -12,6 +12,7 @@ const alive=r=>!r.ends_at || new Date(r.ends_at)>now;
 const valid=r=>!r.expires_at || new Date(r.expires_at)>now;
 const kiosk=new URLSearchParams(window.location.search).has("kiosk")&&!new URLSearchParams(window.location.search).has("disable_km");
 const small=window.innerHeight<850;
+const night=Boolean(model.focus?.night);
 // Authored outline geometry is shared by native HA and isolated previews.
 const shapes={home:'<path d="m3 11 9-8 9 8M5 10v11h5v-7h4v7h5V10"/>',car:'<path d="m5 8 2-4h10l2 4M4 17v3m16-3v3"/><rect x="3" y="8" width="18" height="10" rx="3"/><path d="M6 13h2m8 0h2"/>',calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 11h18"/>',check:'<circle cx="12" cy="12" r="9"/><path d="m7 12 3 3 7-7"/>',sun:'<circle cx="12" cy="12" r="4"/><path d="M12 1v3m0 16v3M1 12h3m16 0h3M4 4l2 2m12 12 2 2M4 20l2-2M18 6l2-2"/>',cloud:'<path d="M6 18a5 5 0 1 1 1-10 6 6 0 0 1 11 2 4 4 0 0 1 0 8Z"/>',thermometer:'<path d="M9 14V5a3 3 0 0 1 6 0v9a5 5 0 1 1-6 0Z"/><path d="M12 8v10"/>',lock:'<rect x="5" y="10" width="14" height="12" rx="2"/><path d="M8 10V6a4 4 0 0 1 8 0v4m-4 5v3"/>',light:'<path d="M8 15a7 7 0 1 1 8 0l-1 4H9ZM9 22h6"/>',camera:'<rect x="2" y="5" width="14" height="14" rx="3"/><path d="m16 10 6-4v12l-6-4"/>',alert:'<path d="m12 2 10 19H2ZM12 8v5m0 3v1"/>'};
 const icon=name=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${shapes[name] || shapes.calendar}</svg>`;
@@ -22,7 +23,7 @@ const location=r=>r.location&&!r.title.toLocaleLowerCase().includes(r.location.t
 const rows=(items,limit)=> (items || []).filter(alive).slice(0,limit);
 const exceptions=(model.household_exception || []).filter(valid);
 const active=(model.active_context || []).filter(r=>valid(r)&&r.kind!=="climate").slice(0,2);
-const cards=(model.cards || []).map(c=>({...c,items:rows(c.items,small&&c.title==="This week"?2:3)})).filter(c=>c.items.length).slice(0,3);
+const cards=(model.cards || []).map(c=>({...c,items:rows(c.items,night?2:small&&c.title==="This week"?2:3)})).filter(c=>c.items.length).slice(0,3);
 const avatar=card=>{
  const path=hass.states[card.avatar_entity]?.attributes?.entity_picture;
  return typeof path==="string"&&/^\/api\/image\/serve\/[a-zA-Z0-9_-]+\/\d+x\d+$/.test(path)?`<img src="${esc(path)}" alt="">`:`<span>${esc(card.title.split(/\s+/).map(n=>n[0]).slice(0,2).join(""))}</span>`;
@@ -38,6 +39,11 @@ const family=cards.length?cards.map((card,n)=>`<section class="wall-family-card 
 const school=model.school;
 const schoolPanel=school?.children?.length?school.children.map((child,n)=>{
  const dated=rows(child.dated,2),rules=(child.rules || []).slice(0,2),groups=[];
+ if(night){
+  const first=child.periods?.[0],next=rows(child.commitments,1);
+  const summary=first?`School · ${clock(first.start)}`:!dated.length?(child.status==="not_configured"?"Timetable not linked":"No classes listed"):"";
+  return `<section class="wall-family-card wall-school-child wall-tone-${n%3}" data-kind="person" data-key="school-${esc(child.person)}" data-status="${esc(child.status)}"><header><div class="wall-avatar">${avatar({title:child.name,avatar_entity:cfg.people?.[child.person]})}</div><div><h2>${esc(child.name)}</h2><p class="wall-person-day">${esc(model.focus?.label || (model.focus?.preview?"Tomorrow":"Today"))}</p></div></header><div class="wall-card-facts">${summary?`<p class="wall-night-summary">${esc(summary)}</p>`:""}${dated.slice(0,1).map(r=>fact(r,true)).join("")}${rules.map(r=>`<p class="wall-night-rule">${esc(r)}</p>`).join("")}${next.map(r=>fact(r,true)).join("")}</div></section>`;
+ }
  for(const period of child.periods || []) {
   const last=groups.at(-1);
   if(last?.subject===period.subject)last.count++;
@@ -47,7 +53,7 @@ const schoolPanel=school?.children?.length?school.children.map((child,n)=>{
  const shown=periods.reduce((count,r)=>count+r.count,0);
  return `<section class="wall-family-card wall-school-child wall-tone-${n%3}" data-kind="person" data-key="school-${esc(child.person)}" data-status="${esc(child.status)}" data-importance="upcoming"><header><div class="wall-avatar">${avatar({title:child.name,avatar_entity:cfg.people?.[child.person]})}</div><div><h2>${esc(child.name)}</h2><p class="wall-person-day">${esc(model.focus?.preview?"Tomorrow":"Today")} at school</p></div></header><div class="wall-card-facts">${dated.length?`<div class="wall-school-dated">${dated.map(r=>fact(r,true)).join("")}</div>`:""}${periods.length?`<ol class="wall-school-periods">${periods.map(r=>`<li data-period-count="${r.count}"><span>${esc(r.subject)}</span>${r.count>1?`<span class="wall-period-count" aria-label="${r.count} scheduled periods">&times;${r.count}</span>`:""}</li>`).join("")}</ol>${child.periods.length>shown?`<p class="wall-school-more">+${child.periods.length-shown} later classes</p>`:""}`:!dated.length&&!rules.length?`<p class="wall-school-fallback">${esc(child.fallback)}</p>`:""}${rules.length?`<div class="wall-school-rules">${rules.map(rule=>`<p>${esc(rule)}</p>`).join("")}</div>`:""}</div></section>`;
 }).join(""):"";
-const weekPanel=model.week?.length?`<section class="wall-week wall-secondary wall-surface" aria-label="Week ahead"><header><h2>Week ahead</h2></header><ol class="wall-week-days">${model.week.slice(0,6).map((day,n)=>rows(day.items,1).map(r=>`<li class="wall-week-row wall-tone-${n%3}"><span class="wall-week-day">${esc(day.label.length>9?day.label:day.label.slice(0,3))}</span><time>${esc(shortTime(r.time))}</time><span class="wall-dot"></span><h3>${esc(nice(r.title))}</h3></li>`).join("")).join("")}</ol></section>`:"";
+const weekPanel=!night&&model.week?.length?`<section class="wall-week wall-secondary wall-surface" aria-label="Week ahead"><header><h2>Week ahead</h2></header><ol class="wall-week-days">${model.week.slice(0,6).map((day,n)=>rows(day.items,1).map(r=>`<li class="wall-week-row wall-tone-${n%3}"><span class="wall-week-day">${esc(day.label.length>9?day.label:day.label.slice(0,3))}</span><time>${esc(shortTime(r.time))}</time><span class="wall-dot"></span><h3>${esc(nice(r.title))}</h3></li>`).join("")).join("")}</ol></section>`:"";
 const timeline=(panel,secondary=false)=>{
  const available=rows(panel?.items,secondary?3:small?4:5),items=[];
  let capacity=secondary?(small?2:3):small?5:7;
@@ -57,19 +63,22 @@ const timeline=(panel,secondary=false)=>{
 };
 const weather=model.weather;
 const temperature=value=>typeof value==="number"&&Number.isFinite(value)?Math.round(value)+"°":null;
-const preview=Boolean(model.focus?.preview);
+const preview=Boolean(model.focus?.preview || night);
 const weatherCondition=preview?weather?.forecast_condition:weather?.condition;
 const condition=weatherCondition?.replace(/partlycloudy/g,"Partly cloudy").replace(/^./,c=>c.toUpperCase());
-const weatherDay=preview&&weather?.focus_date?new Intl.DateTimeFormat("en-AU",{weekday:"short",timeZone:"UTC"}).format(new Date(weather.focus_date+"T12:00:00Z")).toUpperCase():"";
-const weatherPanel=`<section class="wall-weather" aria-label="${preview?"Tomorrow's forecast":"Weather"}"><div class="wall-weather-reading">${weatherDay?`<span class="wall-weather-day">${esc(weatherDay)}</span>`:""}${icon(["sunny","clear night"].includes(weatherCondition)?"sun":"cloud")}<strong>${esc(temperature(preview?weather?.low:weather?.temperature) || (preview?"High":"—"))}</strong>${temperature(weather?.high)?`<span>${preview&&weather?.low==null?"":"→ "}${esc(temperature(weather.high))}</span>`:""}</div><h2>${esc(preview?"Tomorrow"+(condition?" · "+condition:weather?.high==null?" · Forecast unavailable":""):condition || "Weather unavailable")}</h2>${!preview&&weather?.high==null?'<p>Forecast high unavailable</p>':""}${preview&&temperature(weather?.temperature)?`<p>Now ${esc(temperature(weather.temperature))}</p>`:""}${typeof weather?.precipitation_probability==="number"?`<p>${esc(weather.precipitation_probability)}% chance of rain</p>`:""}${exceptions.filter(e=>e.kind==="weather").map(e=>`<p class="wall-weather-impact">${esc(e.title)}</p>`).join("")}</section>`;
+const weatherDay=preview&&weather?.focus_date?new Intl.DateTimeFormat("en-AU",{weekday:"long",timeZone:"UTC"}).format(new Date(weather.focus_date+"T12:00:00Z")):"";
+const reading=(value,label,primary=false)=>temperature(value)?`<div class="wall-temperature${primary?" wall-temperature-primary":""}"><${primary?"strong":"span"}>${esc(temperature(value))}</${primary?"strong":"span"}><small>${esc(label)}</small></div>`:"";
+const weatherLabel=preview?(model.focus?.label || "Tomorrow")+(weatherDay?" · "+weatherDay:""):"Weather";
+const weatherPanel=`<section class="wall-weather" aria-label="${esc(weatherLabel)}"><div class="wall-weather-reading">${icon(["sunny","clear night"].includes(weatherCondition)?"sun":"cloud")}${preview?reading(weather?.high,"High",true)+reading(weather?.low,"Low"):reading(weather?.temperature,"Now",true)+reading(weather?.high,"High")}</div><h2>${esc(preview?weatherLabel:condition || "Weather unavailable")}</h2>${preview?`<p>${esc(condition || "Forecast unavailable")}</p>`:""}${weather?.high==null?'<p>Forecast high unavailable</p>':""}${preview&&temperature(weather?.temperature)?`<p>Now ${esc(temperature(weather.temperature))}</p>`:""}${typeof weather?.precipitation_probability==="number"?`<p>${esc(weather.precipitation_probability)}% chance of rain</p>`:""}${exceptions.filter(e=>e.kind==="weather").map(e=>`<p class="wall-weather-impact">${esc(e.title)}</p>`).join("")}</section>`;
 const status=fresh?model.household_status || {}:{};
 const statusCell=(kind,label,value,detail)=>{
+ if(night&&(kind==="light"&&value==="All off"||kind==="lock"&&value==="Armed"))return "";
  if(label!=="Home"&&(!value||value==="Not selected"))return "";
  const climate=kind==="thermometer"&&detail;
  return `<section class="wall-status-cell" aria-label="${esc(label)}"><span class="wall-status-icon">${icon(kind)}</span><div><h3>${esc(climate?value:label)}</h3><strong>${esc(climate?detail:value || "Status unavailable")}</strong></div></section>`;
 };
 const household=`<section class="wall-household wall-surface" aria-label="Household status">${statusCell("home","Home",status.home)}${statusCell("thermometer","Climate",temperature(status.climate?.temperature)||status.climate?.detail,temperature(status.climate?.temperature)?status.climate?.detail:"")}${statusCell("lock","Security",status.security)}${statusCell("light","Lights",status.lights)}</section>`;
-const cameras=(status.cameras || []).slice(0,3);
+const cameras=(status.cameras || []).filter(c=>!night||!c.available).slice(0,3);
 const cameraPicture=c=>{
  const path=hass.states[c.entity]?.attributes?.entity_picture;
  return c.available&&typeof path==="string"&&path.split("?")[0]===`/api/camera_proxy/${c.entity}`?`<img src="${esc(path)}" alt="${esc(c.name)} camera view">`:icon("camera");
@@ -83,8 +92,8 @@ if(session?.kind==="camera" && /^camera\.[a-z0-9_]+$/.test(session.camera || "")
 }
 const overlay=session?`<section class="wall-session" aria-label="Temporary display session"><div><h2>${esc(session.title)}</h2>${picture}${session.kind==="camera"&&!picture?"<p>Camera view unavailable</p>":""}<p class="wall-session-body">${esc(session.body)}</p><p>Returns to the family board automatically</p></div></section>`:"";
 const alerts=exceptions.filter(r=>r.kind!=="weather");
-const primaryAgenda=timeline(model.timeline),secondaryAgenda=weekPanel || timeline(model.secondary,true);
-const body=`<main class="hs-wall" data-fresh="${fresh}" data-wall-surface="${esc(cfg.surface_id)}" data-cursor-hidden="${kiosk}" data-state="${esc(model.day_state)}" data-mode="${esc(model.focus?.mode || "today")}" data-phase="${esc(model.phase || "morning")}" data-agenda="${primaryAgenda||secondaryAgenda||weekPanel?"visible":"hidden"}" style="--wall-chrome:${kiosk?0:56}px" aria-label="${esc(cfg.title)} household board">${alerts.length?`<aside class="wall-alerts">${icon("alert")}${esc(alerts.map(r=>r.title+" · "+r.detail).join(" · "))}</aside>`:""}<header class="wall-header"><div class="wall-clock"><time>${esc(date({hour:"numeric",minute:"2-digit",hour12:false}).replace(/^0/,""))}</time><p>${esc(date({weekday:"long",day:"numeric",month:"short"})).replace(",","")}</p></div>${weatherPanel}</header><div class="wall-family${schoolPanel?" wall-family-school":""}" data-count="${schoolPanel?school.children.length:cards.length}" aria-label="${esc(school?.label || "Household plans")}">${schoolPanel || family}</div><aside class="wall-agenda">${primaryAgenda}${secondaryAgenda}</aside><footer class="wall-bottom">${household}${cameraPanel}</footer>${overlay}</main>`;
+const primaryAgenda=timeline(model.timeline),secondaryAgenda=night?"":weekPanel || timeline(model.secondary,true);
+const body=`<main class="hs-wall" data-fresh="${fresh}" data-night="${night}" data-wall-surface="${esc(cfg.surface_id)}" data-cursor-hidden="${kiosk}" data-state="${esc(model.day_state)}" data-mode="${esc(model.focus?.mode || "today")}" data-phase="${esc(model.phase || "morning")}" data-agenda="${primaryAgenda||secondaryAgenda||weekPanel?"visible":"hidden"}" style="--wall-chrome:${kiosk?0:56}px" aria-label="${esc(cfg.title)} household board">${alerts.length?`<aside class="wall-alerts">${icon("alert")}${esc(alerts.map(r=>r.title+" · "+r.detail).join(" · "))}</aside>`:""}<header class="wall-header"><div class="wall-clock"><time>${esc(date({hour:"numeric",minute:"2-digit",hour12:false}).replace(/^0/,""))}</time><p>${esc(date({weekday:"long",day:"numeric",month:"short"})).replace(",","")}</p></div>${weatherPanel}</header><div class="wall-family${schoolPanel?" wall-family-school":""}" data-count="${schoolPanel?school.children.length:cards.length}" aria-label="${esc(school?.label || "Household plans")}">${schoolPanel || family}</div><aside class="wall-agenda">${primaryAgenda}${secondaryAgenda}</aside><footer class="wall-bottom">${household}${cameraPanel}</footer>${overlay}</main>`;
 if(window.customElements&&typeof HTMLElement!=="undefined"&&!window.customElements.get("home-starter-ambient-wall")) {
  // HA uses nested shadow roots. Scope the document-wide rule to this mounted wall
  // route in kiosk mode; remove every injected style/listener on navigation or detach.

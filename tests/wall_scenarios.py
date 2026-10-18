@@ -11,10 +11,12 @@ ZONE = "Australia/Sydney"
 
 
 def scenario(name):
-    if name in ("school_sunday", "school_sunday_late", "school_monday"):
-        case = scenario("canonical_weekday" if name == "school_monday" else "canonical_evening")
+    if name in ("school_sunday", "school_sunday_late", "school_monday", "school_monday_night"):
+        case = scenario("canonical_weekday" if name in ("school_monday", "school_monday_night") else "canonical_evening")
         if name == "school_sunday_late":
             case["now"] = case["now"].replace(hour=22, minute=9)
+        if name == "school_monday_night":
+            case["now"] = case["now"].replace(hour=0, minute=30)
         day = case["now"].replace(day=19, hour=9, minute=0)
         case["view"]["person_roles"] = dict.fromkeys(case["people"], "child")
         case["events"] = case["events"][1:]  # Native periods supply school attendance in these scenarios.
@@ -202,6 +204,7 @@ def scenario(name):
 SCENARIOS = (
     "school_sunday",
     "school_sunday_late",
+    "school_monday_night",
     "school_monday",
     "canonical_weekday",
     "canonical_evening",

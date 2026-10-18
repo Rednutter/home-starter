@@ -44,10 +44,28 @@ def test_late_evening_keeps_monday_school_cards_and_timeline_until_midnight():
         assert late["focus"]["preview"] and not late["focus"].get("restrained")
         assert late["school"] == evening["school"] and len(late["school"]["children"]) == 3
         assert late["timeline"] == evening["timeline"]
-        assert late["week"] == evening["week"] and not late["cards"]
+        assert late["focus"]["night"] and not late["week"] and not late["cards"]
     case["now"] = case["now"].replace(hour=0, minute=30) + timedelta(days=1)
     overnight = render(case)
-    assert overnight["focus"].get("restrained") and overnight["school"] is None
+    assert overnight["focus"]["night"] and not overnight["focus"]["preview"]
+    assert overnight["school"]["date"] == evening["school"]["date"]
+    assert [(c["person"], c["periods"]) for c in overnight["school"]["children"]] == [(c["person"], c["periods"]) for c in evening["school"]["children"]]
+    assert overnight["timeline"]["label"] == "Today" and not overnight["week"]
+
+
+def test_night_boundaries_keep_people_and_morning_restores_full_detail():
+    case = scenario("school_sunday")
+    for hour, minute, expected in ((20, 59, False), (21, 0, True), (23, 59, True)):
+        case["now"] = case["now"].replace(hour=hour, minute=minute)
+        model = render(case)
+        assert model["focus"]["night"] is expected
+        assert len(model["school"]["children"]) == 3 and model["timeline"]["items"]
+    case["now"] = case["now"] + timedelta(days=1)
+    for hour, minute, expected in ((0, 0, True), (4, 59, True), (5, 0, False)):
+        case["now"] = case["now"].replace(hour=hour, minute=minute)
+        model = render(case)
+        assert model["focus"]["night"] is expected
+        assert model["focus"]["date"] == "2026-10-19" and len(model["school"]["children"]) == 3
 
 
 def test_explicit_dated_school_information_then_subjects_then_configured_rules():

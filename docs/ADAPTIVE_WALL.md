@@ -254,3 +254,20 @@ names. Classes remain in person cards. An explicit school event takes precedence
 for its linked children; missing periods, suppressed dates and expired attendance
 never create assumed school commitments. Other dated household events stay in
 the timeline in time order. Live Monday has one 8:50 School row for three children.
+
+## Compact night presentation (0.8.37)
+
+Night now runs from 21:00 inclusive to 05:00 exclusive in the household timezone.
+It retains the reference anchors, three shallow person cards and household
+timeline. Native school attendance, confirmed requirements and the next linked
+commitment replace full class lists; week and routine camera/light/security
+details recede. Missing timetables never imply a school day. Actual overnight
+events and safety exceptions retain their existing priority. The photograph
+reclaims space under shallow cards; no new containers or scrolling are added.
+At midnight the same upcoming morning becomes Today, rather than jumping to
+the following day. At 05:00 the full class presentation returns. Temperature
+labels distinguish High/Low forecasts from Now observations, without arrows.
+Visual night treatment does not change the Pi monitor's hardware brightness.
+Live acceptance confirmed three 184px-high cards, all four household timeline
+entries, High 23° / Low 11°, no class/week lists, and no clipping or cursor after
+reload. Boundary regressions cover 20:59, 21:00, midnight, 04:59 and 05:00.
