@@ -11,8 +11,10 @@ ZONE = "Australia/Sydney"
 
 
 def scenario(name):
-    if name in ("school_sunday", "school_monday"):
-        case = scenario("canonical_evening" if name == "school_sunday" else "canonical_weekday")
+    if name in ("school_sunday", "school_sunday_late", "school_monday"):
+        case = scenario("canonical_weekday" if name == "school_monday" else "canonical_evening")
+        if name == "school_sunday_late":
+            case["now"] = case["now"].replace(hour=22, minute=9)
         day = case["now"].replace(day=19, hour=9, minute=0)
         case["view"]["person_roles"] = dict.fromkeys(case["people"], "child")
         case["settings"]["rules"] = []
@@ -198,6 +200,7 @@ def scenario(name):
 
 SCENARIOS = (
     "school_sunday",
+    "school_sunday_late",
     "school_monday",
     "canonical_weekday",
     "canonical_evening",

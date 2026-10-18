@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.35
+
+- Keep tomorrow's mapped school timetable cards, household timeline and week
+  outlook visible after the night boundary. Preserve the three-person reference
+  composition; overnight restraint resumes after midnight.
+- Cover late Sunday at 22:09 and 23:59, Monday continuity and both wall sizes.
+
 ## 0.8.34
 
 - Hide cursors throughout the mounted wall kiosk document and HA shadow roots,

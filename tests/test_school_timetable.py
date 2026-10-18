@@ -34,6 +34,22 @@ def test_missing_data_fails_safely_without_using_another_child_or_day():
     assert [c["status"] for c in school["children"]] == ["no_classes", "not_configured", "not_configured"]
 
 
+def test_late_evening_keeps_monday_school_cards_and_timeline_until_midnight():
+    case = scenario("school_sunday")
+    evening = render(case)
+    for hour, minute in ((22, 9), (23, 59)):
+        case["now"] = case["now"].replace(hour=hour, minute=minute)
+        late = render(case)
+        assert late["baseline_state"] == "overnight" and late["phase"] == "night"
+        assert late["focus"]["preview"] and not late["focus"].get("restrained")
+        assert late["school"] == evening["school"] and len(late["school"]["children"]) == 3
+        assert late["timeline"] == evening["timeline"]
+        assert late["week"] == evening["week"] and not late["cards"]
+    case["now"] = case["now"].replace(hour=0, minute=30) + timedelta(days=1)
+    overnight = render(case)
+    assert overnight["focus"].get("restrained") and overnight["school"] is None
+
+
 def test_explicit_dated_school_information_then_subjects_then_configured_rules():
     case = scenario("school_sunday")
     dated = case["events"][0]

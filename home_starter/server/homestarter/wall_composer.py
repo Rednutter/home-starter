@@ -493,7 +493,9 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
     if bins.get("configured") and bins.get("attention") not in (None, "quiet") and bins.get("summary"):
         exceptions.append({"title": bins["summary"], "detail": "Household collection", "kind": "bins"})
     baseline = state
-    if baseline == "overnight" and not exceptions:
+    # Night presentation must not discard the selected tomorrow preview. Before
+    # midnight, families still need the same school cards and useful chronology.
+    if baseline == "overnight" and not exceptions and not focus["preview"]:
         focus["restrained"] = True
     if exceptions:
         state = "exception"

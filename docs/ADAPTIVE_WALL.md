@@ -235,3 +235,15 @@ also produced no cursor pixels in cursor-inclusive captures with webpage cursor
 hiding temporarily overridden; the probe was removed and the wall reloaded.
 No physical mouse was attached. Isolated phone/tablet navigation checks restored
 their original cursor styles. Private screenshots stay outside Git.
+
+## Late-evening preview continuity (0.8.35)
+
+The 22:00 night boundary previously set `focus.restrained` even while Tomorrow
+was selected. That removed the school panel and reduced the timeline to two
+items, leaving one stretched adult card. Tomorrow preview now retains its full
+content through midnight; actual overnight restraint still applies afterwards.
+The reference composition, CSS and Cirrus ownership/visibility choices are
+unchanged. Live checks confirmed three selected Cirrus feeds with seven Monday
+periods each, three person cards, all three Monday household commitments and
+four upcoming-day groups, without clipping. Regression scenarios cover late
+Sunday as well as weekday morning at both supported wall sizes.
