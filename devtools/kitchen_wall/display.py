@@ -14,7 +14,8 @@ OFFLINE = """<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width">
 <title>Kitchen wall connection</title>
-<style>body{margin:0;background:#0b151f;color:#f7f8fa;font:32px Arial,sans-serif;display:grid;place-content:center;
+<style>html,body,#root,#app,*{cursor:none!important}
+body{margin:0;background:#0b151f;color:#f7f8fa;font:32px Arial,sans-serif;display:grid;place-content:center;
 min-height:100vh;padding:0 8vw;box-sizing:border-box;cursor:none}
 h1{font-size:52px;font-weight:400}
 p{color:#c3cfdd;line-height:1.5;max-width:38ch}

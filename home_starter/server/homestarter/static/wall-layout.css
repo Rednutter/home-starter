@@ -1,6 +1,6 @@
 :host { display:block; container-type:inline-size; }
 home-starter-ambient-wall { display:block; }
-#card.disabled { cursor:default; }
+:host,html,body,#root,#app,* { cursor:none !important; }
 .hs-wall { box-sizing:border-box; height:calc(100dvh - var(--wall-chrome,56px)); padding:30px 32px; display:grid; grid-template-columns:minmax(0,2.45fr) minmax(0,1fr); grid-template-rows:minmax(210px,.58fr) minmax(0,1fr) minmax(130px,.34fr); gap:20px; overflow:hidden; position:relative; color:#f7f8fa; font-family:Roboto,Arial,sans-serif; background:linear-gradient(90deg,#06131c65,transparent 76%),linear-gradient(180deg,#06131c42,#06131c24 42%,#06131c75),var(--wall-landscape); background-size:cover; background-position:center; --wall-muted:#d0dce8; --wall-blue:#b9d6ed; cursor:none; view-transition-name:home-starter-wall; }
 .hs-wall * { box-sizing:border-box; min-width:0; }
 .hs-wall h2,.hs-wall h3,.hs-wall p,.hs-wall figure { margin:0; }

@@ -84,9 +84,46 @@ if(session?.kind==="camera" && /^camera\.[a-z0-9_]+$/.test(session.camera || "")
 const overlay=session?`<section class="wall-session" aria-label="Temporary display session"><div><h2>${esc(session.title)}</h2>${picture}${session.kind==="camera"&&!picture?"<p>Camera view unavailable</p>":""}<p class="wall-session-body">${esc(session.body)}</p><p>Returns to the family board automatically</p></div></section>`:"";
 const alerts=exceptions.filter(r=>r.kind!=="weather");
 const primaryAgenda=timeline(model.timeline),secondaryAgenda=weekPanel || timeline(model.secondary,true);
-const body=`<main class="hs-wall" data-fresh="${fresh}" data-state="${esc(model.day_state)}" data-mode="${esc(model.focus?.mode || "today")}" data-phase="${esc(model.phase || "morning")}" data-agenda="${primaryAgenda||secondaryAgenda||weekPanel?"visible":"hidden"}" style="--wall-chrome:${kiosk?0:56}px" aria-label="${esc(cfg.title)} household board">${alerts.length?`<aside class="wall-alerts">${icon("alert")}${esc(alerts.map(r=>r.title+" · "+r.detail).join(" · "))}</aside>`:""}<header class="wall-header"><div class="wall-clock"><time>${esc(date({hour:"numeric",minute:"2-digit",hour12:false}).replace(/^0/,""))}</time><p>${esc(date({weekday:"long",day:"numeric",month:"short"})).replace(",","")}</p></div>${weatherPanel}</header><div class="wall-family${schoolPanel?" wall-family-school":""}" data-count="${schoolPanel?school.children.length:cards.length}" aria-label="${esc(school?.label || "Household plans")}">${schoolPanel || family}</div><aside class="wall-agenda">${primaryAgenda}${secondaryAgenda}</aside><footer class="wall-bottom">${household}${cameraPanel}</footer>${overlay}</main>`;
+const body=`<main class="hs-wall" data-fresh="${fresh}" data-wall-surface="${esc(cfg.surface_id)}" data-cursor-hidden="${kiosk}" data-state="${esc(model.day_state)}" data-mode="${esc(model.focus?.mode || "today")}" data-phase="${esc(model.phase || "morning")}" data-agenda="${primaryAgenda||secondaryAgenda||weekPanel?"visible":"hidden"}" style="--wall-chrome:${kiosk?0:56}px" aria-label="${esc(cfg.title)} household board">${alerts.length?`<aside class="wall-alerts">${icon("alert")}${esc(alerts.map(r=>r.title+" · "+r.detail).join(" · "))}</aside>`:""}<header class="wall-header"><div class="wall-clock"><time>${esc(date({hour:"numeric",minute:"2-digit",hour12:false}).replace(/^0/,""))}</time><p>${esc(date({weekday:"long",day:"numeric",month:"short"})).replace(",","")}</p></div>${weatherPanel}</header><div class="wall-family${schoolPanel?" wall-family-school":""}" data-count="${schoolPanel?school.children.length:cards.length}" aria-label="${esc(school?.label || "Household plans")}">${schoolPanel || family}</div><aside class="wall-agenda">${primaryAgenda}${secondaryAgenda}</aside><footer class="wall-bottom">${household}${cameraPanel}</footer>${overlay}</main>`;
 if(window.customElements&&typeof HTMLElement!=="undefined"&&!window.customElements.get("home-starter-ambient-wall")) {
+ // HA uses nested shadow roots. Scope the document-wide rule to this mounted wall
+ // route in kiosk mode; remove every injected style/listener on navigation or detach.
+ const cursorGuard=host=>{
+  const doc=host.ownerDocument,view=doc.defaultView,styles=new Map(),observers=new Map();
+  const css=":host,html,body,#root,#app,*,*::before,*::after{cursor:none!important}";
+  let surface="",enabled=false,frame=0,active=false;
+  const changed=records=>{
+   if(records.some(r=>r.removedNodes.length||[...r.addedNodes].some(n=>!(n.nodeType===1&&n.hasAttribute('data-home-starter-wall-cursor'))))&&!frame)
+    frame=view.requestAnimationFrame(()=>{frame=0;if(active)cover(doc);});
+  };
+  const cover=root=>{
+   if(root===doc||root instanceof view.ShadowRoot){
+    if(!styles.has(root)){
+     const style=doc.createElement("style");style.setAttribute("data-home-starter-wall-cursor","");style.textContent=css;
+     styles.set(root,style);(root===doc?doc.head:root).append(style);
+     const observer=new view.MutationObserver(changed);observer.observe(root,{childList:true,subtree:true});observers.set(root,observer);
+    }else if(!styles.get(root).isConnected)(root===doc?doc.head:root).append(styles.get(root));
+   }
+   if(root.shadowRoot)cover(root.shadowRoot);
+   for(const element of root.querySelectorAll("*"))if(element.shadowRoot)cover(element.shadowRoot);
+  };
+  const clear=()=>{
+   active=false;if(frame)view.cancelAnimationFrame(frame);frame=0;
+   for(const observer of observers.values())observer.disconnect();observers.clear();
+   for(const style of styles.values())style.remove();styles.clear();
+  };
+  const sync=()=>{
+   const query=new URLSearchParams(view.location.search);
+   const wanted=host.isConnected&&enabled&&surface&&view.location.pathname.startsWith('/home-starter-'+surface+'/')&&query.has('kiosk')&&!query.has('disable_km');
+   if(wanted){active=true;cover(doc);}else clear();
+  };
+  const events=['popstate','hashchange','location-changed'];for(const event of events)view.addEventListener(event,sync);
+  return {set(root){surface=root?.dataset.wallSurface || "";enabled=root?.dataset.cursorHidden==="true";sync();},
+   dispose(){clear();for(const event of events)view.removeEventListener(event,sync);}};
+ };
  class AmbientWall extends HTMLElement {
+  connectedCallback(){this._cursorGuard ||= cursorGuard(this);this._cursorGuard.set(this.querySelector('.hs-wall'));}
+  disconnectedCallback(){this._cursorGuard?.dispose();this._cursorGuard=null;}
   set content(value) {
    if(value===this._content)return;
    this._content=value;
@@ -95,7 +132,7 @@ if(window.customElements&&typeof HTMLElement!=="undefined"&&!window.customElemen
    const next=parsed.content.querySelector(".hs-wall"),old=this.querySelector(".hs-wall");
    const keys=root=>[...(root?.querySelectorAll("[data-key]") || [])].map(e=>e.dataset.key).join("|");
    const changed=old&&next&&(keys(old)!==keys(next)||old.dataset.mode!==next.dataset.mode);
-   const update=()=>{if(generation===this._generation)this.innerHTML=value;};
+   const update=()=>{if(generation===this._generation){this.innerHTML=value;this._cursorGuard?.set(this.querySelector(".hs-wall"));}};
    this._transition?.skipTransition();
    if(changed&&old.dataset.fresh==="true"&&next.dataset.fresh==="true"&&document.startViewTransition&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     this._transition=document.startViewTransition(update);

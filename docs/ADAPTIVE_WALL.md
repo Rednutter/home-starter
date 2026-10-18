@@ -203,3 +203,35 @@ The live children's person records currently have no portraits, so initials are
 the correct fallback. Native photos are confined to admitted Person sources.
 A before/after digest checks the live focus, school, timeline, secondary and
 week data contract; real screenshots remain ignored local verification evidence.
+
+
+## Invisible kiosk cursor (0.8.34)
+
+The wall's own shadow CSS uses `cursor: none !important` for its entire surface.
+While that wall is mounted at its own `/home-starter-<surface>/` route with
+`?kiosk` (without `disable_km`), its component also inserts the rule into the
+HA document and every open shadow root. A mutation observer covers new controls
+and overlays. Navigation, kiosk escape or component removal removes the injected
+styles and listeners; phone/tablet surfaces retain their own pointer behaviour.
+The standalone Pi network fallback applies the same cursor rule locally.
+Run `python devtools/e2e_wall_cursor.py` for pointer, reload and scope acceptance.
+
+The actual Pi runs labwc/Wayland. `devtools/kitchen_wall/install_cursor.py` creates
+a transparent cursor theme in the dedicated display account, validates its image
+through the native cursor library, and covers installed cursor aliases. It sets
+labwc's environment, the browser user service environment and that account's GTK
+cursor preference; no X11 daemon or additional package is installed. This prevents
+motion from revealing the OS cursor, including before the wall page loads.
+[labwc documents its Wayland cursor-theme environment](https://labwc.github.io/labwc-config.5.html#environment_variables).
+Original labwc environment and GTK preference are retained beside their settings.
+To undo, restore `environment.before-home-starter-cursor`, restore the saved
+`cursor-theme.before` preference, remove the owned `cursor.conf` service drop-in,
+and reboot. Browser credentials/profiles and unrelated services are untouched.
+
+Live acceptance on 18 October 2026 confirmed an actual Pi reboot and automatic
+kiosk startup, then two reloads with all 533 inspected elements across 89 HA/shadow
+roots resolving to `cursor: none`. Eleven native Wayland virtual-pointer motions
+also produced no cursor pixels in cursor-inclusive captures with webpage cursor
+hiding temporarily overridden; the probe was removed and the wall reloaded.
+No physical mouse was attached. Isolated phone/tablet navigation checks restored
+their original cursor styles. Private screenshots stay outside Git.

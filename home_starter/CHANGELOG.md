@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.34
+
+- Hide cursors throughout the mounted wall kiosk document and HA shadow roots,
+  including controls, overlays and hover states. Restore interactive cursors on
+  navigation, kiosk escape or component removal; other screen builds are scoped.
+- Hide the local network fallback cursor and add a dedicated labwc/Wayland
+  transparent cursor theme, with validated assets and preserved original settings.
+- Cover pointer motion, reload and interactive phone/tablet route isolation.
+
 ## 0.8.33
 
 - Restore the original wall reference: clock/weather hero, three circular-avatar
