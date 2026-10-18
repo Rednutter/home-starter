@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Schedule Kitchen Wall HDMI output off at 22:00 and on at 06:00 local time using
+  native Wayland power control. Reconcile after startup and missed events while
+  keeping kiosk, audio and voice running; verify both power states.
+- Prevent standby HDMI reconnects from waking the monitor; preserve the original
+  compositor configuration and explicitly restore rotated HDMI output at wake.
+
 ## 0.8.37
 
 - Add restrained 21:00–05:00 wall presentation within the reference composition:

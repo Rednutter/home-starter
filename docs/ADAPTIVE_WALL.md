@@ -140,8 +140,8 @@ passive board. Existing labwc/autologin/health/voice/audio services are preserve
 
 The overnight presentation deliberately reduces content. **Actual monitor
 brightness/wake is infrastructure, not a dark-CSS claim.** No DDC/backlight
-controller is commissioned on the inspected HDMI monitor, so physical scheduled
-dimming remains pending a working hardware adapter. A reboot can verify service
+controller is commissioned on the inspected HDMI monitor. Scheduled output power
+now uses Wayland (see below); brightness dimming remains separate. A reboot can verify service
 recovery; it is not a physical power-cut or human distance-readability test.
 
 
@@ -271,3 +271,37 @@ Visual night treatment does not change the Pi monitor's hardware brightness.
 Live acceptance confirmed three 184px-high cards, all four household timeline
 entries, High 23° / Low 11°, no class/week lists, and no clipping or cursor after
 reload. Boundary regressions cover 20:59, 21:00, midnight, 04:59 and 05:00.
+
+## Nightly screen power
+
+Kitchen Wall's HDMI-A-1 output sleeps from 22:00 inclusive to 06:00 exclusive in
+Australia/Sydney time, independently of the wall's 21:00–05:00 content mode.
+`screen_power.py` uses the existing native Wayland `wlopm` power protocol and
+verifies the returned output state, including disabled HDMI after standby's
+hotplug cycle. The user service/timer runs at both daily
+boundaries, 15 seconds after manager startup and every minute for recovery.
+Each execution reconciles the current local time, so missed timer events and
+overnight reboots cannot replay the wrong power action. DST follows the local
+timezone. Chromium, authentication, audio and voice remain running.
+
+The inspected monitor briefly disconnects on standby. The merged labwc user
+configuration disables automatic output re-enabling; the original rc.xml is
+preserved in `rc.xml.before-home-starter-power` (empty means originally absent).
+This is the [documented labwc standby workaround](https://labwc.github.io/labwc-config.5.html#entry_core_autoenableoutputs).
+At wake, the service explicitly enables HDMI with `wlr-randr`, restores the
+existing 180-degree rotation, then confirms power on. A disabled HDMI output
+with the compositor's headless fallback is a valid off state.
+
+Install both Python helpers in `~/.local/share/home-starter/` and the shipped
+`home-starter-screen-power.service` / `.timer` in `~/.config/systemd/user/`.
+Run `python3 ~/.local/share/home-starter/install_screen_power.py` once in the
+dedicated account; it requires the existing `labwc -m` merged configuration.
+Run `systemctl --user daemon-reload`, then
+`systemctl --user enable --now home-starter-screen-power.timer` and
+`systemctl --user start home-starter-screen-power.service`.
+The live Pi confirmed output off → on → scheduled off while all kiosk/audio/voice
+services remained active. The actual 06:00 timer firing has not yet occurred.
+To disable scheduling, stop/disable the timer, restore the saved rc.xml (remove
+the owned rc.xml if the backup is empty), reload labwc, and enable HDMI with
+`wlr-randr --output HDMI-A-1 --on --transform 180` followed by
+`wlopm --on HDMI-A-1` within the graphical account's Wayland environment.

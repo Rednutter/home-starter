@@ -1,0 +1,11 @@
+[Unit]
+Description=Home Starter scheduled wall screen power
+After=graphical-session.target home-starter-display.service
+
+[Service]
+Type=oneshot
+Environment=WAYLAND_DISPLAY=wayland-0
+Environment=WALL_TIMEZONE=Australia/Sydney
+Environment=WALL_OUTPUT=HDMI-A-1
+ExecStart=/usr/bin/python3 %h/.local/share/home-starter/screen_power.py
+TimeoutStartSec=75

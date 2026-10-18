@@ -18,6 +18,10 @@ Night mode runs 21:00–05:00: three compact people cards, confirmed school/kit/
 commitment and household chronology; hide classes/week detail. At midnight keep
 the upcoming day and relabel Tomorrow to Today; restore full detail at 05:00.
 Weather preview emphasises labelled High/Low; daytime emphasises Now. No arrows.
+Pi output power is separate: off 22:00–06:00 Australia/Sydney using wlopm and the
+user screen-power timer. Keep Chromium/audio/voice running; verify off and wake.
+The monitor hotplugs on standby: retain labwc's auto-enable guard and explicit
+wlr-randr wake; disabled HDMI with a NOOP fallback is a valid overnight state.
 Explicit event links/calendar ownership win; a unique leading "Name · event"
 calendar label may identify a confirmed person. Never infer school/kit/travel.
 School timetables use explicit child/source mappings and dated native periods;
