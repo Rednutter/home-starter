@@ -20,11 +20,13 @@ The composer exposes `day_state`, `baseline_state`, `primary`, `next_movement`,
 `display_session`, `spans` and `valid_until`. Named states are busy morning,
 quiet daytime, pre-activity, active movement, evening, overnight, weekend,
 abnormal schedule and exception. Urgent context overrides the clock baseline.
-The weekday reference's hierarchy remains, with an ambient photographic canvas:
-upper-left time/date beside weather, useful person/context islands, right-hand
-chronology and a restrained bottom status anchor. No visible fixed grid, card
-borders, empty islands or unselected status placeholders. Surfaces are softly
-translucent, with optional blur; importance adjusts opacity/type, not loud alerts.
+The supplied weekday mock-up is the canonical visual composition: a large
+clock/date and weather hero, three circular-avatar person cards, right-hand
+timeline, lower-right Later/Week ahead panel, and a readable household/status
+bar. Keep the photographic background visible through lighter tinted glass;
+do not replace the cards with floating text or a wide school table. Native
+permitted portraits are used where present, otherwise clean initial circles.
+Rose/blue/green accents distinguish people without solid-colour cards.
 Evening selects tomorrow's people, confirmed requirements and forecast. Sunday
 afternoon also brings Monday forward. Imminent commitments override preview.
 Monday naturally returns to Today using the same person keys and placement.
@@ -39,8 +41,8 @@ empty groups disappear and neighbours expand. Remaining tonight is secondary to
 tomorrow unless imminent. Night suppresses secondary information and density.
 
 `static/wall-content.js` renders these priorities and applies only freshness,
-expiry and viewport-capacity checks. `static/wall-layout.css` retains the approved
-landscape and stable anchors without rigid containers. Native composition changes
+expiry and viewport-capacity checks. `static/wall-layout.css` restores the approved
+landscape, card composition and stable anchors with lighter glass. Native composition changes
 crossfade for 450ms when supported, respecting reduced motion. Poll/clock updates
 do not animate continuously. Stale/foreign data clears immediately without a fade.
 Evening shows known early starts/departures and confirmed next-day routine rules;
@@ -180,3 +182,24 @@ were approved for shared school display by the user's timetable request. Live
 verification on 18 October read seven Monday entries per child; no subjects or
 private native screenshot are committed. Calendar identity remains a native ID
 mapping; no product code depends on these household-specific IDs or names.
+
+
+## Reference restoration (0.8.33)
+
+This slice changes presentation only. Calendar/timetable mappings, school date
+selection, event selection, horizon and state machine are unchanged. Existing
+`school.children` render in the three avatar cards. Adjacent identical subject
+names collapse visually to a counted group (for example ×2); nonadjacent repeats
+remain separate and scheduled-period totals are preserved. This is not a packing
+rule. Week groups move to the lower-right secondary region and retain their
+selected dates/events. Today appointments already in the main timeline need not
+be repeated in a third right-side panel.
+
+The clock/date and forecast share the open upper-left hero. Person cards use
+subtle individual tint, large circular portraits/initials and legible facts.
+The status footer uses meaningful selected native data, with camera thumbnails
+only when selected. No security/camera state or household photo is invented.
+The live children's person records currently have no portraits, so initials are
+the correct fallback. Native photos are confined to admitted Person sources.
+A before/after digest checks the live focus, school, timeline, secondary and
+week data contract; real screenshots remain ignored local verification evidence.

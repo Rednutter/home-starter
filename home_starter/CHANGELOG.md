@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.8.33
+
+- Restore the original wall reference: clock/weather hero, three circular-avatar
+  person cards with subtle individual tint, right timeline and lower-right week
+  panel, and a readable household/status bar. Use lighter glass over the photo.
+- Present adjacent repeated classes with explicit period counts; retain every
+  selected subject, source, event, week horizon and Sunday/Monday state decision.
+- Use selected native portraits when available and clean initials otherwise.
+  Preserve freshness, privacy, reduced-motion and temporary-session guards.
+- Verify the weekday and school preview at full HD and smaller landscape, plus
+  all existing wall scenarios; keep live household screenshots outside Git.
+
 ## 0.8.32
 
 - Show each child's dated native school timetable in period order, with source

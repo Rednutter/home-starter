@@ -34,8 +34,11 @@ def main():
                 assert not failures, (name, width, failures)
                 for region in (".wall-weather", ".wall-household", ".wall-bottom"):
                     assert wall.locator(region).is_visible(), (name, region)
-                assert not wall.locator(".wall-family-card:not(:has(.wall-card-fact))").count(), (name, "empty information island")
-                assert not wall.locator(".wall-surface:not(.wall-household):not(.wall-camera-status):not(:has(.wall-line-item))").count(), (
+                assert not wall.locator(".wall-family-card:not(:has(.wall-card-fact,.wall-school-periods,.wall-school-fallback,.wall-school-rules))").count(), (
+                    name,
+                    "empty information island",
+                )
+                assert not wall.locator(".wall-surface:not(.wall-household):not(.wall-camera-status):not(:has(.wall-line-item,.wall-week-row))").count(), (
                     name,
                     "empty timeline island",
                 )
@@ -61,10 +64,16 @@ def main():
                     assert abs(boxes[1][0] - reference_boxes[1][0]) < 1 and abs(boxes[1][1] - reference_boxes[1][1]) < 70
                 if name in ("school_sunday", "school_monday"):
                     assert wall.locator(".wall-school-child").count() == 3
-                    assert wall.locator(".wall-school-periods li").count() == (15 if width < 1500 else 21)
-                    assert wall.locator(".wall-week-days > section").count() >= 4
-                    assert wall.locator(".wall-family-card").count() == 0
-                    assert wall.locator(".wall-school > h2").inner_text() == ("Tomorrow" if name == "school_sunday" else "Today") + " at school"
+                    assert wall.locator(".wall-school-periods li").count() == 18
+                    assert wall.locator(".wall-school-periods li").evaluate_all("nodes=>nodes.reduce((n,e)=>n+Number(e.dataset.periodCount),0)") == 21
+                    assert wall.locator(".wall-agenda .wall-week-row").count() >= 4
+                    assert wall.locator(".wall-family-card").count() == 3
+                    assert wall.locator(".wall-family .wall-avatar").count() == 3
+                    assert not wall.locator(".wall-family .wall-week").count()
+                    assert wall.locator(".wall-family").get_attribute("aria-label") == ("Tomorrow" if name == "school_sunday" else "Today") + " at school"
+                    primary = wall.locator(".wall-timeline").bounding_box()
+                    secondary = wall.locator(".wall-week").bounding_box()
+                    assert abs(primary["x"] - secondary["x"]) < 1 and secondary["y"] > primary["y"]
                 if name in ("school_sunday", "school_monday", "quiet_sunday", "sunday_evening", "canonical_weekday", "canonical_evening"):
                     page.screenshot(path=str(output / (name + "-" + str(width) + ".png")))
                 print(f"{name} {width}x{height}: ambient anchors, no empty islands, borders, clipping or overlapping times")

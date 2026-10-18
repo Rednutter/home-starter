@@ -24,6 +24,7 @@ def apply(generated, house, policy):
         "epoch": house["epoch"],
         "context": entity_id(generated["surface"]["id"]),
         "weather": next((i["entity_id"] for i in items if i["domain"] == "weather"), None),
+        "people": {i["attributes"]["id"]: i["entity_id"] for i in items if i["domain"] == "person" and i.get("attributes", {}).get("id")},
         "climate": main["entity_id"] if main else None,
         "lights": [i["entity_id"] for i in items if i["domain"] == "light"],
         "security": [i["entity_id"] for i in items if i["domain"] == "alarm_control_panel" and not i["id"].startswith("alert:")],

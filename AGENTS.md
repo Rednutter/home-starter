@@ -3,9 +3,12 @@
 Search before broad reads; use targeted edits and tests. Preserve the touch shell,
 person pages, climate, room navigation, screen identities and activity tracking.
 
-The wall retains the weekday reference's information hierarchy as an ambient
-canvas: time/weather anchors, useful translucent person/context islands, right
-chronology and restrained selected status. No fixed empty cards or visible grid.
+The supplied Smart Family Morning Dashboard is the wall's canonical visual
+composition: clock/weather hero, three avatar/person cards, right timeline and
+secondary panel, readable household bar and selected camera/status area.
+Restore that grammar with lighter tinted glass; do not remove cards/avatars or
+move week-ahead into a bottom strip. Keep dynamic selection/state underneath.
+Use existing permitted photos or initial circles; never invent household photos.
 Evening normally previews tomorrow's people/rules/forecast without overrides.
 Explicit event links/calendar ownership win; a unique leading "Name · event"
 calendar label may identify a confirmed person. Never infer school/kit/travel.

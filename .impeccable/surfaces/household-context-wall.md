@@ -5,15 +5,18 @@ primary_target: home_starter/server/homestarter/surfaces.py
 related_targets: [home_starter/server/homestarter/wall.py, home_starter/server/homestarter/wall_composer.py, home_starter/server/homestarter/static/wall-content.js, home_starter/server/homestarter/static/wall-layout.css]
 ---
 
-Mode: Operate. Retain the supplied weekday reference's information hierarchy
-as a relaxed ambient canvas. Time/date and useful weather are stable anchors;
-adaptive people/context islands, right-side chronology and restrained selected
-household status sit over the photograph. Soft translucent surfaces, optional
-blur, no visible borders or permanent empty rectangles. Typography conveys
-importance. Empty islands disappear and useful neighbours reclaim their space.
-Sunday evening previews Monday people and requirements using normal date logic;
-Monday morning changes Tomorrow to Today with continuity of person placement.
-Never show a generic "Next movement" panel or invented tasks/leave times.
+Mode: Operate. The supplied Smart Family Morning Dashboard is the canonical
+visual reference. Retain its composition: large proportionate clock/date beside
+weather, three coloured person cards with circular avatars, right chronology,
+lower-right Later/Week ahead panel, substantial household/status footer.
+Use lighter tinted glass (roughly 30–45% dark fill, 12–20px blur), restrained
+shadow, generous rounding and no bright borders. Photograph stays visible;
+readability across a 21-inch display comes first. Do not remove cards or avatars,
+create floating-text islands, or move the week into a thin bottom strip.
+Use permitted existing portraits, otherwise clean initial circles. Never invent
+portraits. Sunday evening feeds the same three cards with Monday timetables;
+Monday changes labels. Adjacent equal subjects may display a counted group,
+without losing scheduled-period totals or ordering. Sources/state stay intact.
 
 Use the existing native HA button-card and infrastructure. One passive board
 expands/contracts by explicit composer priorities. Departures, routine overrides,
@@ -29,7 +32,7 @@ selection, priority, placement and treatment. Respect reduced motion; crossfade
 only composition changes (450ms), never continually animate a polling clock.
 Never invent portraits, camera footage, forecast highs or plans.
 
-School preview uses a wide calm island with one ordered native timetable per
+School preview uses three avatar/person cards with one native timetable per
 confirmed child; no subject-derived kit or year labels. Dated school facts come
 first, explicit recurring rules follow subjects, missing data is School tomorrow.
 Household appointments appear once in the chronology; remaining space brings

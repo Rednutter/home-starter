@@ -71,10 +71,20 @@ test("portraits accept selected native image paths rather than external URLs",()
 test("school subjects render in order without invented kit; stale data hides them",()=>{
  const school={label:"Tomorrow at school",children:[{person:"fixture",name:"Casey",periods:[{subject:"PE"},{subject:"Science"},{subject:"PE"}],dated:[],rules:[],fallback:"School tomorrow",sources:[{entity:"calendar.private_source"}]}]};
  const body=scene({school,week:[{label:"Tuesday",items:[{...event,title:"Fictional next event"}]}]});
- assert.match(body,/Tomorrow at school/);assert.match(body,/<li>PE<\/li><li>Science<\/li><li>PE<\/li>/);
- assert.doesNotMatch(body,/uniform|equipment|calendar.private_source|School tomorrow|wall-family-card/);
- assert.match(body,/Week ahead/);assert.match(body,/Tuesday/);
+ assert.match(body,/Tomorrow at school/);assert.match(body,/<span>PE<\/span>[\s\S]*<span>Science<\/span>[\s\S]*<span>PE<\/span>/);
+ assert.doesNotMatch(body,/uniform|equipment|calendar.private_source|School tomorrow/);
+ assert.match(body,/Week ahead/);assert.match(body,/>Tue</);
  assert.doesNotMatch(scene({school},{valid_until:new Date(0).toISOString()}),/Casey|Science|PE/);
  school.children[0].periods=[];
  assert.match(scene({school}),/School tomorrow/);
+});
+
+test("reference school cards restore avatar identity and preserve adjacent period counts",()=>{
+ const school={label:"Tomorrow at school",children:[{person:"fictional",name:"Casey",periods:[{subject:"Science"},{subject:"Science"},{subject:"PE"},{subject:"Science"}],dated:[],rules:[]}]};
+ const body=scene({focus:{preview:true},school,week:[{label:"Tuesday",items:[{...event,title:"Fictional appointment"}]}]});
+ assert.match(body,/wall-family-card wall-school-child wall-tone-0/);assert.match(body,/wall-avatar/);
+ assert.match(body,/Tomorrow at school/);assert.match(body,/data-period-count="2"/);
+ assert.equal((body.match(/data-period-count="1"/g)||[]).length,2);
+ assert.match(body,/<aside class="wall-agenda">[\s\S]*wall-week wall-secondary/);
+ assert.doesNotMatch(body,/wall-school-children/);
 });
