@@ -301,6 +301,42 @@ def validate_policy(value):
     return policy
 
 
+def school_placement(panels, school, rows, future, settings, people, local):
+    """School facts own the canvas; household chronology is shown once beside it."""
+    panels["school"] = school
+    panels["week"] = []
+    if not school:
+        return panels
+    consumed = set()
+    for child in school["children"]:
+        dated = [
+            r
+            for r in [*rows, *future]
+            if r.get("date") == school["date"]
+            and child["person"] in r.get("person_ids", [])
+            and settings["events"].get(r["id"], {}).get("wall_role") in {"school", "preparation"}
+        ]
+        child["dated"] = [{**r, "title": r.get("person_title") or r["title"], "importance": importance(r, local, panels["focus"]["preview"])} for r in dated]
+        day = date.fromisoformat(school["date"])
+        child["rules"] = [
+            r["text"]
+            for r in settings["rules"]
+            if child["person"] in r["people"] and r["start"] <= school["date"] <= r["end"] and day.weekday() in r["weekdays"]
+        ]
+        consumed.update(r["id"] for r in dated)
+    for panel in ("timeline", "secondary"):
+        panels[panel]["items"] = [r for r in panels[panel]["items"] if r["id"] not in consumed]
+    # School columns replace generic copies of the same calendar appointments.
+    panels["cards"] = []
+    used = {r["id"] for panel in ("timeline", "secondary") for r in panels[panel]["items"]} | consumed
+    days = {}
+    for row in future:
+        if row["date"] > school["date"] and row["id"] not in used:
+            days.setdefault(row["date"], {"date": row["date"], "label": row["day_label"], "items": []})["items"].append(row)
+    panels["week"] = [{**group, "items": group["items"][:2]} for group in list(days.values())[:6]]
+    return panels
+
+
 def moment(value):
     try:
         result = datetime.fromisoformat(value)
@@ -512,6 +548,17 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
     if baseline == "overnight":
         transient = []  # The infrastructure owns actual monitor dimming, never CSS alone.
     valid_until = now + timedelta(seconds=75)
+    from .school_timetable import select as school_select
+
+    focus_day = date.fromisoformat(focus["date"])
+    school_changed = focus["date"] in policy["suppressed_dates"] or any(
+        e["start"].astimezone(local.tzinfo).date() <= focus_day < e["end"].astimezone(local.tzinfo).date()
+        and links.get(e["key"], {}).get("wall_role") == "holiday"
+        for e in events
+    )
+    school = school_select(view.get("school_sources", []), people, view.get("person_roles", {}), focus, local, school_changed)
+    panels = reference_panels(rows, future, people, signals, local, cue, view.get("issues", []), exceptions, preparation_rows, focus)
+    panels = school_placement(panels, school, rows, future, settings, people, local)
     # Row/session deadlines expire independently in the renderer. Expiring a
     # transient must not invalidate the underlying board until the next poll.
     return {
@@ -520,7 +567,7 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
         "baseline_state": baseline,
         "primary": primary,
         **outlook,
-        **reference_panels(rows, future, people, signals, local, cue, view.get("issues", []), exceptions, preparation_rows, focus),
+        **panels,
         "today_summary": "Plans unavailable" if view.get("issues") and not rows else "Quiet " + local.strftime("%A") if not rows else "Still to come today",
         "tomorrow_label": (local + timedelta(days=1)).strftime("%A"),
         "tomorrow_preparation": preparation[:2],

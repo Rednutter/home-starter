@@ -54,6 +54,23 @@ def test_identity_boundaries_and_stale_revision(configured):
     assert services.load(store, house) == saved
 
 
+def test_timetable_mapping_requires_one_person_and_stores_no_class_payload(configured):
+    store, house, value = configured
+    value["calendars"] = [{"entity_id": "calendar.fictional_timetable", "category": "timetable", "people": ["child"]}]
+    saved = services.save(store, house, value)
+    assert services.load(store, house)["calendars"] == saved["calendars"]
+    assert services.save(store, house, saved) == saved
+    for owners in ([], ["child", "adult"]):
+        changed = deepcopy(saved)
+        changed["calendars"][0]["people"] = owners
+        with pytest.raises(ValueError, match="exactly one"):
+            services.validate(changed, house)
+    changed = deepcopy(saved)
+    changed["calendars"][0]["subjects"] = ["Fictional class"]
+    with pytest.raises(ValueError, match="without copying events"):
+        services.validate(changed, house)
+
+
 def test_private_key_and_future_file_preservation(configured):
     store, house, value = configured
     services.save(store, house, value)

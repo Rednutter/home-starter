@@ -27,7 +27,7 @@ def main():
                 wall = page.locator(".hs-wall")
                 assert wall.is_visible(), name
                 failures = wall.evaluate(
-                    """root=>[...root.querySelectorAll('.wall-header,.wall-family-card,.wall-surface')]
+                    """root=>[...root.querySelectorAll('.wall-header,.wall-family,.wall-family-card,.wall-surface,.wall-school,.wall-week')]
                     .filter(e=>e.clientWidth&&e.clientHeight&&(e.scrollHeight>e.clientHeight+1||e.scrollWidth>e.clientWidth+1))
                     .map(e=>e.className)"""
                 )
@@ -59,7 +59,13 @@ def main():
                     assert wall.locator('.wall-family-card[data-kind="person"]').count() == 3
                     assert wall.locator(".wall-timeline h2").inner_text() == "Tomorrow"
                     assert abs(boxes[1][0] - reference_boxes[1][0]) < 1 and abs(boxes[1][1] - reference_boxes[1][1]) < 70
-                if name in ("quiet_sunday", "sunday_evening", "canonical_weekday", "canonical_evening"):
+                if name in ("school_sunday", "school_monday"):
+                    assert wall.locator(".wall-school-child").count() == 3
+                    assert wall.locator(".wall-school-periods li").count() == (15 if width < 1500 else 21)
+                    assert wall.locator(".wall-week-days > section").count() >= 4
+                    assert wall.locator(".wall-family-card").count() == 0
+                    assert wall.locator(".wall-school > h2").inner_text() == ("Tomorrow" if name == "school_sunday" else "Today") + " at school"
+                if name in ("school_sunday", "school_monday", "quiet_sunday", "sunday_evening", "canonical_weekday", "canonical_evening"):
                     page.screenshot(path=str(output / (name + "-" + str(width) + ".png")))
                 print(f"{name} {width}x{height}: ambient anchors, no empty islands, borders, clipping or overlapping times")
             if width == 1920:

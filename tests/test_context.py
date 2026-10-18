@@ -492,3 +492,39 @@ async def test_multiple_calendars_merge_overlap_and_map_only_explicit_person(mak
     services["calendars"][0]["people"] = []
     household_services.save(store, house, services)
     assert not (await runtime.inspect(env.core, store, house["surfaces"][0], person_id="example_a", inputs=inputs))["events"]
+
+
+@pytest.mark.parametrize("mode", ["show", "context", "ignore", "review", "failure", "excluded", "expired"])
+async def test_native_school_path_obeys_shared_consent_identity_scope_and_failure(make_env, monkeypatch, mode):
+    from homestarter import calendar_access, household_services
+
+    env, store, house, saved, source = await configured(make_env)
+    house["people"] = [{"id": "child", "name": "Fictional pupil", "audience": "everyone"}]
+    house = store.save(house)
+    services = household_services.empty(house["epoch"])
+    services["person_links"] = {"child": "native_child"}
+    services["calendars"] = [{"entity_id": source, "category": "timetable", "people": ["child"]}]
+    household_services.save(store, house, services)
+    choices = calendar_access.load(store, house)
+    calendar_access.save(store, house, await env.core.states(), {**choices, "calendars": {source: mode if mode in calendar_access.MODES else "show"}})
+    env.mock.calendar_events[source] = [event("Fictional class", NOW.replace(hour=9))]
+    if mode == "failure":
+        env.mock.calendar_events[source] = None
+    if mode == "excluded":
+        house["preferences"] = {"surface:example_wall": {"pin": [], "hide": [source], "order": []}}
+        house = store.save(house)
+    if mode == "expired":
+        saved["verified"]["calendars"]["at"] = (datetime.now(UTC) - timedelta(days=2)).isoformat()
+    inv = await collect_inventory(env.core)
+    policy = r.policy_for(saved, house, inv, await env.core.states(), store)
+    monkeypatch.setattr(r, "policy_for", lambda *args: policy)
+    saved["verified"]["calendars"]["at"] = (NOW - timedelta(days=2) if mode == "expired" else NOW).isoformat()
+    inputs = (house, saved, inv, await env.core.states(), ZONE, [{"id": "native_child", "name": "Fictional pupil", "role": "child", "confirmed": True}])
+    result = await runtime.inspect(env.core, store, house["surfaces"][0], now=NOW, inputs=inputs)
+    child = result["wall"]["school"]["children"][0]
+    assert bool(child["periods"]) == (mode == "show")
+    assert "Fictional class" not in str(result["wall"]["timeline"])
+    assert "Fictional class" not in str(result["events"])
+    personal = await runtime.inspect(env.core, store, house["surfaces"][0], person_id="child", now=NOW, inputs=inputs)
+    assert personal["wall"]["school"] is None
+    assert not any("Fictional class" in p.read_text() for p in store.path.parent.glob("*.json"))

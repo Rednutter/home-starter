@@ -38,13 +38,13 @@ export function initServices({ h, api, navigateHA }) {
         field("Google integration", select("Google integration", options.google.map(g => [g.id, `${g.name} · ${g.state}`]), draft.calendar_hub, v => draft.calendar_hub = v)),
         !options.google.length && h("p", { class: "small muted" }, "No Google integration found yet. You can leave this pending."),
         ...draft.calendars.map(row => h("fieldset", {}, h("legend", {}, options.calendars.find(c => c.id === row.entity_id)?.name || row.entity_id),
-          field("Calendar purpose", select("Purpose for " + row.entity_id, ["household", "person", "school", "sport", "work", "other"].map(v => [v, v]), row.category, v => row.category = v || "other")),
+          field("Calendar purpose", select("Purpose for " + row.entity_id, ["household", "person", "school", "timetable", "sport", "work", "other"].map(v => [v, v === "timetable" ? "School timetable (ordered classes)" : v]), row.category, v => row.category = v || "other")),
           members("People this calendar belongs to", row),
           button("Remove calendar mapping", () => { draft.calendars = draft.calendars.filter(c => c !== row); changed(); render(); }))),
         field("Add a calendar", select("Add a calendar", options.calendars.filter(c => !draft.calendars.some(r => r.entity_id === c.id)).map(c => [c.id, c.name]), null, v => {
           if (v) { draft.calendars.push({ entity_id: v, category: "other", people: [] }); render(); }
         })),
-        h("p", { class: "small muted" }, "For personal events, select their people explicitly. After saving, choose and verify the calendar sources under Home Readiness; existing visibility permissions still apply.")),
+        h("p", { class: "small muted" }, "For a school timetable, choose its child explicitly. Timetable subjects never imply equipment or uniforms. For personal events, select their people explicitly. After saving, choose and verify the calendar sources under Home Readiness; existing visibility permissions still apply.")),
       disclosure("spotify", "Spotify accounts",
         h("p", {}, "In Music Assistant Settings → Music providers, add and sign in to each Spotify account separately. Give each provider its household account name, then refresh and match it below. Children use the shared accounts."),
         musicButton(),

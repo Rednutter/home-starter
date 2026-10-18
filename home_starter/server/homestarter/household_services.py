@@ -117,8 +117,14 @@ def validate(value, house):
             or not re.fullmatch(r"calendar\.[a-z0-9_]+", row["entity_id"])
         ):
             raise ValueError("Map native calendar entities without copying events into settings.")
-        if row["entity_id"] in calendars or row["category"] not in {"household", "person", "school", "sport", "work", "other"} or not members(row["people"]):
+        if (
+            row["entity_id"] in calendars
+            or row["category"] not in {"household", "person", "school", "timetable", "sport", "work", "other"}
+            or not members(row["people"])
+        ):
             raise ValueError("Use distinct calendar mappings and explicit household members.")
+        if row["category"] == "timetable" and len(row["people"]) != 1:
+            raise ValueError("Map a school timetable to exactly one child.")
         calendars.add(row["entity_id"])
     if not isinstance(value["libraries"], list) or len(value["libraries"]) > 30:
         raise ValueError("Review audiobook libraries.")

@@ -61,7 +61,10 @@ def validate(value):
             raise ValueError("Choose an observed event and explicit departure settings.")
         if not people(link["people"]) or link["round_minutes"] not in (5, 10) or type(link["round_minutes"]) is not int:
             raise ValueError("Choose people and a five- or ten-minute departure boundary.")
-        if link.get("wall_role", "commitment") not in ("commitment", "preparation", "holiday") or type(link.get("early_attention", False)) is not bool:
+        if (
+            link.get("wall_role", "commitment") not in ("commitment", "preparation", "school", "holiday")
+            or type(link.get("early_attention", False)) is not bool
+        ):
             raise ValueError("Choose a wall event role and explicit early-attention preference.")
         if link["travel_minutes"] is not None and (type(link["travel_minutes"]) is not int or not 0 <= link["travel_minutes"] <= 720):
             raise ValueError("Travel time must be an explicit number of minutes, or absent.")

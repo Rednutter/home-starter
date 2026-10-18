@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.8.32
+
+- Show each child's dated native school timetable in period order, with source
+  provenance and no inferred uniform, equipment, year level or rotating-week rules.
+- Keep Sunday preview and Monday morning on the same school composition. Explicit
+  dated school facts precede classes, followed by applicable configured rules;
+  unavailable timetable data falls back to School tomorrow/today.
+- Use one household chronology and the next nonempty week days, without duplicate
+  appointment islands. Preserve shared calendar consent, source verification,
+  exclusions and freshness; save only child/source mappings, never class payloads.
+- Verify 38 viewport/scenario cases, including school preview/morning continuity;
+  correct small-wall overflow while retaining existing weekday person layouts.
+
 ## 0.8.31
 
 - Retain the weekday reference's hierarchy as a transparent ambient canvas;

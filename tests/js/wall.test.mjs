@@ -67,3 +67,14 @@ test("portraits accept selected native image paths rather than external URLs",()
  assert.doesNotMatch(scene(model,{}, {"person.fixture":{attributes:{entity_picture:"https://example.com/portrait.jpg"}}}),/<img/);
  assert.match(scene(model,{}, {"person.fixture":{attributes:{entity_picture:"/api/image/serve/fixture/512x512"}}}),/<img/);
 });
+
+test("school subjects render in order without invented kit; stale data hides them",()=>{
+ const school={label:"Tomorrow at school",children:[{person:"fixture",name:"Casey",periods:[{subject:"PE"},{subject:"Science"},{subject:"PE"}],dated:[],rules:[],fallback:"School tomorrow",sources:[{entity:"calendar.private_source"}]}]};
+ const body=scene({school,week:[{label:"Tuesday",items:[{...event,title:"Fictional next event"}]}]});
+ assert.match(body,/Tomorrow at school/);assert.match(body,/<li>PE<\/li><li>Science<\/li><li>PE<\/li>/);
+ assert.doesNotMatch(body,/uniform|equipment|calendar.private_source|School tomorrow|wall-family-card/);
+ assert.match(body,/Week ahead/);assert.match(body,/Tuesday/);
+ assert.doesNotMatch(scene({school},{valid_until:new Date(0).toISOString()}),/Casey|Science|PE/);
+ school.children[0].periods=[];
+ assert.match(scene({school}),/School tomorrow/);
+});

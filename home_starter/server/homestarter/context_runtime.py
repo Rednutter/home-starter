@@ -58,6 +58,7 @@ async def inspect(core, store, surface=None, now=None, *, person_id=None, inputs
         # from names or let a personal wall acquire another member's explicit notes.
         settings = {"rules": [r for r in settings["rules"] if not r["people"]], "events": {}}
     result = {"revision": saved["revision"], "epoch": house["epoch"], "settings": settings, "people": people, "events": [], "zone": zone}
+    result["person_roles"] = {p["id"]: p["role"] for p in members if p["id"] in people}
     from .wall_composer import validate_policy
 
     result["wall_policy"] = validate_policy(settings.get("wall", {}))
@@ -71,7 +72,7 @@ async def inspect(core, store, surface=None, now=None, *, person_id=None, inputs
         if person_id is not None and saved["members"].get(person_id, {}).get("kind") == "child":
             scoped = {**scoped, "audience": "everyone"}
         admitted_ids = {i["id"] for i in items if readiness.allowed(i, scoped, house, policy) and admitted(i, scoped, house, preferences(house, scoped))}
-    events, issues, expiries = [], [], []
+    events, issues, expiries, school_sources = [], [], [], []
     from zoneinfo import ZoneInfo
 
     local = now.astimezone(ZoneInfo(zone))
@@ -128,7 +129,17 @@ async def inspect(core, store, surface=None, now=None, *, person_id=None, inputs
                     owners = [p for p in owners if p in people]
                     parsed = [{**e, "person_ids": owners} for e in parsed]
                 mapped = bool(linked_person and person_id in calendars.get(source, {}).get("people", []))
-                events.extend(e for e in parsed if person_id is None or mapped or e["key"] in settings["events"])
+                timetable = key == "calendars" and surface and surface["profile"] == "wall" and calendars.get(source, {}).get("category") == "timetable"
+                if timetable:
+                    for owner in owners:
+                        if result["person_roles"].get(owner) == "child" and person_id is None and not surface.get("person_id"):
+                            label = next(
+                                (s.get("attributes", {}).get("friendly_name", "School timetable") for s in states if s["entity_id"] == source),
+                                "School timetable",
+                            )
+                            school_sources.append({"person": owner, "source": source, "label": label, "events": parsed})
+                else:
+                    events.extend(e for e in parsed if person_id is None or mapped or e["key"] in settings["events"])
                 if invalid:
                     issues.append("Some calendar entries could not be read")
                 expiries.append(datetime.fromisoformat(saved["verified"][key]["at"]) + timedelta(days=1))
@@ -177,8 +188,10 @@ async def inspect(core, store, surface=None, now=None, *, person_id=None, inputs
         weather = next((s for s in signals if s["domain"] == "weather"), None)
         if weather and hasattr(core, "weather_forecast"):
             weather["attributes"] = {**weather.get("attributes", {}), "forecast": await core.weather_forecast(weather["entity_id"])}
-        result["person_roles"] = {p["id"]: p["role"] for p in members if p["id"] in people}
-        result["wall"] = compose(result, events, settings, people, now, zone, signals, display_session)
+        school_roles = result["person_roles"] if person_id is None and not surface.get("person_id") else {}
+        result["wall"] = compose(
+            {**result, "person_roles": school_roles, "school_sources": school_sources}, events, settings, people, now, zone, signals, display_session
+        )
     result["events"] = [
         {"key": e["key"], "title": e["title"], "start": e["start"].isoformat(), "all_day": e["all_day"], "proximity": context.proximity(e, now)}
         for e in events

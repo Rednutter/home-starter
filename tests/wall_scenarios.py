@@ -11,6 +11,30 @@ ZONE = "Australia/Sydney"
 
 
 def scenario(name):
+    if name in ("school_sunday", "school_monday"):
+        case = scenario("canonical_evening" if name == "school_sunday" else "canonical_weekday")
+        day = case["now"].replace(day=19, hour=9, minute=0)
+        case["view"]["person_roles"] = dict.fromkeys(case["people"], "child")
+        case["settings"]["rules"] = []
+        case["view"]["briefing"] = []
+        case["view"]["school_sources"] = [
+            {
+                "person": person,
+                "source": "calendar.fictional_" + person,
+                "label": "Fictional school timetable",
+                "events": [
+                    {"title": subject, "start": day + timedelta(minutes=45 * n), "end": day + timedelta(minutes=45 * (n + 1)), "all_day": False}
+                    for n, subject in enumerate(("Form", "Science", "Science", "English", "Maths", "PE", "Library"))
+                ],
+            }
+            for person in case["people"]
+        ]
+        for n, title in enumerate(("Fictional rehearsal", "Fictional appointment", "Fictional practice", "Fictional match", "Fictional visit")):
+            start = day.replace(hour=17) + timedelta(days=n + 1)
+            case["events"].append({"key": "week" + str(n), "title": title, "start": start, "end": start + timedelta(hours=1), "all_day": False})
+        case["name"] = name
+        case["model"] = compose(case["view"], case["events"], case["settings"], case["people"], case["now"], ZONE, case["signals"])
+        return case
     now = datetime(2026, 10, 19, 7, 30, tzinfo=ZoneInfo(ZONE))
     settings = {"rules": [], "events": {}}
     events, signals = [], []
@@ -173,6 +197,8 @@ def scenario(name):
 
 
 SCENARIOS = (
+    "school_sunday",
+    "school_monday",
     "canonical_weekday",
     "canonical_evening",
     "busy_school_morning",

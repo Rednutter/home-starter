@@ -63,7 +63,7 @@ export function initContext({h, api}) {
       const event=data.events.find(e=>e.key===key);
       root.append(h("details",{class:"house-row"},h("summary",{},event?.title || "Event no longer in the verified horizon"),
         people(link.people,v=>link.people=v),
-        field("Wall meaning",h("select",{"aria-label":"Wall event role "+key,onchange:e=>{link.wall_role=e.target.value;dirty=true;}},[["commitment","Commitment"],["preparation","Preparation needed"],["holiday","Holiday / changed routine"]].map(([value,label])=>h("option",{value,selected:(link.wall_role||"commitment")===value},label)))),
+        field("Wall meaning",h("select",{"aria-label":"Wall event role "+key,onchange:e=>{link.wall_role=e.target.value;dirty=true;}},[["commitment","Commitment"],["preparation","Preparation needed"],["school","Dated school information"],["holiday","Holiday / changed routine"]].map(([value,label])=>h("option",{value,selected:(link.wall_role||"commitment")===value},label)))),
         h("label",{},h("input",{type:"checkbox",checked:!!link.early_attention,onchange:e=>{link.early_attention=e.target.checked;dirty=true;}}),"Show this event early in quiet planning periods"),
         h("div",{class:"screen-fields"},
           field("Travel minutes (known, optional)",input("Travel minutes "+key,link.travel_minutes,v=>link.travel_minutes=v===""?null:Number(v),"number")),

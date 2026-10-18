@@ -141,3 +141,42 @@ brightness/wake is infrastructure, not a dark-CSS claim.** No DDC/backlight
 controller is commissioned on the inspected HDMI monitor, so physical scheduled
 dimming remains pending a working hardware adapter. A reboot can verify service
 recovery; it is not a physical power-cut or human distance-readability test.
+
+
+## School timetable input and live source evidence (0.8.32)
+
+Calendar mappings now distinguish `timetable` (one confirmed child, ordered native
+classes) from `school` (general school events). Keep the timetable selected,
+verified and **Show at home** for the shared wall. Context-only, ignored, new,
+excluded or unverified sources cannot enter the shared school projection.
+`context_runtime` separates timetable events from household appointments before
+composition; `school_timetable.select` selects the focus date and sorts periods
+chronologically. Separate periods retain repeated subjects. No class bodies are
+written to Home Starter settings, fixtures or logs. The existing published HA
+context/recorder boundary still applies to displayed information.
+
+School content is dated school/preparation event links first, timetable subjects
+second, explicitly applicable date-scoped rules third, and **School tomorrow** /
+**School today** only when none is available. No year label, kit or travel estimate
+is derived from subjects. Explicit routine-exception/holiday dates suppress the
+school fallback. Morning and evening share child keys; only the focus label and
+real departure importance change. On smaller screens retain ordered leading
+classes and an honest remaining-class count rather than shrinking all type.
+Nonempty week groups show their next significant event; household events are
+not repeated in generic person/context islands.
+
+Live attribution was established from Google's existing calendar display labels
+(`summaryOverride`), which HA had flattened to the same Cirrus friendly name:
+
+| Child | Native timetable source | Original source label |
+| --- | --- | --- |
+| Maddie | `calendar.cirrus_calendar_3` | Maddie's Timetable |
+| Edie | `calendar.cirrus_calendar_2` | Edith's Timetable |
+| Flynn | `calendar.cirrus_calendar` | Flynn's Timetable |
+
+The other two Cirrus feeds are VLC Events, not personal timetables. Their existing
+context-only classification remains. Only the three identified timetable feeds
+were approved for shared school display by the user's timetable request. Live
+verification on 18 October read seven Monday entries per child; no subjects or
+private native screenshot are committed. Calendar identity remains a native ID
+mapping; no product code depends on these household-specific IDs or names.

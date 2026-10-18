@@ -9,6 +9,11 @@ chronology and restrained selected status. No fixed empty cards or visible grid.
 Evening normally previews tomorrow's people/rules/forecast without overrides.
 Explicit event links/calendar ownership win; a unique leading "Name · event"
 calendar label may identify a confirmed person. Never infer school/kit/travel.
+School timetables use explicit child/source mappings and dated native periods;
+retain order/provenance, never infer clothing/equipment or rotating weeks.
+Duplicate feed names require metadata/event previews, not name-only guessing.
+Shared school content still requires Show consent and verified selected sources.
+No class payloads or private wall screenshots in Git.
 
 Commissioning follows prepare → authenticate/consent → resume → verify. Never
 authenticate personal Google accounts, persist credential/session material in

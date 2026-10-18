@@ -937,6 +937,9 @@ async def api_household_services(request: web.Request) -> web.Response:
                     native = {p["id"] for p in view["people"] if p["confirmed"] and p["role"] in {"adult", "child"}}
                     if not view["complete"] or not set(config["person_links"].values()) <= native:
                         raise ValueError("Link only current confirmed household members.")
+                    children = {p["id"] for p in view["people"] if p["confirmed"] and p["role"] == "child"}
+                    if any(config["person_links"].get(r["people"][0]) not in children for r in config["calendars"] if r["category"] == "timetable"):
+                        raise ValueError("Link each school timetable to a confirmed child.")
                     inventory = await collect_inventory(state.core)
                     try:
                         music = await state.music_runtime.snapshot()

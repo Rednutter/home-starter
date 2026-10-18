@@ -29,7 +29,13 @@ selection, priority, placement and treatment. Respect reduced motion; crossfade
 only composition changes (450ms), never continually animate a polling clock.
 Never invent portraits, camera footage, forecast highs or plans.
 
-Verify seventeen reproducible scenarios in full-HD and smaller landscape; retain
+School preview uses a wide calm island with one ordered native timetable per
+confirmed child; no subject-derived kit or year labels. Dated school facts come
+first, explicit recurring rules follow subjects, missing data is School tomorrow.
+Household appointments appear once in the chronology; remaining space brings
+forward nonempty week days. Morning retains school placement and changes labels.
+
+Verify nineteen reproducible scenarios in full-HD and smaller landscape; retain
 private native HA captures and actual Pi compositor evidence outside Git.
 Verify live production evening selects tomorrow preview, then publish and
 capture the actual restricted Pi display without any development override.
