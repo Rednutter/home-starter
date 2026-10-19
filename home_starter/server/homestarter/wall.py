@@ -2,19 +2,36 @@
 
 import base64
 import json
+from functools import lru_cache
 from pathlib import Path
 
 from .context import entity_id
+
+
+@lru_cache(maxsize=1)
+def wallpapers():
+    """Embed reviewed decorative assets locally; never fetch a remote feed."""
+    static = Path(__file__).parent / "static"
+    manifest = static / "wallpapers.json"
+    if not manifest.exists():
+        return [], ""
+    images, styles = [], []
+    for row in json.loads(manifest.read_text(encoding="utf-8"))["images"]:
+        image = base64.b64encode((static / "wallpapers" / row["file"]).read_bytes()).decode()
+        images.append({"id": row["id"], "period": row["period"]})
+        styles.append(f"--wallpaper-{row['id']}:url(data:image/webp;base64,{image});")
+    return images, "".join(styles)
 
 
 def apply(generated, house, policy):
     from .surfaces import fingerprint
 
     static = Path(__file__).parent / "static"
-    source = (static / "wall-content.js").read_text(encoding="utf-8")
+    source = (static / "wall-wallpaper.js").read_text(encoding="utf-8") + "\n" + (static / "wall-content.js").read_text(encoding="utf-8")
     css = (static / "wall-layout.css").read_text(encoding="utf-8")
     backdrop = static / "wall-morning.jpg"
     image = "url(data:image/jpeg;base64," + base64.b64encode(backdrop.read_bytes()).decode() + ")" if backdrop.exists() else "none"
+    catalogue, wallpaper_styles = wallpapers()
     items = generated["admitted"]
     climate = [i for i in items if i["domain"] == "climate"]
     main = next((i for i in climate if i.get("attributes", {}).get("fan_modes")), next(iter(climate), None))
@@ -30,6 +47,7 @@ def apply(generated, house, policy):
         "security": [i["entity_id"] for i in items if i["domain"] == "alarm_control_panel" and not i["id"].startswith("alert:")],
         "alerts": [{"entity": i["entity_id"], "name": i["name"], "alarm": i["domain"] == "alarm_control_panel"} for i in items if i["level"] == 0],
         "endpoint": policy.get("wall_endpoint"),
+        "wallpapers": catalogue,
     }
     root = {
         "type": "custom:button-card",
@@ -46,7 +64,7 @@ def apply(generated, house, policy):
             "custom_fields": {"wall": [{"white-space": "normal"}, {"text-align": "left"}]},
         },
         "custom_fields": {"wall": "[[[\n" + source + "\n]]]"},
-        "extra_styles": ":host { --wall-landscape: " + image + "; }\n" + css,
+        "extra_styles": ":host { --wall-landscape: " + image + "; " + wallpaper_styles + " }\n" + css,
     }
     generated["config"]["views"] = [{"type": "panel", "title": "Home", "path": "home", "background": "#0b1013", "cards": [root]}]
     generated["wall_briefing"] = True

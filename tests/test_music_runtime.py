@@ -20,6 +20,21 @@ async def runtime_for(make_env):
     return runtime, env
 
 
+async def test_wall_playback_reads_native_queues_and_clears_on_read_failure(make_env, monkeypatch):
+    from unittest.mock import AsyncMock
+
+    runtime, _ = await runtime_for(make_env)
+    players = [{"player_id": "fixture", "name": "Room", "active_source": "fixture", "available": True, "playback_state": "playing"}]
+    queues = [{"queue_id": "fixture", "active": True, "state": "playing", "current_item": {"name": "Station"}}]
+    read = AsyncMock(side_effect=[players, queues])
+    monkeypatch.setattr(runtime, "command", read)
+    assert "player_queues/all" in READ_COMMANDS
+    assert await runtime.wall_playback() == [{"title": "Station", "artist": "", "room": "Room"}]
+    assert [call.args[2] for call in read.await_args_list] == ["players/all", "player_queues/all"]
+    read.side_effect = MusicRuntimeError("Music Assistant API could not be read. Saved settings are preserved.")
+    assert await runtime.wall_playback() == []
+
+
 async def test_a_failed_household_spotify_path_does_not_complete_commissioning(make_env, monkeypatch):
     from unittest.mock import AsyncMock
 
@@ -42,6 +57,32 @@ async def test_household_auth_handoff_uses_the_discovered_app_route(make_env, mo
     result = await runtime.household()
     assert result["route"] == snapshot["open_path"]
     assert result["route"].startswith("/app/")
+
+
+async def test_native_collection_consent_requires_enforcement_and_is_bound_to_server(make_env, monkeypatch):
+    from unittest.mock import AsyncMock
+
+    runtime, _ = await runtime_for(make_env)
+    assert runtime.collection_sharing() is False
+    guard = AsyncMock(side_effect=MusicRuntimeError("Synthetic inactive protection"))
+    monkeypatch.setattr(runtime, "account_guard", guard)
+    monkeypatch.setattr(runtime, "household", AsyncMock(return_value={"shared_collections": True}))
+    with pytest.raises(MusicRuntimeError):
+        await runtime.set_collection_sharing(True)
+    assert not runtime.collection_path.exists()
+    guard.side_effect = None
+    guard.return_value = {"protocol": 1, "isolated": True}
+    await runtime.set_collection_sharing(True)
+    assert runtime.collection_sharing() is True
+    assert "token" not in runtime.collection_path.read_text()
+    connection = runtime.store.read(runtime.connection_path, None)
+    connection["server_id"] = "different-fictional-server"
+    private_write(runtime.connection_path, connection)
+    assert runtime.collection_sharing() is False
+    guard.reset_mock()
+    await runtime.set_collection_sharing(False)
+    guard.assert_not_awaited()
+    assert runtime.collection_sharing() is False
 
 
 async def test_catalogue_setup_is_idempotent_and_cannot_create_login_accounts(make_env, monkeypatch):

@@ -1,9 +1,27 @@
 """The reference wall is passive and keeps source selection/ownership boundaries."""
 
 import json
+from collections import Counter
+from hashlib import sha256
+from pathlib import Path
 
 from homestarter.surfaces import generate
 from test_surfaces import household, inventory
+
+
+def test_local_wallpaper_library_has_complete_periods_and_recorded_provenance():
+    static = Path(__file__).parents[1] / "home_starter/server/homestarter/static"
+    manifest = json.loads((static / "wallpapers.json").read_text(encoding="utf-8"))
+    assert manifest["generator"] == "OpenAI built-in image_gen"
+    assert manifest["not_live_household_data"] is True
+    assert Counter(row["period"] for row in manifest["images"]) == dict.fromkeys(("morning", "day", "afternoon", "evening", "night"), 4)
+    assert len({row["id"] for row in manifest["images"]}) == 20
+    for row in manifest["images"]:
+        assert row["prompt"] and row["easter_egg"]
+        assert row["file"] == row["id"] + ".webp"
+        payload = (static / "wallpapers" / row["file"]).read_bytes()
+        assert payload[:4] == b"RIFF" and payload[8:12] == b"WEBP"
+        assert sha256(payload).hexdigest() == row["sha256"]
 
 
 def test_reference_wall_uses_bounded_single_panel_and_no_operating_actions():
@@ -20,5 +38,8 @@ def test_reference_wall_uses_bounded_single_panel_and_no_operating_actions():
     root = view["cards"][0]
     assert root["tap_action"] == root["hold_action"] == root["double_tap_action"] == {"action": "none"}
     assert "data:image/jpeg;base64" in root["extra_styles"]
+    catalogue = json.loads(root["variables"]["wall_json"])["wallpapers"]
+    assert len(catalogue) == root["extra_styles"].count("data:image/webp;base64,") == 20
+    assert "const wallWallpaper=" in root["custom_fields"]["wall"]
     assert len(json.dumps(generated["config"]).encode()) < 4 * 1024 * 1024
     assert "call-service" not in str(root) and '"action": "navigate"' not in str(root)

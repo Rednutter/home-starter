@@ -13,8 +13,9 @@ const valid=r=>!r.expires_at || new Date(r.expires_at)>now;
 const kiosk=new URLSearchParams(window.location.search).has("kiosk")&&!new URLSearchParams(window.location.search).has("disable_km");
 const small=window.innerHeight<850;
 const night=Boolean(model.focus?.night);
+const wallpaper=wallWallpaper(now,hass.config.time_zone,cfg.surface_id,cfg.wallpapers);
 // Authored outline geometry is shared by native HA and isolated previews.
-const shapes={home:'<path d="m3 11 9-8 9 8M5 10v11h5v-7h4v7h5V10"/>',car:'<path d="m5 8 2-4h10l2 4M4 17v3m16-3v3"/><rect x="3" y="8" width="18" height="10" rx="3"/><path d="M6 13h2m8 0h2"/>',calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 11h18"/>',check:'<circle cx="12" cy="12" r="9"/><path d="m7 12 3 3 7-7"/>',sun:'<circle cx="12" cy="12" r="4"/><path d="M12 1v3m0 16v3M1 12h3m16 0h3M4 4l2 2m12 12 2 2M4 20l2-2M18 6l2-2"/>',cloud:'<path d="M6 18a5 5 0 1 1 1-10 6 6 0 0 1 11 2 4 4 0 0 1 0 8Z"/>',thermometer:'<path d="M9 14V5a3 3 0 0 1 6 0v9a5 5 0 1 1-6 0Z"/><path d="M12 8v10"/>',lock:'<rect x="5" y="10" width="14" height="12" rx="2"/><path d="M8 10V6a4 4 0 0 1 8 0v4m-4 5v3"/>',light:'<path d="M8 15a7 7 0 1 1 8 0l-1 4H9ZM9 22h6"/>',camera:'<rect x="2" y="5" width="14" height="14" rx="3"/><path d="m16 10 6-4v12l-6-4"/>',alert:'<path d="m12 2 10 19H2ZM12 8v5m0 3v1"/>'};
+const shapes={home:'<path d="m3 11 9-8 9 8M5 10v11h5v-7h4v7h5V10"/>',car:'<path d="m5 8 2-4h10l2 4M4 17v3m16-3v3"/><rect x="3" y="8" width="18" height="10" rx="3"/><path d="M6 13h2m8 0h2"/>',calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 11h18"/>',check:'<circle cx="12" cy="12" r="9"/><path d="m7 12 3 3 7-7"/>',sun:'<circle cx="12" cy="12" r="4"/><path d="M12 1v3m0 16v3M1 12h3m16 0h3M4 4l2 2m12 12 2 2M4 20l2-2M18 6l2-2"/>',cloud:'<path d="M6 18a5 5 0 1 1 1-10 6 6 0 0 1 11 2 4 4 0 0 1 0 8Z"/>',thermometer:'<path d="M9 14V5a3 3 0 0 1 6 0v9a5 5 0 1 1-6 0Z"/><path d="M12 8v10"/>',lock:'<rect x="5" y="10" width="14" height="12" rx="2"/><path d="M8 10V6a4 4 0 0 1 8 0v4m-4 5v3"/>',music:'<path d="M9 18V5l12-3v13M9 8l12-3"/><ellipse cx="6" cy="18" rx="3" ry="3"/><ellipse cx="18" cy="15" rx="3" ry="3"/>',light:'<path d="M8 15a7 7 0 1 1 8 0l-1 4H9ZM9 22h6"/>',camera:'<rect x="2" y="5" width="14" height="14" rx="3"/><path d="m16 10 6-4v12l-6-4"/>',alert:'<path d="m12 2 10 19H2ZM12 8v5m0 3v1"/>'};
 const icon=name=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${shapes[name] || shapes.calendar}</svg>`;
 const nice=value=>String(value || "").replace(/\s+-\s+/g," · ");
 const shortTime=value=>String(value || "").replace(/\s+pm$/i,"");
@@ -22,7 +23,7 @@ const clock=value=>new Intl.DateTimeFormat("en-AU",{timeZone:hass.config.time_zo
 const location=r=>r.location&&!r.title.toLocaleLowerCase().includes(r.location.toLocaleLowerCase())?r.location:"";
 const rows=(items,limit)=> (items || []).filter(alive).slice(0,limit);
 const exceptions=(model.household_exception || []).filter(valid);
-const active=(model.active_context || []).filter(r=>valid(r)&&r.kind!=="climate").slice(0,2);
+const active=(model.active_context || []).filter(r=>valid(r)&&!["climate","media"].includes(r.kind)).slice(0,2);
 const cards=(model.cards || []).map(c=>({...c,items:rows(c.items,night?2:small&&c.title==="This week"?2:3)})).filter(c=>c.items.length).slice(0,3);
 const avatar=card=>{
  const path=hass.states[card.avatar_entity]?.attributes?.entity_picture;
@@ -37,29 +38,79 @@ const fact=(r,person=false)=>{
 const family=cards.length?cards.map((card,n)=>`<section class="wall-family-card wall-tone-${n}" data-key="${esc(card.key || card.kind+card.title)}" data-kind="${esc(card.kind)}" data-importance="${esc(card.importance || "upcoming")}"><header>${card.kind==="person"?`<div class="wall-avatar">${avatar(card)}</div>`:""}<div><h2>${esc(card.title)}</h2>${model.focus?.preview&&card.kind==="person"?'<p class="wall-person-day">Tomorrow</p>':""}</div></header><div class="wall-card-facts">${card.items.map(r=>fact(r,card.kind==="person")).join("")}</div></section>`).join(""):!fresh?'<section class="wall-unavailable"><h2>Household context unavailable</h2><p>Waiting for a fresh Home Assistant update</p></section>':"";
 // Presentation-only grouping: count adjacent equal subjects without losing order or periods.
 const school=model.school;
-const schoolPanel=school?.children?.length?school.children.map((child,n)=>{
- const dated=rows(child.dated,2),rules=(child.rules || []).slice(0,2),groups=[];
- if(night){
-  const first=child.periods?.[0],next=rows(child.commitments,1);
-  const summary=first?`School · ${clock(first.start)}`:!dated.length?(child.status==="not_configured"?"Timetable not linked":"No classes listed"):"";
-  return `<section class="wall-family-card wall-school-child wall-tone-${n%3}" data-kind="person" data-key="school-${esc(child.person)}" data-status="${esc(child.status)}"><header><div class="wall-avatar">${avatar({title:child.name,avatar_entity:cfg.people?.[child.person]})}</div><div><h2>${esc(child.name)}</h2><p class="wall-person-day">${esc(model.focus?.label || (model.focus?.preview?"Tomorrow":"Today"))}</p></div></header><div class="wall-card-facts">${summary?`<p class="wall-night-summary">${esc(summary)}</p>`:""}${dated.slice(0,1).map(r=>fact(r,true)).join("")}${rules.map(r=>`<p class="wall-night-rule">${esc(r)}</p>`).join("")}${next.map(r=>fact(r,true)).join("")}</div></section>`;
+const departures=(school?.children || []).map(child=>child.next_departure?.leave_at);
+const sharedDeparture=night&&departures.length&&departures.every(value=>value===departures[0]&&Date.parse(value)>now)?departures[0]:null;
+const nightReadiness=sharedDeparture?`<p class="wall-night-departure">${esc(model.focus?.label || "School")} · School · Leave ${clock(sharedDeparture)}</p>`:"";
+const familyIncomplete=Boolean(school?.children?.length&&!school.children.some(c=>c.periods?.length||c.dated?.length||c.rules?.length||c.commitments?.length));
+const schoolBreak=subject=>/^(recess|lunch|morning tea|break)( break)?$/i.test(subject.trim());
+// Each native period owns a row even when adjacent lessons join into one card.
+// Real gaps get slim rows, preserving the same bell-time positions across people.
+const schoolGrid=periods=>{
+ const slots=[],gaps=[];
+ let breaks=0;
+ for(let n=0;n<periods.length;n++){
+  const period=periods[n],previous=periods[n-1];
+  if(previous&&Date.parse(period.start)-Date.parse(previous.end)>60000){
+   const label=["Recess","Lunch"][breaks++] || "Break";
+   gaps.push({subject:label,count:0,start:previous.end,end:period.start,row:slots.length+1,span:1,break:true});
+   slots.push("var(--wall-break-height)");
+  }
+  slots.push(schoolBreak(period.subject)?"var(--wall-break-height)":"minmax(0,1fr)");
  }
- for(const period of child.periods || []) {
+ return {slots,gaps};
+};
+const schoolPanel=!night&&school?.children?.length?school.children.map((child,n)=>{
+ const dated=rows(child.dated,1),rules=(child.rules || []).slice(0,2),groups=[];
+ const readiness=child.next_departure?`Leave ${clock(child.next_departure.leave_at)}`:Number.isFinite(Date.parse(child.periods?.[0]?.start))?`Starts ${clock(child.periods[0].start)}`:school.preview?"Tomorrow":model.focus?.label || "Today";
+ const readyLabel=school.preview&&readiness!=="Tomorrow"?`<small>Tomorrow</small>${esc(readiness)}`:esc(readiness);
+ const nativePeriods=child.periods || [],grid=schoolGrid(nativePeriods);
+ let row=0;
+ for(let index=0;index<nativePeriods.length;index++) {
+  const period=nativePeriods[index];
+  if(index&&Date.parse(period.start)-Date.parse(nativePeriods[index-1].end)>60000)row++;
+  row++;
   const last=groups.at(-1);
-  if(last?.subject===period.subject)last.count++;
-  else groups.push({subject:period.subject,count:1});
+  const gap=Date.parse(period.start)-Date.parse(last?.end);
+  // Cirrus encodes adjacent periods with a one-minute transition, not touching intervals.
+  // Preserve larger gaps as visual boundaries without guessing their purpose.
+  if(last?.subject===period.subject&&(!last.end&&!period.start||gap>=0&&gap<=60000)){last.count++;last.span++;last.end=period.end;}
+  else groups.push({subject:period.subject,count:1,start:period.start,end:period.end,row,span:1});
  }
- const periods=groups.slice(0,Math.max(2,(small?7:8)-dated.length*2-rules.length));
+ const periodRow=r=>{
+  const start=Date.parse(r.start),end=Date.parse(r.end);
+  const state=Number.isFinite(end)&&end<=now?"completed":Number.isFinite(start)&&Number.isFinite(end)&&start<=now&&now<end?"current":"upcoming";
+  const isBreak=r.break || schoolBreak(r.subject);
+  const content=isBreak?"":`<span>${esc(r.subject)}</span>`;
+  return `<li style="grid-row:${r.row}/span ${r.span}" data-period-count="${r.count}" data-period-state="${state}" data-break="${isBreak}"${isBreak?` role="separator" aria-label="${esc(r.subject)}"`:state==="current"?' aria-current="true"':""}>${content}</li>`;
+ };
+ const periods=[...groups,...grid.gaps].sort((a,b)=>a.row-b.row);
  const shown=periods.reduce((count,r)=>count+r.count,0);
- return `<section class="wall-family-card wall-school-child wall-tone-${n%3}" data-kind="person" data-key="school-${esc(child.person)}" data-status="${esc(child.status)}" data-importance="upcoming"><header><div class="wall-avatar">${avatar({title:child.name,avatar_entity:cfg.people?.[child.person]})}</div><div><h2>${esc(child.name)}</h2><p class="wall-person-day">${esc(model.focus?.preview?"Tomorrow":"Today")} at school</p></div></header><div class="wall-card-facts">${dated.length?`<div class="wall-school-dated">${dated.map(r=>fact(r,true)).join("")}</div>`:""}${periods.length?`<ol class="wall-school-periods">${periods.map(r=>`<li data-period-count="${r.count}"><span>${esc(r.subject)}</span>${r.count>1?`<span class="wall-period-count" aria-label="${r.count} scheduled periods">&times;${r.count}</span>`:""}</li>`).join("")}</ol>${child.periods.length>shown?`<p class="wall-school-more">+${child.periods.length-shown} later classes</p>`:""}`:!dated.length&&!rules.length?`<p class="wall-school-fallback">${esc(child.fallback)}</p>`:""}${rules.length?`<div class="wall-school-rules">${rules.map(rule=>`<p>${esc(rule)}</p>`).join("")}</div>`:""}</div></section>`;
+ const requirements=rules.length?`<div class="wall-school-rules">${rules.map(rule=>`<p>${esc(rule)}</p>`).join("")}</div>`:"";
+ const upcoming=dated.length?[]:rows(child.commitments,1),dense=Boolean(upcoming.length||dated.length||rules.length||groups.length>6);
+ return `<section class="wall-family-card wall-school-child wall-tone-${n%3}" data-kind="person" data-key="school-${esc(child.person)}" data-status="${esc(child.status)}" style="grid-column:${n+1}" data-dense="${dense}" data-importance="${esc(child.importance || "upcoming")}"><header><div class="wall-avatar">${avatar({title:child.name,avatar_entity:cfg.people?.[child.person]})}</div><div><h2>${esc(child.name)}</h2><p class="wall-person-day" data-departure="${Boolean(child.next_departure)}">${readyLabel}</p></div></header><div class="wall-card-facts wall-school-day">${periods.length?`<ol class="wall-school-periods" style="grid-template-rows:${grid.slots.join(" ")}">${periods.map(periodRow).join("")}</ol>${child.periods.length>shown?`<p class="wall-school-more">+${child.periods.length-shown} later classes</p>`:""}`:!dated.length&&!rules.length?`<p class="wall-school-fallback">${esc(child.fallback)}</p>`:""}</div><div class="wall-school-extra">${dated.length?`<div class="wall-school-dated">${dated.map(r=>fact(r,true)).join("")}</div>`:""}${requirements}${upcoming.map(r=>fact(r,true)).join("")}</div></section>`;
 }).join(""):"";
-const weekPanel=!night&&model.week?.length?`<section class="wall-week wall-secondary wall-surface" aria-label="Week ahead"><header><h2>Week ahead</h2></header><ol class="wall-week-days">${model.week.slice(0,6).map((day,n)=>rows(day.items,1).map(r=>`<li class="wall-week-row wall-tone-${n%3}"><span class="wall-week-day">${esc(day.label.length>9?day.label:day.label.slice(0,3))}</span><time>${esc(shortTime(r.time))}</time><span class="wall-dot"></span><h3>${esc(nice(r.title))}</h3></li>`).join("")).join("")}</ol></section>`:"";
+const upcomingDays=night?[]:(model.upcoming_days || model.week || []);
+const upcoming=(budget)=>{
+ let remaining=small?6:8;
+ return upcomingDays.map((day,n)=>{
+  const items=[];budget-=small?30:38;
+  for(const row of rows(day.items,remaining)){
+   const cost=(small?29:36)*(1+Math.floor((row.title.length+(row.people?.join(" ").length || 0))/32));
+   if(cost>budget)break;
+   items.push(row);budget-=cost;remaining--;
+  }
+  if(!items.length)return "";
+  return `<section class="wall-upcoming-day"><h3>${esc(day.label)}</h3><ol>${items.map(r=>`<li class="wall-upcoming-row wall-tone-${n%3}"><span class="wall-dot"></span><time>${esc(shortTime(r.time))}</time><p>${esc(nice(r.title))}${r.people?.length&&!r.person_title?`<span> · ${esc(r.people.join(" · "))}</span>`:""}</p></li>`).join("")}</ol></section>`;
+ }).join("");
+};
 const timeline=(panel,secondary=false)=>{
  const available=rows(panel?.items,secondary?3:small?4:5),items=[];
  let capacity=secondary?(small?2:3):small?5:7;
  for(const r of available){const cost=1+(r.title.length>28?0.5:0)+(!secondary&&(r.detail||location(r))?0.5:0)+(secondary&&r.day_offset>0?0.5:0);if(cost>capacity&&items.length)break;items.push(r);capacity-=cost;}
- if(!items.length)return "";
- return `<section class="wall-surface ${secondary?"wall-secondary":"wall-timeline"}"><header><h2>${esc(panel?.label || (secondary?"Upcoming":"Today"))}</h2>${!secondary?`<p>${esc(panel?.date_label || date({weekday:"short",day:"numeric",month:"short"}))}</p>`:""}</header><ol>${items.map((r,n)=>`<li class="wall-line-item wall-tone-${n%3}"><time aria-label="${esc(r.time || r.when)}">${esc(shortTime(r.time || r.when))}</time><span class="wall-dot"></span><div><h3>${esc(nice(r.title))}</h3><div class="wall-line-meta">${secondary?(r.day_offset>0?`<p>${esc(r.day_label)}</p>`:""):`${r.people?.length&&!r.person_title?`<p>${esc(r.people.join(" · "))}</p>`:""}${location(r)?`<p>${esc(location(r))}</p>`:""}${r.detail?`<p class="wall-leave">${icon("car")}${esc(r.leave_at&&r.id!==model.next_movement?.id?"Leave "+clock(r.leave_at):r.detail)}</p>`:""}`}</div></div></li>`).join("")}</ol></section>`;
+ const primaryHeight=items.reduce((height,r)=>height+(small?55:65)+(r.detail||location(r)||r.people?.length?(small?30:35):0)+(r.title.length>28?(small?25:31):0),0);
+ const future=upcoming(window.innerHeight*.76-(small?110:130)-primaryHeight);
+ if(!items.length&&!future)return "";
+ return `<section class="wall-surface ${secondary?"wall-secondary":"wall-timeline"}"><header><h2>${esc(panel?.label || (secondary?"Upcoming":"Today"))}</h2>${!secondary?`<p>${esc(panel?.date_label || date({weekday:"short",day:"numeric",month:"short"}))}</p>`:""}</header><ol>${items.map((r,n)=>`<li class="wall-line-item wall-tone-${n%3}"><time aria-label="${esc((r.time&&r.time!=="All day"?"Starts ":"")+(r.time || r.when))}">${r.time&&r.time!=="All day"?"<small>Starts</small>":""}${esc(shortTime(r.time || r.when))}</time><span class="wall-dot"></span><div><h3>${esc(nice(r.title))}</h3><div class="wall-line-meta">${secondary?(r.day_offset>0?`<p>${esc(r.day_label)}</p>`:""):`${r.people?.length&&!r.person_title?`<p>${esc(r.people.join(" · "))}</p>`:""}${location(r)?`<p>${esc(location(r))}</p>`:""}${r.detail?`<p class="wall-leave">${icon("car")}${esc(r.leave_at&&r.id!==model.next_movement?.id?"Leave "+clock(r.leave_at):r.detail)}</p>`:""}`}</div></div></li>`).join("")}</ol>${future?`<div class="wall-upcoming" aria-label="Upcoming days">${future}</div>`:""}</section>`;
 };
 const weather=model.weather;
 const temperature=value=>typeof value==="number"&&Number.isFinite(value)?Math.round(value)+"°":null;
@@ -72,19 +123,34 @@ const weatherSummary=[preview?weatherLabel:null,condition,weather?.high==null?"F
 const weatherImpact=exceptions.find(e=>e.kind==="weather")?.title || (typeof weather?.precipitation_probability==="number"&&weather.precipitation_probability>=60?`${weather.precipitation_probability}% chance of rain`:"");
 const weatherPanel=`<section class="wall-weather" aria-label="${esc(weatherLabel)}"><div class="wall-weather-reading">${weatherCondition?icon(["sunny","clear night"].includes(weatherCondition)?"sun":"cloud"):""}${preview?reading(weather?.high,"High",true)+reading(weather?.low,"Low"):reading(weather?.temperature,"Now",true)+reading(weather?.high,"High")}</div><h2>${esc(weatherSummary)}</h2>${weatherImpact?`<p class="wall-weather-impact">${esc(weatherImpact)}</p>`:""}</section>`;
 const status=fresh?model.household_status || {}:{};
+const lightsOn=Array.isArray(status.lights_on)?status.lights_on:[];
+const lightShapes={
+ lamp:'<path d="m8 3-4 10h16L16 3ZM12 13v8m-4 0h8"/>',
+ pendant:'<path d="M12 2v5m-7 9a7 7 0 0 1 14 0ZM10 19h4"/>',
+ downlight:'<path d="M3 7h18M7 7v4h10V7M8 15l-2 4m6-4v5m4-5 2 4"/>',
+ strip:'<path d="M3 8h18v5H3Zm3 9v2m6-2v2m6-2v2"/>',
+};
+const litIcon=r=>{
+ const shape=({'mdi:lamp':'lamp','mdi:floor-lamp':'lamp','mdi:ceiling-light':'pendant','mdi:ceiling-light-multiple':'pendant','mdi:light-recessed':'downlight','mdi:recessed-ceiling':'downlight','mdi:led-strip':'strip','mdi:led-strip-variant':'strip'})[r.icon];
+ return shape?`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${lightShapes[shape]}</svg>`:icon("light");
+};
+const litRow=lightsOn.length?`<div class="wall-lights-on" aria-label="${esc(lightsOn.length+" lights or groups on")}">${lightsOn.slice(0,3).map(r=>`<span class="wall-lit-light" role="img" aria-label="${esc(r.name)}" title="${esc(r.name)}">${litIcon(r)}</span>`).join("")}${lightsOn.length>3?`<span class="wall-lights-more" aria-label="${lightsOn.length-3} more on">+${lightsOn.length-3}</span>`:""}</div>`:"";
 const statusCell=(kind,label,value,detail)=>{
  if(night&&(kind==="light"&&value==="All off"||kind==="lock"&&value==="Armed"))return "";
  if(label!=="Home"&&(!value||value==="Not selected"))return "";
  const climate=kind==="thermometer"&&detail;
- return `<section class="wall-status-cell" aria-label="${esc(label)}"><span class="wall-status-icon">${icon(kind)}</span><div><h3>${esc(climate?value:label)}</h3><strong>${esc(climate?detail:value || "Status unavailable")}</strong></div></section>`;
+ return `<section class="wall-status-cell" aria-label="${esc(label)}"><span class="wall-status-icon">${icon(kind)}</span><div><h3>${esc(climate?value:label)}</h3>${kind==="light"&&litRow?litRow:`<strong>${esc(climate?detail:value || "Status unavailable")}</strong>`}</div></section>`;
 };
 const household=`<section class="wall-household wall-surface" aria-label="Household status">${statusCell("home","Home",status.home)}${statusCell("thermometer","Climate",temperature(status.climate?.temperature)||status.climate?.detail,temperature(status.climate?.temperature)?status.climate?.detail:"")}${statusCell("lock","Security",status.security)}${statusCell("light","Lights",status.lights)}</section>`;
-const cameras=(status.cameras || []).filter(c=>!night||!c.available).slice(0,3);
+const selectedCameras=status.cameras || [];
+const playing=selectedCameras.some(c=>c.available)?[]:(status.now_playing || []).slice(0,2);
+const cameras=playing.length?[]:selectedCameras.filter(c=>!night||!c.available).slice(0,3);
 const cameraPicture=c=>{
  const path=hass.states[c.entity]?.attributes?.entity_picture;
  return c.available&&typeof path==="string"&&path.split("?")[0]===`/api/camera_proxy/${c.entity}`?`<img src="${esc(path)}" alt="${esc(c.name)} camera view">`:icon("camera");
 };
-const cameraPanel=cameras.length||active.length||model.issues?.length?`<section class="wall-camera-status wall-surface" aria-label="Cameras and active context">${cameras.length?`<div class="wall-camera-heading"><span class="wall-status-icon">${icon("camera")}</span><div><h2>Cameras</h2><p>${esc(cameras.filter(c=>c.available).length+" available")}</p></div></div>`:""}${active.length?`<div class="wall-active-status">${active.map(r=>`<section><h3>${esc(r.title)}</h3><p>${esc(r.detail)}</p></section>`).join("")}</div>`:cameras.length?`<div class="wall-cameras">${cameras.map(c=>`<figure>${cameraPicture(c)}<figcaption>${esc(c.name)}${!c.available?" · Unavailable":""}</figcaption></figure>`).join("")}</div>`:model.issues?.length?`<p class="wall-source-note">${esc(model.issues[0])}</p>`:""}</section>`:"";
+const mediaPanel=playing.length?`<section class="wall-camera-status wall-media-status wall-surface" aria-label="Now playing"><div class="wall-camera-heading"><span class="wall-status-icon">${icon("music")}</span><div><h2>Now playing</h2></div></div><div class="wall-active-status">${playing.map(r=>`<section><h3>${esc(r.title)}</h3><p>${esc([r.artist,r.room].filter(Boolean).join(" · "))}</p></section>`).join("")}</div></section>`:"";
+const cameraPanel=mediaPanel || (cameras.length||active.length?`<section class="wall-camera-status wall-surface" aria-label="Cameras and active context">${cameras.length?`<div class="wall-camera-heading"><span class="wall-status-icon">${icon("camera")}</span><div><h2>Cameras</h2><p>${esc(cameras.filter(c=>c.available).length+" available")}</p></div></div><div class="wall-cameras">${cameras.map(c=>`<figure>${cameraPicture(c)}<figcaption>${esc(c.name)}${!c.available?" · Unavailable":""}</figcaption></figure>`).join("")}</div>`:`<div class="wall-active-status">${active.map(r=>`<section><h3>${esc(r.title)}</h3><p>${esc(r.detail)}</p></section>`).join("")}</div>`}</section>`:model.issues?.length?`<aside class="wall-source-note" role="status">${esc(model.issues.some(s=>s.includes("Calendar"))?"Calendar temporarily unavailable":"Some household information is temporarily unavailable")}</aside>`:"");
 const session=model.display_session && valid(model.display_session) ? model.display_session : null;
 let picture="";
 if(session?.kind==="camera" && /^camera\.[a-z0-9_]+$/.test(session.camera || "")) {
@@ -93,8 +159,8 @@ if(session?.kind==="camera" && /^camera\.[a-z0-9_]+$/.test(session.camera || "")
 }
 const overlay=session?`<section class="wall-session" aria-label="Temporary display session"><div><h2>${esc(session.title)}</h2>${picture}${session.kind==="camera"&&!picture?"<p>Camera view unavailable</p>":""}<p class="wall-session-body">${esc(session.body)}</p><p>Returns to the family board automatically</p></div></section>`:"";
 const alerts=exceptions.filter(r=>r.kind!=="weather");
-const primaryAgenda=timeline(model.timeline),secondaryAgenda=night?"":weekPanel || timeline(model.secondary,true);
-const body=`<main class="hs-wall" data-fresh="${fresh}" data-night="${night}" data-wall-surface="${esc(cfg.surface_id)}" data-cursor-hidden="${kiosk}" data-state="${esc(model.day_state)}" data-mode="${esc(model.focus?.mode || "today")}" data-phase="${esc(model.phase || "morning")}" data-agenda="${primaryAgenda||secondaryAgenda||weekPanel?"visible":"hidden"}" style="--wall-chrome:${kiosk?0:56}px" aria-label="${esc(cfg.title)} household board">${alerts.length?`<aside class="wall-alerts">${icon("alert")}${esc(alerts.map(r=>r.title+" · "+r.detail).join(" · "))}</aside>`:""}<header class="wall-header"><div class="wall-clock"><time>${esc(date({hour:"numeric",minute:"2-digit",hour12:false}).replace(/^0/,""))}</time><p>${esc(date({weekday:"long",day:"numeric",month:"short"})).replace(",","")}</p></div>${weatherPanel}</header><div class="wall-family${schoolPanel?" wall-family-school":""}" data-count="${schoolPanel?school.children.length:cards.length}" aria-label="${esc(school?.label || "Household plans")}">${schoolPanel || family}</div><aside class="wall-agenda">${primaryAgenda}${secondaryAgenda}</aside><footer class="wall-bottom">${household}${cameraPanel}</footer>${overlay}</main>`;
+const primaryAgenda=night?"":timeline(model.timeline);
+const body=`<main class="hs-wall" data-fresh="${fresh}" data-night="${night}" data-wallpaper-period="${wallpaper.period}" data-wallpaper="${wallpaper.id || "fallback"}" data-wall-surface="${esc(cfg.surface_id)}" data-cursor-hidden="${kiosk}" data-state="${esc(model.day_state)}" data-mode="${esc(model.focus?.mode || "today")}" data-phase="${esc(model.phase || "morning")}" data-agenda="${primaryAgenda?"visible":"hidden"}" style="--wall-chrome:${kiosk?0:56}px${wallpaper.id?`;--wall-landscape:var(--wallpaper-${wallpaper.id})`:""}" aria-label="${esc(cfg.title)} household board">${alerts.length?`<aside class="wall-alerts">${icon("alert")}${esc(alerts.map(r=>r.title+" · "+r.detail).join(" · "))}</aside>`:""}<header class="wall-header"><div class="wall-clock"><time>${esc(date({hour:"numeric",minute:"2-digit",hour12:false}).replace(/^0/,""))}</time><p>${esc(date({weekday:"long",day:"numeric",month:"short"})).replace(",","")}</p>${nightReadiness}</div>${weatherPanel}</header>${night?"":`<div class="wall-family${schoolPanel?" wall-family-school":""}" data-incomplete="${familyIncomplete}" data-count="${schoolPanel?school.children.length:cards.length}" aria-label="${esc(school?.label || "Household plans")}">${schoolPanel || family}</div><aside class="wall-agenda">${primaryAgenda}</aside>`}<footer class="wall-bottom">${household}${cameraPanel}</footer>${overlay}</main>`;
 if(window.customElements&&typeof HTMLElement!=="undefined"&&!window.customElements.get("home-starter-ambient-wall")) {
  // HA uses nested shadow roots. Scope the document-wide rule to this mounted wall
  // route in kiosk mode; remove every injected style/listener on navigation or detach.

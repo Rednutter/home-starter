@@ -33,6 +33,8 @@ def media_record(value):
         "uri": path,
         "folder": folder,
         "sources": sorted(household_music.item_sources(value)),
+        **({"household_collection": True} if value.get("household_collection") is True else {}),
+        **({"continuation": True} if value.get("continuation") is True else {}),
     }
 
 
@@ -47,6 +49,10 @@ class ListeningRuntime:
         from .media_catalogue import MediaCatalogue
 
         self.media = MediaCatalogue(runtime, core, store)
+        from .listening_collections import Collections
+
+        self.collections = Collections(runtime)
+        self.collection_view = None
 
     async def regional_radio(self, endpoint, connection, region):
         if not region:
@@ -158,13 +164,24 @@ class ListeningRuntime:
             )
         return result, child
 
-    async def catalog_items(self, endpoint, connection, folder=None, query=None):
-        if query:
+    async def catalog_items(self, endpoint, connection, folder=None, query=None, providers=()):
+        from .listening_collections import KINDS, roots, selection
+
+        collection = self.catalog.get(folder, {}) if folder else {}
+        path = collection.get("uri") if folder else None
+        self.collection_view = None
+        if selected := selection(path):
+            values, incomplete, total = await self.collections.page(endpoint, connection, path, providers, query)
+            kind = selected[0]
+            root = media_record(roots()[list(KINDS).index(kind)])
+            self.catalog[root["id"]] = root
+            self.collection_view = {"title": KINDS[kind][0], "root": root["id"], "total": total, "incomplete": incomplete, "search": bool(query)}
+        elif isinstance(collection.get("_page"), list):
+            values = collection["_page"]
+        elif query:
             raw = await self.runtime.command(endpoint, connection, "music/search", search_query=query, limit=12)
             values = [v for rows in raw.values() if isinstance(rows, list) for v in rows] if isinstance(raw, dict) else []
         else:
-            collection = self.catalog.get(folder, {}) if folder else {}
-            path = collection.get("uri") if folder else None
             if folder and path is None:
                 raise ValueError("This library selection expired. Open the library again.")
             if collection.get("kind") == "podcast":
@@ -178,17 +195,37 @@ class ListeningRuntime:
                 values = await self.runtime.command(
                     endpoint, connection, "music/podcasts/podcast_episodes", item_id=show["item_id"], provider_instance_id_or_domain=show["provider"]
                 )
+                if collection.get("household_collection"):
+                    values = [{**v, "household_collection": True} for v in values]
             else:
                 values = await self.runtime.command(endpoint, connection, "music/browse", path=path)
         if not isinstance(values, list):
             raise MusicRuntimeError("Music Assistant library could not be read.")
+        if not folder and not query and any(p.get("domain") == "spotify" for p in providers):
+            spotify = {p["id"] for p in providers if p.get("domain") == "spotify"}
+            values = [*roots(), *(v for v in values if not household_music.item_sources(v) & spotify and v.get("provider") != "spotify")]
+        continuation = None
+        if not selected and len(values) > 60:
+            more = {
+                "media_type": "folder",
+                "name": "More results",
+                "path": "homestarter-page://" + secrets.token_hex(16),
+                "provider": "household_collections",
+                "continuation": True,
+            }
+            continuation = media_record(more)
+            continuation["_page"] = values[60:]
+            values = [*values[:60], more]
         result = []
-        for value in values[:80]:
+        for value in values:
             if record := media_record(value):
-                if record["kind"] not in {"folder", "track", "album", "playlist", "radio", "audiobook", "podcast", "podcast_episode", "sound_effect"}:
+                if record["kind"] not in {"folder", "track", "album", "artist", "playlist", "radio", "audiobook", "podcast", "podcast_episode", "sound_effect"}:
                     continue
                 self.catalog[record["id"]] = record
                 result.append(record)
+        if continuation:
+            self.catalog[continuation["id"]] = continuation
+            result[-1] = continuation
         if len(self.catalog) > 3000:
             self.catalog = {r["id"]: r for r in result}
         return result
@@ -346,7 +383,7 @@ class ListeningRuntime:
             players, child = await self.players(house, surface, saved, person, snapshot)
             if child and (folder or query):
                 raise PermissionError("This view uses its permitted listening choices.")
-            library = [] if child else await self.catalog_items(endpoint, connection, folder, query)
+            library = [] if child else await self.catalog_items(endpoint, connection, folder, query, snapshot.get("providers", []))
             listener = next((p["name"] for p in house["people"] if p["id"] == person), "House")
             providers = snapshot.get("providers", [])
             library = [r for r in library if household_music.visible(r, listener, providers)]
@@ -370,7 +407,7 @@ class ListeningRuntime:
                 default = default or next((p["entity_id"] for p in players if p["available"]), None)
 
             def public(r):
-                return {k: r[k] for k in ("id", "title", "kind", "folder") if k in r}
+                return {k: r[k] for k in ("id", "title", "kind", "folder", "continuation") if k in r}
 
             books = sorted(profile["books"].values(), key=lambda b: b.get("updated_at", 0), reverse=True)
             channels = []
@@ -393,6 +430,7 @@ class ListeningRuntime:
                 "default_destination": default,
                 "browse": not child,
                 "library": [public(r) for r in library],
+                "collection": self.collection_view if not child else None,
                 "channels": channels,
                 "discovery": True,
                 "regional_radio": {"name": region["name"], "items": [public(r) for r in local_radio], "issue": radio_issue}

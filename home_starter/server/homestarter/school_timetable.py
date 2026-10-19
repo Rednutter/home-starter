@@ -14,10 +14,12 @@ def attendance(children, explicit_people, local):
         if end <= local:
             continue
         key = start.isoformat()
+        leave_at = child.get("school_leave_at")
+        group_key = (key, leave_at)
         row = groups.setdefault(
-            key,
+            group_key,
             {
-                "id": "school-attendance-" + key,
+                "id": "school-attendance-" + key + ("-" + leave_at if leave_at else ""),
                 "kind": "school_attendance",
                 "title": "School",
                 "people": [],
@@ -25,6 +27,8 @@ def attendance(children, explicit_people, local):
                 "sources": [],
                 "date": start.date().isoformat(),
                 "starts_at": key,
+                "leave_at": leave_at,
+                "detail": "Leave " + datetime.fromisoformat(leave_at).strftime("%H:%M") if leave_at else "",
                 "ends_at": end.isoformat(),
                 "day_offset": (start.date() - local.date()).days,
                 "day_label": start.strftime("%A"),
@@ -69,7 +73,7 @@ def select(sources, people, roles, focus, local, suppressed=False):
                 "periods": periods,
                 "sources": [{"kind": "ha_calendar", "entity": f["source"], "label": f["label"]} for f in feeds],
                 "status": "available" if periods else "no_classes" if feeds else "not_configured",
-                "fallback": "School tomorrow" if focus["preview"] else "School today",
+                "fallback": "No classes listed" if feeds else "Timetable temporarily unavailable",
             }
         )
     return {"label": focus["label"] + " at school", "date": focus["date"], "children": children} if children else None

@@ -1,6 +1,7 @@
 """Synthetic probes for privacy boundaries; never use a real credential in a test."""
 
 import fnmatch
+import json
 import logging
 import shutil
 import subprocess
@@ -57,6 +58,11 @@ def test_packaging_uses_deny_by_default_source_allowlist():
     assert included("server/homestarter/household.py")
     assert included("server/homestarter/static/wall-morning.jpg")
     assert included("server/homestarter/static/wall-imagery.json")
+    assert included("server/homestarter/static/wallpapers.json")
+    assert included("server/homestarter/static/wallpapers/night-moonlit-valley.webp")
+    for row in json.loads(Path("home_starter/server/homestarter/static/wallpapers.json").read_text())["images"]:
+        assert included("server/homestarter/static/wallpapers/" + row["file"])
+    assert not included("server/homestarter/static/wallpapers/private-wall-capture.webp")
     assert not included("server/homestarter/static/household-photo.jpg")
     for path in ("data/household.json", "server/homestarter/household.json", ".env", "screens/capture.png", "runtime.db", "server/homestarter/private.key"):
         assert not included(path)
@@ -91,6 +97,8 @@ def test_contacts_and_non_neutral_fixture_coordinates_are_rejected_without_value
 
 def test_reviewed_wall_asset_and_systemd_unit_do_not_admit_private_artifacts():
     assert not forbidden_path("home_starter/server/homestarter/static/wall-morning.jpg")
+    assert not forbidden_path("home_starter/server/homestarter/static/wallpapers/night-moonlit-valley.webp")
+    assert forbidden_path("home_starter/server/homestarter/static/wallpapers/private-wall-capture.webp")
     assert forbidden_path("home_starter/server/homestarter/static/household-photo.jpg")
     script = "devtools/kitchen_wall/install-voice-firewall.sh"
     assert not inspect_text(script, "Before=user@" + "1000.service")

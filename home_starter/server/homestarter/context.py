@@ -18,8 +18,18 @@ def empty():
 
 
 def validate(value):
-    if not isinstance(value, dict) or set(value) - {"rules", "events", "wall"} or not {"rules", "events"} <= set(value):
+    if not isinstance(value, dict) or set(value) - {"rules", "events", "wall", "school_departures"} or not {"rules", "events"} <= set(value):
         raise ValueError("Unsupported household context settings.")
+    departures = value.get("school_departures", {})
+    if (
+        not isinstance(departures, dict)
+        or len(departures) > 30
+        or any(
+            not isinstance(person, str) or not ID.fullmatch(person) or not isinstance(at, str) or not re.fullmatch(r"(?:[01]\d|2[0-3]):[0-5]\d", at)
+            for person, at in departures.items()
+        )
+    ):
+        raise ValueError("School departures need confirmed children and a local HH:MM time.")
     if "wall" in value:
         from .wall_composer import validate_policy
 

@@ -4,6 +4,39 @@ Music Assistant installation/HA integration health is separate from Music readin
 Home Starter never marks Music verified from installation, a Spotify Connect plugin,
 or a player label alone.
 
+## Current household media (0.8.39)
+
+Collections combine connected household sources into Playlists, Podcasts,
+Audiobooks, Albums, Artists, Tracks and Saved radio. Exact provider identities
+merge; matching names alone do not. Paging and typed search keep large libraries
+and search-only catalogues accessible. A saved podcast count is not the size of
+the iTunes search catalogue. Partial source reads remain explicitly incomplete.
+
+Native MA provider access was expanded only after administrator consent. That
+choice is bound to this household/server and requires active account enforcement;
+it is broader native source access, not a metadata-only MA permission. Personal
+playback precedence and the House → House #2 → Grant allocator remain separate.
+Renae stays pending and personal-only; children have no Spotify identities.
+
+The wall reads live MA players and queues, groups metadata by actual queue owner,
+and shows one Now playing entry per active group when no selected camera is
+available. Station catalogue names take precedence over delivery/ad markers.
+
+All eight intended speakers are selected for shared Home Starter surfaces,
+including Living Area Speakers, Workshop Speaker and Master Bedroom Speaker.
+Child destination permissions retain their existing room scope. Existing media
+entity IDs remain intact; duplicate/legacy HA views were hidden, not deleted.
+MA's configured groups are Kitchen Area (Kitchen Hub + Living Area Pi), Morning
+Group (those two + children's rooms), and Everywhere (all eight speakers).
+Membership was verified; audible synchronisation was not. Home Starter still
+starts individual speakers only: native MA group configuration does not establish
+working group starts in the Home Starter UI.
+
+The Pi uses its native `bcm2835 Headphones` output for 3.5 mm audio to the stereo
+amp; USB microphone/voice routing is separate. Audible radio was confirmed by the
+user. The agreed analogue mixer level is −6 dB and MA was set to 10%; boot-time
+mixer persistence has not been verified. This is not a household loudness calibration.
+
 Connect using a dedicated MA API token from **MA → Settings → Profile**, entered
 only in Home Starter's password field. The connection is checked before replacing
 an existing one. Provider account passwords and sign-ins stay in MA. The token is
@@ -22,9 +55,9 @@ it cannot create Spotify accounts or accept provider passwords. See
 
 Choose a connected source and an available, single ungrouped speaker. Play one item
 from that source on that speaker in MA, then **Check selected speaker playback**.
-Home Starter observes; it never sends transport, queue, volume or grouping commands.
-The read API allowlist is `providers`, `config/providers`, `players/all`,
-`players/get`, and `player_queues/get_active_queue`.
+The readiness check only observes; it never sends transport, queue, volume or
+grouping commands. The separately authorised listening controls can operate
+playback. The current read allowlist is defined in `music_runtime.READ_COMMANDS`.
 
 The check requires matching source/queue/item/speaker identity, active playback
 and fresh raw device timestamps. Advancing raw position is recorded separately;
@@ -43,7 +76,7 @@ preserving the service connection. API connection and read-only verification are
 available before commissioning Go; they neither apply household plans nor mutate MA.
 Commissioning Retry consumes valid proof; installation alone stays incomplete.
 
-Supported API contract: MA 2.10.6 / models 1.1.205. This is an observed software
+Reviewed MA server versions: 2.10.6 and 2.10.7. This is an observed software
 playback attribution plus human audible confirmation, not acoustic measurement. Other
 sources, speakers and groups remain untested.
 

@@ -11,12 +11,23 @@ move week-ahead into a bottom strip. Keep dynamic selection/state underneath.
 Use existing permitted photos or initial circles; never invent household photos.
 Wall cursors stay hidden across the kiosk document and HA shadow roots. Global
 rules must be mounted-wall/route scoped and removed on interactive navigation.
+Wall Now playing reads active MA queues, once per group, never deduplicated by
+title. Radio shows catalogue station names; publish no raw queue/stream payloads.
+The right timeline is one surface with a content-positioned future-day divider.
+Pi music uses 3.5 mm to the stereo amp; Sendspin's PortAudio name is
+`bcm2835 Headphones`, not the ALSA plughw string. Keep the USB mic independent.
 Kitchen Wall uses labwc/Wayland: use its dedicated transparent cursor theme,
 not an X11 cursor daemon. Preserve original settings and verify after reboot.
 Evening normally previews tomorrow's people/rules/forecast without overrides.
-Night mode runs 21:00–05:00: three compact people cards, confirmed school/kit/next
-commitment and household chronology; hide classes/week detail. At midnight keep
-the upcoming day and relabel Tomorrow to Today; restore full detail at 05:00.
+From noon, school cards preview tomorrow's dated Cirrus periods independently of
+today's household timeline/weather; never substitute today's periods when absent.
+Night mode runs 20:00–05:00: quiet clock/date/weather and restrained home/media
+status; omit all people/planning cards and timelines. Retain a single unboxed
+school leave time only when all mapped children share that confirmed departure.
+Restore full detail at 05:00.
+Wallpapers are local generated landscapes with subtle hidden decorative details.
+Keep one selection per morning/day/afternoon/evening/night, stable on reload and
+across midnight; choose from each period's pool daily, never rotate within it.
 Weather preview emphasises labelled High/Low; daytime emphasises Now. No arrows.
 Weather stays two lines: balanced icon/inline temperature labels, then one brief
 description. Extra text is reserved for meaningful weather exceptions.
@@ -28,8 +39,21 @@ Explicit event links/calendar ownership win; a unique leading "Name · event"
 calendar label may identify a confirmed person. Never infer school/kit/travel.
 School timetables use explicit child/source mappings and dated native periods;
 retain order/provenance, never infer clothing/equipment or rotating weeks.
+Confirmed school departure routines apply only to dated native school days.
+Timetables use subtle person-tinted lesson cards with quiet times and current
+period emphasis. Double lessons span their native slots; slim Recess/Lunch gap
+cards retain shared bell-time positions. The user confirmed those two Cirrus
+gaps as Recess/Lunch. Never invent periods or label other gaps without evidence.
+Lesson cards show subjects only, with no times or multiplier badges; breaks are
+slim unlabelled separators. Keep the full day contained and shared slot positions.
+When selected cameras are unavailable, use that region for fresh playing media;
+available cameras keep priority and stopped media leaves no empty card.
 Duplicate feed names require metadata/event previews, not name-only guessing.
 Shared school content still requires Show consent and verified selected sources.
+Calendar commissioning consent is bound to source/choice identity, not a daily
+expiry. Re-read native events each update; failed reads hide data and retry next
+update. Preserve timetables in morning cards; promote confirmed Leave or native
+Starts times without inferring kit/travel. Timeline times always mean Starts.
 No class payloads or private wall screenshots in Git.
 
 Commissioning follows prepare → authenticate/consent → resume → verify. Never
@@ -40,6 +64,16 @@ previews are ephemeral, administrator-only and excluded from logs/settings.
 Current household acceptance: six MA users; Spotify Grant, House and House #2
 connected; Renae pending until authenticated. Children have no Spotify identities.
 Reconcile existing users/providers; never rename or delete them automatically.
+The user now requests shared collection metadata across all connected Spotify
+identities: category buckets, not account folders. Deduplicate upstream IDs,
+never titles; paginate rather than truncate. This sharing is catalogue metadata
+only: direct personal provider access, allocator priority and playback leases
+remain scoped. Renae contributes only after connection. No upstream sync-back.
+The user additionally approved native MA provider access across all connected
+Spotify identities for all six existing users. Persist separate administrator
+consent, bind it to the household/server and require active pinned playback
+enforcement before expanding native filters. Never infer this native-access
+consent merely from requesting combined catalogue metadata.
 
 Allocator intent: House → House #2 → Grant → busy/takeover; Renae is personal-only.
 MA provider preferences do not prove strict playback isolation. Keep allocator

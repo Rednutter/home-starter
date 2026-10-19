@@ -12,7 +12,7 @@ DEFAULTS = {
     "morning_start": 5,
     "morning_end": 10,
     "evening_start": 18,
-    "night_start": 21,
+    "night_start": 20,
     "imminent_minutes": 15,
     "prepare_minutes": 90,
     "horizon_days": 21,
@@ -143,19 +143,6 @@ def reference_panels(rows, future, people, signals, local, cue, issues, exceptio
         week_days.setdefault(row["date"], row)
     primary = tomorrow if focus["preview"] else dated or tomorrow or later
     label = "Tomorrow" if focus["preview"] else "Today" if dated else "Tomorrow" if tomorrow else "Coming up"
-    timeline_cue = next((r for r in primary if r.get("leave_at")), None) if focus["preview"] else cue
-    if timeline_cue:
-        primary = [
-            {
-                **r,
-                "time": moment(r["leave_at"]).astimezone(local.tzinfo).strftime("%I:%M").lstrip("0")
-                + (" pm" if moment(r["leave_at"]).astimezone(local.tzinfo).hour >= 12 else ""),
-                "detail": "Arrive " + r["time"],
-            }
-            if r["id"] == timeline_cue["id"] and r.get("leave_at")
-            else r
-            for r in primary
-        ]
     secondary = dated if focus["preview"] else dated[1:] if len(dated) > 1 else tomorrow if dated else later
     secondary_label = "Tonight" if focus["preview"] else "Later today" if len(dated) > 1 else "Tomorrow" if dated and tomorrow else "Week ahead"
     context_cards = [
@@ -199,6 +186,14 @@ def reference_panels(rows, future, people, signals, local, cue, issues, exceptio
     climate = climate or next((s for s in sources.values() if s["domain"] == "climate"), None)
     alarms = [s for s in sources.values() if s["domain"] == "alarm_control_panel"]
     lights = [s for s in sources.values() if s["domain"] == "light"]
+    lit = [s for s in lights if s.get("state") == "on"]
+    covered = {
+        member
+        for s in lit
+        for member in (s["attributes"]["entity_id"] if isinstance(s.get("attributes", {}).get("entity_id"), list) else [])
+        if isinstance(member, str)
+    }
+    lit = [s for s in lit if s["entity_id"] not in covered]
 
     def usable(s):
         return s.get("state") not in (None, "unknown", "unavailable")
@@ -219,12 +214,22 @@ def reference_panels(rows, future, people, signals, local, cue, issues, exceptio
         if not lights
         else "Status unavailable"
         if not all(usable(s) for s in lights)
-        else str(sum(s["state"] == "on" for s in lights)) + " on"
+        else str(len(lit)) + " on"
         if any(s["state"] == "on" for s in lights)
         else "All off"
     )
     climate_attrs = climate.get("attributes", {}) if climate and usable(climate) else {}
     temp = climate_attrs.get("current_temperature")
+    mode = climate.get("state") if climate and usable(climate) else None
+    mode_labels = {"heat": "Heating", "cool": "Cooling", "auto": "Auto", "heat_cool": "Auto", "dry": "Drying", "fan_only": "Fan only"}
+    action_labels = {"heating": "Heating", "cooling": "Cooling", "drying": "Drying", "fan": "Fan only", "defrosting": "Defrosting"}
+    climate_detail = "Not selected" if not climate else "Off" if mode == "off" else mode_labels.get(mode, "Status unavailable")
+    action = climate_attrs.get("hvac_action")
+    if mode in mode_labels:
+        if action in action_labels:
+            climate_detail = ("Auto · " if mode in ("auto", "heat_cool") else "") + action_labels[action]
+        elif action == "idle":
+            climate_detail += " · Idle"
     selected_status = [*alarms, *lights, *([climate] if climate else [])]
     status = {
         "home": "Needs attention"
@@ -237,16 +242,28 @@ def reference_panels(rows, future, people, signals, local, cue, issues, exceptio
         "climate": {
             "temperature": temp if type(temp) in (int, float) and isfinite(temp) else None,
             "unit": climate_attrs.get("temperature_unit", "°C"),
-            "detail": " · ".join(str(v).replace("_", " ").capitalize() for v in (climate_attrs.get("hvac_action"), climate_attrs.get("fan_mode")) if v)
-            or ("Not selected" if not climate else "Status unavailable"),
+            "detail": climate_detail,
         },
         "security": security,
         "lights": lighting,
+        "lights_on": [
+            {"name": s.get("name") or s.get("attributes", {}).get("friendly_name") or "Light", "icon": s.get("attributes", {}).get("icon") or "mdi:lightbulb"}
+            for s in sorted(lit, key=lambda s: s["entity_id"])
+        ],
         "cameras": [
             {"entity": s["entity_id"], "name": s.get("name") or s.get("attributes", {}).get("friendly_name", "Camera"), "available": usable(s)}
             for s in sources.values()
             if s["domain"] == "camera"
         ],
+        "now_playing": [
+            {
+                "title": s.get("attributes", {}).get("media_title") or s.get("name") or "Playing media",
+                "artist": s.get("attributes", {}).get("media_artist") or "",
+                "room": s.get("name") or "Media player",
+            }
+            for s in sorted(sources.values(), key=lambda s: s["entity_id"])
+            if s["domain"] == "media_player" and s.get("state") == "playing"
+        ][:2],
     }
     return {
         "focus": focus,
@@ -329,6 +346,31 @@ def school_placement(panels, school, rows, future, settings, people, local):
         child["commitments"] = [
             r for r in [*rows, *future] if r.get("date") == school["date"] and child["person"] in r.get("person_ids", []) and r not in dated
         ][:1]
+        child_rows = [r for r in [*rows, *future] if r.get("date") == school["date"] and child["person"] in r.get("person_ids", [])]
+        routine = settings.get("school_departures", {}).get(child["person"])
+        child["school_leave_at"] = None
+        # A confirmed routine applies only to a dated, selected native school day.
+        # An explicit linked school departure always takes precedence.
+        if routine and child["periods"] and not any(settings["events"].get(r["id"], {}).get("wall_role") == "school" and r.get("leave_at") for r in child_rows):
+            at = datetime.fromisoformat(school["date"] + "T" + routine).replace(tzinfo=local.tzinfo)
+            first = min(moment(p["start"]) for p in child["periods"])
+            if at <= first:
+                child["school_leave_at"] = at.isoformat()
+                if at >= local - timedelta(minutes=15):
+                    child_rows.append({"id": "school-departure-" + child["person"], "leave_at": at.isoformat(), "school_routine": True})
+        departures = [
+            r
+            for r in child_rows
+            if moment(r.get("leave_at"))
+            and local - timedelta(minutes=15) <= moment(r["leave_at"])
+            and (
+                settings["events"].get(r["id"], {}).get("wall_role") == "school"
+                or r.get("school_routine")
+                or moment(r["leave_at"]) <= local + timedelta(minutes=validate_policy(settings.get("wall", {}))["prepare_minutes"])
+            )
+        ]
+        child["next_departure"] = min(departures, key=lambda r: r["leave_at"], default=None)
+        child["importance"] = importance(child["next_departure"], local, panels["focus"]["preview"]) if child["next_departure"] else "upcoming"
         consumed.update(r["id"] for r in dated if settings["events"].get(r["id"], {}).get("wall_role") == "preparation")
     for panel in ("timeline", "secondary"):
         panels[panel]["items"] = [r for r in panels[panel]["items"] if r["id"] not in consumed]
@@ -338,12 +380,16 @@ def school_placement(panels, school, rows, future, settings, people, local):
     # separately so school attendance appears alongside the whole household.
     presented = {r["id"]: r for r in panels["timeline"]["items"]}
     selected = [presented.get(r["id"], r) for r in selected]
-    selected.extend(attendance(school["children"], explicit_school, local))
-    panels["timeline"].update(
-        label=panels["focus"]["label"],
-        date_label=date.fromisoformat(school["date"]).strftime("%a %d %b"),
-        items=sorted(selected, key=lambda r: r.get("leave_at") or r.get("starts_at") or school["date"]),
-    )
+    school["attendance"] = attendance(school["children"], explicit_school, local)
+    selected.extend(school["attendance"])
+    if school["date"] == panels["focus"]["date"] or (
+        panels["timeline"]["label"] == "Tomorrow" and school["date"] == (local + timedelta(days=1)).date().isoformat()
+    ):
+        panels["timeline"].update(
+            label=panels["focus"]["label"],
+            date_label=date.fromisoformat(school["date"]).strftime("%a %d %b"),
+            items=sorted(selected, key=lambda r: r.get("starts_at") or school["date"]),
+        )
     timeline_ids = {r["id"] for r in panels["timeline"]["items"]}
     panels["secondary"]["items"] = [r for r in panels["secondary"]["items"] if r["id"] not in timeline_ids]
     # School columns replace generic copies of the same calendar appointments.
@@ -352,7 +398,8 @@ def school_placement(panels, school, rows, future, settings, people, local):
     days = {}
     for row in future:
         if row["date"] > school["date"] and row["id"] not in used:
-            days.setdefault(row["date"], {"date": row["date"], "label": row["day_label"], "items": []})["items"].append(row)
+            day_label = "Tomorrow" if row["day_offset"] == 1 else row["day_label"]
+            days.setdefault(row["date"], {"date": row["date"], "label": day_label, "items": []})["items"].append(row)
     panels["week"] = [{**group, "items": group["items"][:2]} for group in list(days.values())[:6]]
     return panels
 
@@ -568,15 +615,34 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
     valid_until = now + timedelta(seconds=75)
     from .school_timetable import select as school_select
 
-    focus_day = date.fromisoformat(focus["date"])
-    school_changed = focus["date"] in policy["suppressed_dates"] or any(
+    # Afternoon school cards preview tomorrow independently of today's urgent
+    # events, weather and household timeline. Morning and night keep their focus.
+    school_focus = dict(focus)
+    if local.hour >= 12 and not focus["night"]:
+        school_focus.update(preview=True, date=(local + timedelta(days=1)).date().isoformat(), label="Tomorrow")
+    focus_day = date.fromisoformat(school_focus["date"])
+    school_changed = school_focus["date"] in policy["suppressed_dates"] or any(
         e["start"].astimezone(local.tzinfo).date() <= focus_day < e["end"].astimezone(local.tzinfo).date()
         and links.get(e["key"], {}).get("wall_role") == "holiday"
         for e in events
     )
-    school = school_select(view.get("school_sources", []), people, view.get("person_roles", {}), focus, local, school_changed)
+    school = school_select(view.get("school_sources", []), people, view.get("person_roles", {}), school_focus, local, school_changed)
+    if school:
+        school["preview"] = school_focus["preview"]
     panels = reference_panels(rows, future, people, signals, local, cue, view.get("issues", []), exceptions, preparation_rows, focus)
     panels = school_placement(panels, school, rows, future, settings, people, local)
+    # One chronological surface: detailed focus day, then compact future days.
+    # Build from all admitted events so tomorrow is not lost to the old
+    # secondary-panel selection or the week preview's per-day truncation.
+    focus_date = panels["focus"]["date"]
+    days = {}
+    presented_ids = {r["id"] for r in panels["timeline"]["items"]}
+    upcoming = [*future, *(school.get("attendance", []) if school and school["date"] != focus_date else [])]
+    for row in sorted(upcoming, key=lambda r: r.get("starts_at") or r["date"]):
+        if row["date"] > focus_date and row["id"] not in presented_ids:
+            day_label = "Tomorrow" if row["day_offset"] == 1 else row["day_label"]
+            days.setdefault(row["date"], {"date": row["date"], "label": day_label, "items": []})["items"].append(row)
+    panels["upcoming_days"] = list(days.values())[:6] if not focus["night"] else []
     if focus["night"]:
         panels["week"] = []
     # Row/session deadlines expire independently in the renderer. Expiring a

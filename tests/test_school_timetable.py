@@ -10,6 +10,37 @@ def render(case):
     return compose(case["view"], case["events"], case["settings"], case["people"], case["now"], ZONE, case["signals"])
 
 
+def test_afternoon_previews_tomorrow_classes_without_replacing_remaining_today():
+    case = scenario("school_monday")
+    case["now"] = case["now"].replace(hour=16, minute=45)
+    for feed in case["view"]["school_sources"]:
+        feed["events"] = [{**e, "start": e["start"] + timedelta(days=1), "end": e["end"] + timedelta(days=1)} for e in feed["events"]]
+    case["settings"]["school_departures"] = dict.fromkeys(case["people"], "08:30")
+    today = case["now"].replace(hour=17, minute=0)
+    case["events"].append({"key": "today-training", "title": "Today's training", "start": today, "end": today + timedelta(hours=1), "all_day": False})
+    model = render(case)
+    assert not model["focus"]["preview"]  # Imminent activity still owns the household focus.
+    assert model["school"]["preview"] and model["school"]["date"] == "2026-10-20"
+    assert len(model["school"]["children"]) == 3
+    for child in model["school"]["children"]:
+        assert len(child["periods"]) == 7
+        assert all(p["start"].startswith("2026-10-20") for p in child["periods"])
+        assert child["next_departure"]["leave_at"].startswith("2026-10-20T08:30")
+    assert model["timeline"]["label"] == "Today"
+    assert any(r["id"] == "today-training" for r in model["timeline"]["items"])
+    tomorrow = next(d for d in model["upcoming_days"] if d["label"] == "Tomorrow")
+    assert len([r for r in tomorrow["items"] if r.get("kind") == "school_attendance"]) == 1
+
+
+def test_afternoon_missing_tomorrow_classes_never_reuses_todays_periods():
+    case = scenario("school_monday")
+    case["now"] = case["now"].replace(hour=15)
+    model = render(case)
+    assert model["school"]["label"] == "Tomorrow at school"
+    assert all(not c["periods"] and c["status"] == "no_classes" for c in model["school"]["children"])
+    assert not model["school"]["attendance"]
+
+
 def test_native_period_order_and_provenance_survive_sunday_to_monday():
     sunday, monday = scenario("school_sunday"), scenario("school_monday")
     sunday["view"]["school_sources"][0]["events"].reverse()
@@ -30,7 +61,7 @@ def test_missing_data_fails_safely_without_using_another_child_or_day():
     first["events"] = [{**e, "start": e["start"] + timedelta(days=1)} for e in first["events"]]
     case["view"]["school_sources"] = [first]
     school = render(case)["school"]
-    assert all(not c["periods"] and c["fallback"] == "School tomorrow" for c in school["children"])
+    assert all(not c["periods"] and "School tomorrow" not in c["fallback"] for c in school["children"])
     assert [c["status"] for c in school["children"]] == ["no_classes", "not_configured", "not_configured"]
 
 
@@ -55,7 +86,7 @@ def test_late_evening_keeps_monday_school_cards_and_timeline_until_midnight():
 
 def test_night_boundaries_keep_people_and_morning_restores_full_detail():
     case = scenario("school_sunday")
-    for hour, minute, expected in ((20, 59, False), (21, 0, True), (23, 59, True)):
+    for hour, minute, expected in ((19, 59, False), (20, 0, True), (23, 59, True)):
         case["now"] = case["now"].replace(hour=hour, minute=minute)
         model = render(case)
         assert model["focus"]["night"] is expected
@@ -130,3 +161,20 @@ def test_attendance_keeps_distinct_times_and_never_invents_missing_school():
     children = model["school"]["children"]
     assert not attendance(children, set(), case["now"] + timedelta(days=2))
     assert len(attendance(children, {children[0]["person"]}, case["now"])) == 1
+
+
+def test_school_cards_expose_only_configured_departures_and_their_current_priority():
+    case = scenario("school_monday")
+    dental = next(e for e in case["events"] if e["title"] == "Dental")
+    dental["start"] = case["now"].replace(hour=8, minute=40)
+    dental["end"] = dental["start"] + timedelta(hours=1)
+    case["settings"]["events"][dental["key"]]["routine_time"] = "08:10"
+    model = render(case)
+    assert model["school"]["children"][1]["next_departure"]["title"] == "Dental"
+    assert model["school"]["children"][1]["importance"] == "soon"
+    assert model["school"]["children"][0]["next_departure"] is None
+    assert all(c["periods"] for c in model["school"]["children"])
+    for choice in case["settings"]["events"].values():
+        choice["travel_minutes"] = None
+        choice["routine_time"] = None
+    assert all(c["next_departure"] is None for c in render(case)["school"]["children"])

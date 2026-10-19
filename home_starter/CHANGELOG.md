@@ -1,5 +1,59 @@
 # Changelog
 
+## 0.8.39
+
+- Make night a quiet landscape with clock, weather and a restrained status strip;
+  omit planning cards and timelines. Select one locally bundled wallpaper per
+  morning/day/afternoon/evening/night, stable on reload and across midnight.
+- Run quiet night presentation from 20:00 to 05:00, retaining one unboxed school
+  departure only when all mapped children share the confirmed leave time.
+  Screen power remains separately scheduled off from 22:00 to 06:00.
+- Show active lights beneath the wall Lights heading as warm-white outline icons,
+  collapsing selected native groups and keeping a compact overflow count. Off
+  and unavailable lights produce no illuminated indicator.
+- Show actual HVAC power/mode/action in the wall household strip: Off, Heating,
+  Cooling, Fan only or Auto. A stored fan setting no longer masks an off system.
+- From noon, preview tomorrow's mapped Cirrus timetables in the three child cards
+  independently of today's remaining events and current weather. Keep today's
+  chronology prominent and summarise tomorrow's school attendance below it.
+- Drive wall Now playing from live MA queues, once per active group; show radio
+  station names instead of transport markers and clear unavailable playback.
+- Merge upcoming days beneath Today's detailed timeline in one full-height
+  surface, with a content-positioned divider and compact future event rows.
+- Correct the Pi Sendspin device name for the 3.5 mm stereo amp output; preserve
+  the USB microphone and independent voice/display services.
+- Simplify wall lessons to subject-only tinted cards: no times or multiplier
+  badges, with thinner unlabelled breaks and retained double-period row spans.
+- Browse combined household Playlists, Podcasts, Audiobooks, Albums, Artists and
+  Tracks instead of Spotify account folders. Merge exact upstream identities,
+  retain distinct same-name collections and page large lists and episode feeds.
+  Collection metadata sharing is separate from personal playback access; the
+  existing shared Spotify allocator and listener-owned progress stay in place.
+- Search within a collection by media type, including search-only podcast and
+  audiobook sources. Report incomplete sources instead of silently hiding failures.
+- Native MA collection sharing is a separate administrator-confirmed choice,
+  bound to this household/server and gated on active playback enforcement.
+  Reconciliation preserves that choice without recreating users or providers.
+- Align subtle person-tinted lesson cards to native bell-time slots. Double
+  lessons span their original rows; confirmed Recess/Lunch gaps use slim fixed
+  rows so each child's later lessons stay aligned.
+- Use the camera area for Now playing (title, artist and room) when no selected
+  camera is available. Hide stopped or stale media; available cameras retain priority.
+- Soften completed lessons and gently emphasise the current lesson.
+- Support confirmed per-child school departure times only on dated native school
+  days, keeping departure cues separate from the timeline's actual school start.
+- Keep approved, identity-matched calendar commissioning valid across days while
+  reading and validating events fresh on every update. Restore healthy school
+  feeds automatically without re-authentication or changing calendar consent.
+- Keep children's timetables visible, with confirmed Leave times or native
+  Starts times in person headers and subtle departure prominence. Timelines
+  retain event-start chronology and label Starts separately from Leave details.
+- Keep card placement stable and shallow during data failures, use honest
+  availability text and avoid a large troubleshooting panel on the family wall.
+- Fix missing-timetable fallback height so unavailable school data cannot clip
+  the compact person cards. Keep household/media footer edges aligned beneath
+  the first two and third timetable columns.
+
 ## 0.8.38
 
 - Compact wall weather into an icon/temperature row with inline High/Low or

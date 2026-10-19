@@ -41,6 +41,15 @@ communications, calendar, display, climate, camera, presence, voice or appliance
 choices. Questions follow discovery and explicit interest. Installed or available
 never means end-to-end verified. Credentials stay in Home Assistant/Music Assistant.
 
+Music collections group the connected Spotify accounts into shared Playlists,
+Podcasts, Audiobooks, Albums, Artists and Tracks. Exact upstream identities merge
+duplicates; same-name collections remain separate. Large collections and episode
+feeds have additional pages. Search inside a bucket also reaches search-only
+sources such as iTunes podcasts. Shared collection metadata does not change
+personal playback precedence, the shared allocator or listener-owned progress.
+Sharing provider access in native MA is a separate administrator-confirmed choice;
+it is stored for this household/server and requires active playback enforcement.
+
 Waste collection is a household service: Wodonga's official collection areas and
 annual calendar supply dated, verified bin context without calendar events.
 Service confirmation prepares native HA entities; selected displays receive
@@ -154,13 +163,23 @@ and verification. Permissions are unchanged from V0.1.1.
 * Only Home Assistant OS / Supervised installs (it needs the Supervisor).
 * No prebuilt image yet: the first install builds locally and needs internet
   access to `ghcr.io` and PyPI.
-* Home Starter can't confirm the Music Assistant integration or do Music
-  Assistant's own setup for you; it links to those screens and re-checks.
+* Human provider authentication, upstream terms and pairing remain in the
+  relevant service. Home Starter prepares, resumes and verifies supported steps;
+  an installed integration alone never proves successful playback.
 * The server check uses the internal ingress port reported by Supervisor, so
   changes to the public port or TLS settings don't bypass verification.
-  A missing response leaves setup unverified. Browser ingress authentication
-  and real playback still need acceptance testing.
-* Only the music outcome is built. Other outcomes are shown as "Later".
+  A missing response leaves setup unverified. Live evidence is recorded in
+  [commissioning acceptance](home_starter/COMMISSIONING.md); it is scoped to the
+  tested source/destination and is not proof for every speaker or group.
+* Spotify account enforcement is pinned to reviewed MA 2.10.6/2.10.7 server code.
+  An MA image update removes the startup adapter and requires compatibility
+  review before isolated Spotify playback can resume.
+* Home Starter starts playback on individual permitted speakers. The configured
+  MA household groups have verified membership, but group starts in Home Starter
+  and audible multiroom synchronisation are not yet verified/supported there.
+* School timetables use explicitly mapped, selected sources. The richer Cirrus
+  Due Work/RSS/A-B-week ingestion and Butler interpretation in Notion remain
+  design targets; no school kit is inferred without a confirmed rule.
 * The scan reports problems; it doesn't fix them.
 
 ## Development

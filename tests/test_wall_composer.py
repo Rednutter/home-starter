@@ -7,6 +7,63 @@ from homestarter.wall_composer import compose, session, short_location, validate
 from wall_scenarios import SCENARIOS, ZONE, scenario
 
 
+@pytest.mark.parametrize(
+    "mode,action,expected",
+    [
+        ("off", None, "Off"),
+        ("off", "heating", "Off"),
+        ("heat", None, "Heating"),
+        ("cool", None, "Cooling"),
+        ("fan_only", None, "Fan only"),
+        ("dry", None, "Drying"),
+        ("auto", "heating", "Auto · Heating"),
+        ("heat_cool", "cooling", "Auto · Cooling"),
+        ("cool", "idle", "Cooling · Idle"),
+        ("heat", "heating", "Heating"),
+        ("unavailable", "heating", "Status unavailable"),
+        ("unknown", None, "Status unavailable"),
+    ],
+)
+def test_wall_climate_reports_power_and_operation_instead_of_a_stored_fan_setting(mode, action, expected):
+    case = scenario("canonical_weekday")
+    signals = [
+        {
+            "entity_id": "climate.whole_house",
+            "domain": "climate",
+            "state": mode,
+            "attributes": {"current_temperature": 24, "fan_modes": ["diffuse"], "fan_mode": "diffuse", "hvac_action": action},
+        },
+        {"entity_id": "climate.zone", "domain": "climate", "state": "fan_only", "attributes": {}},
+    ]
+    model = compose(case["view"], case["events"], case["settings"], case["people"], case["now"], ZONE, signals)
+    assert model["household_status"]["climate"]["detail"] == expected
+    assert "Diffuse" not in str(model["household_status"]["climate"])
+
+
+def test_wall_active_lights_collapse_selected_native_groups_and_ignore_offline_members():
+    case = scenario("canonical_weekday")
+    signals = [
+        {
+            "entity_id": "light.group",
+            "domain": "light",
+            "state": "on",
+            "name": "Living lights",
+            "attributes": {"entity_id": ["light.a", "light.b"], "icon": "mdi:ceiling-light"},
+        },
+        {"entity_id": "light.a", "domain": "light", "state": "on", "name": "First light"},
+        {"entity_id": "light.b", "domain": "light", "state": "on", "name": "Second light"},
+        {"entity_id": "light.lamp", "domain": "light", "state": "on", "name": "Reading lamp", "attributes": {"icon": "mdi:lamp"}},
+        {"entity_id": "light.off", "domain": "light", "state": "off", "name": "Off light"},
+        {"entity_id": "light.unavailable", "domain": "light", "state": "unavailable", "name": "Offline light"},
+    ]
+    model = compose(case["view"], case["events"], case["settings"], case["people"], case["now"], ZONE, signals)
+    assert model["household_status"]["lights_on"] == [
+        {"name": "Living lights", "icon": "mdi:ceiling-light"},
+        {"name": "Reading lamp", "icon": "mdi:lamp"},
+    ]
+    assert "light." not in str(model["household_status"]["lights_on"])
+
+
 @pytest.mark.parametrize("name", SCENARIOS)
 def test_scenarios_use_one_inspectable_wall_contract(name):
     case = scenario(name)
@@ -21,14 +78,14 @@ def test_canonical_weekday_and_sunday_change_content_inside_the_same_regions():
     assert [c["title"] for c in weekday["cards"]] == ["Casey", "Jordan", "Alex"]
     assert all(c["kind"] == "person" for c in weekday["cards"])
     assert weekday["timeline"]["label"] == "Today"
-    assert weekday["timeline"]["items"][0]["time"] == "8:30"
+    assert weekday["timeline"]["items"][0]["time"] == "8:50"
     assert weekday["secondary"]["label"] == "Later today"
     assert [c["title"] for c in sunday["cards"]] == ["Tomorrow", "This week"]
     assert sunday["timeline"]["label"] == "Tomorrow" and len(sunday["timeline"]["items"]) == 3
     assert sunday["secondary"]["label"] == "Week ahead"
     for model in (weekday, sunday):
         assert model["weather"]["high"] == 20
-        assert set(model["household_status"]) == {"home", "climate", "security", "lights", "cameras"}
+        assert set(model["household_status"]) == {"home", "climate", "security", "lights", "lights_on", "cameras", "now_playing"}
         assert model["household_status"]["security"] == "Armed"
 
 
@@ -39,7 +96,7 @@ def test_sunday_evening_is_monday_people_preview_with_native_forecast_and_contin
     assert [c["key"] for c in evening["cards"]] == [c["key"] for c in morning["cards"]]
     assert [c["title"] for c in evening["cards"]] == ["Casey", "Jordan", "Alex"]
     assert "Sports kit + hat" in str(evening["cards"]) and "No shared plans" not in str(evening["cards"])
-    assert evening["timeline"]["label"] == "Tomorrow" and evening["timeline"]["items"][0]["time"] == "8:30"
+    assert evening["timeline"]["label"] == "Tomorrow" and evening["timeline"]["items"][0]["time"] == "8:50"
     assert evening["weather"]["focus_date"] == "2026-10-19"
     assert evening["weather"]["low"] == 10 and evening["weather"]["high"] == 20
     assert evening["weather"]["forecast_condition"] == "partlycloudy"
@@ -122,6 +179,24 @@ def test_transients_expire_and_takeover_restores_the_board():
     assert len(scenario("active_timer_media")["model"]["active_context"]) == 2
 
 
+def test_now_playing_uses_only_selected_currently_playing_signals():
+    case = scenario("completely_quiet")
+    signals = [
+        {
+            "entity_id": "media_player.kitchen",
+            "domain": "media_player",
+            "name": "Kitchen",
+            "state": "playing",
+            "attributes": {"media_title": "Example song", "media_artist": "Example artist"},
+        },
+        *({"entity_id": "media_player." + state, "domain": "media_player", "state": state} for state in ("paused", "idle", "off", "unavailable", "unknown")),
+    ]
+    model = compose(case["view"], [], case["settings"], {}, case["now"], ZONE, signals)
+    assert model["household_status"]["now_playing"] == [{"title": "Example song", "artist": "Example artist", "room": "Kitchen"}]
+    signals[0]["state"] = "paused"
+    assert not compose(case["view"], [], case["settings"], {}, case["now"], ZONE, signals)["household_status"]["now_playing"]
+
+
 def test_sessions_reject_external_content_unselected_cameras_and_unbounded_lifetimes():
     now = scenario("completely_quiet")["now"]
     for content in (
@@ -139,6 +214,18 @@ def test_configuration_remains_data_and_does_not_change_other_context_settings()
     for changes in ({"night_start": 4}, {"imminent_minutes": True}, {"suppressed_dates": ["Monday"]}, {"camera_links": {"event.door": "https://example.com"}}):
         with pytest.raises(ValueError):
             validate_policy(changes)
+
+
+def test_confirmed_school_routine_requires_native_periods_and_keeps_start_chronology():
+    case = scenario("school_monday")
+    case["settings"]["school_departures"] = dict.fromkeys(case["people"], "08:30")
+    model = compose(case["view"], case["events"], case["settings"], case["people"], case["now"], ZONE, case["signals"])
+    assert all(c["next_departure"]["leave_at"].endswith("08:30:00+11:00") for c in model["school"]["children"])
+    row = next(r for r in model["timeline"]["items"] if r.get("kind") == "school_attendance")
+    assert row["time"] == "9:00" and len(row["people"]) == 3 and row["detail"] == "Leave 08:30"
+    case["view"]["school_sources"] = []
+    model = compose(case["view"], case["events"], case["settings"], case["people"], case["now"], ZONE)
+    assert all(c["next_departure"] is None and c["school_leave_at"] is None for c in model["school"]["children"])
 
 
 def test_overnight_is_low_information_and_critical_exceptions_override_sessions():

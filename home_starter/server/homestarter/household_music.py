@@ -40,7 +40,16 @@ def source_access(name, providers):
     return sorted(allowed)
 
 
-async def reconcile(command, providers, names=NAMES):
+def collection_access(providers):
+    """Native catalogue access after explicit sharing consent, never allocation."""
+    allowed = {p["id"] for p in providers_by_identity(providers).values() if connected(p)}
+    allowed.update(p["id"] for p in providers if p.get("domain") != "spotify" and p.get("enabled", True))
+    if not allowed:
+        raise ValueError("Connect a household source before sharing native collections.")
+    return sorted(allowed)
+
+
+async def reconcile(command, providers, names=NAMES, *, share_collections=False):
     """Run under the runtime lock. Read back after every uncertain write on retry."""
     users = await command("auth/users")
     if not isinstance(users, list):
@@ -49,7 +58,7 @@ async def reconcile(command, providers, names=NAMES):
         matches = [u for u in users if normalized(u.get("display_name")) == normalized(name) or normalized(u.get("username")) == normalized(name)]
         if len(matches) > 1:
             raise ValueError("Duplicate household user names need administrator review. No users were removed.")
-        access = source_access(name, providers)
+        access = collection_access(providers) if share_collections else source_access(name, providers)
         if matches:
             user = matches[0]
             if user.get("enabled") is False:
@@ -129,6 +138,21 @@ def visible(item, name, providers):
         return False
     spotify = {p["id"] for p in providers if p.get("domain") == "spotify"}
     sources = set(item.get("sources") or item_sources(item))
+    # Explicit household collection sharing is metadata access, not permission
+    # to select a personal playback account. Direct provider browsing stays scoped.
+    if item.get("household_collection") is True and item.get("kind", item.get("media_type")) in {
+        "playlist",
+        "podcast",
+        "podcast_episode",
+        "audiobook",
+        "album",
+        "artist",
+        "track",
+        "radio",
+    }:
+        known = {p["id"] for p in providers_by_identity(providers).values() if connected(p)}
+        if sources & known:
+            return True
     if sources & spotify:
         return bool(sources & set(source_access(name, providers)) & spotify)
     if sources and sources <= {"library", "builtin"}:

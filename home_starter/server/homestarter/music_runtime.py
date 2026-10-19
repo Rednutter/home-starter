@@ -21,12 +21,14 @@ from .settings import Secret
 from .supervisor import SupervisorError
 
 READ_COMMANDS = {
+    *("music/" + kind + "/library_items" for kind in ("playlists", "podcasts", "audiobooks", "albums", "artists", "tracks", "radios")),
     "music/podcasts/podcast_episodes",
     "player_queues/items",
     "providers",
     "auth/users",
     "config/providers",
     "players/all",
+    "player_queues/all",
     "players/get",
     "player_queues/get_active_queue",
     "music/browse",
@@ -90,10 +92,42 @@ class MusicRuntime:
         self.store = HouseholdStore(data_dir)
         self.connection_path = Path(data_dir) / "music-connection.json"
         self.proof_path = Path(data_dir) / "music-playback.json"
+        self.collection_path = Path(data_dir) / "music-collection-access.json"
         self.lock = asyncio.Lock()
         self.interval = 2.0
         self.samples = 7
         self.startup_samples = 10
+
+    def collection_sharing(self):
+        value = self.store.read(self.collection_path, None)
+        if value is None:
+            return False
+        connection = self.connection()
+        if (
+            not isinstance(value, dict)
+            or set(value) != {"version", "epoch", "server", "shared"}
+            or value.get("version") != 1
+            or type(value.get("shared")) is not bool
+        ):
+            raise MusicRuntimeError("Collection sharing choices need administrator review.")
+        if not connection or value["epoch"] != self.store.load()["epoch"] or value["server"] != digest([connection["server_id"], connection["app"]]):
+            return False
+        return value["shared"]
+
+    async def set_collection_sharing(self, shared):
+        if type(shared) is not bool:
+            raise MusicRuntimeError("Confirm a supported native collection sharing choice.")
+        async with self.lock:
+            connection, endpoint = self.connection(), await self.endpoint()
+            if not connection:
+                raise MusicRuntimeError("Connect Music Assistant before sharing native collections.")
+            if shared:
+                await self.account_guard(endpoint, connection)
+            private_write(
+                self.collection_path,
+                {"version": 1, "epoch": self.store.load()["epoch"], "server": digest([connection["server_id"], connection["app"]]), "shared": shared},
+            )
+        return await self.household(prepare=True)
 
     def connection(self):
         value = self.store.read(self.connection_path, None)
@@ -139,7 +173,7 @@ class MusicRuntime:
     async def command(self, endpoint, connection, command, **args):
         if command not in READ_COMMANDS:
             raise ValueError("Music runtime only permits read commands.")
-        timeout = aiohttp.ClientTimeout(total=30) if command == "music/podcasts/podcast_episodes" else TIMEOUT
+        timeout = aiohttp.ClientTimeout(total=30) if command in {"music/podcasts/podcast_episodes", "music/search"} else TIMEOUT
         return await self._request(endpoint, connection, command, request_timeout=timeout, **args)
 
     async def control(self, endpoint, connection, command, **args):
@@ -179,12 +213,22 @@ class MusicRuntime:
             async def command(name, **args):
                 return await self._request(endpoint, connection, name, **args)
 
+            sharing = self.collection_sharing()
+            if prepare and sharing:
+                from .household_music import providers_by_identity
+
+                identities = {n: p["id"] for n, p in providers_by_identity(snapshot["providers"]).items()}
+                await self._request(endpoint, connection, "homestarter/configure_accounts", identities=identities)
+                await self.account_guard(endpoint, connection)
             result = (
-                await reconcile(command, snapshot["providers"], names) if prepare else user_status(await command("auth/users"), snapshot["providers"], names)
+                await reconcile(command, snapshot["providers"], names, share_collections=sharing)
+                if prepare
+                else user_status(await command("auth/users"), snapshot["providers"], names)
             )
+            result["shared_collections"] = sharing
             result["route"] = snapshot["open_path"]
             try:
-                if prepare:
+                if prepare and not sharing:
                     from .household_music import providers_by_identity
 
                     identities = {n: p["id"] for n, p in providers_by_identity(snapshot["providers"]).items()}
@@ -272,6 +316,22 @@ class MusicRuntime:
         if not isinstance(providers, list) or not isinstance(players, list):
             raise MusicRuntimeError("Unsupported Music Assistant response. Existing connection is preserved.")
         private_write(self.connection_path, {**candidate, "token": token})
+
+    async def wall_playback(self):
+        """Read fresh, reduced queue metadata without blocking calendar readiness."""
+        from .wall_media import now_playing
+
+        connection = self.connection()
+        if not connection:
+            return []
+        try:
+            async with asyncio.timeout(5):
+                endpoint = await self.endpoint()
+                players = await self.command(endpoint, connection, "players/all")
+                queues = await self.command(endpoint, connection, "player_queues/all")
+                return now_playing(players, queues)
+        except (MusicRuntimeError, SupervisorError, TimeoutError, OSError, ValueError, KeyError, TypeError):
+            return []
 
     async def snapshot(self):
         connection = self.connection()

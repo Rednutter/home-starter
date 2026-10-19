@@ -143,7 +143,7 @@ class State:
     async def monitor_context(self) -> None:
         while True:
             try:
-                await context_runtime.update(self.core, self.household, self.wall_sessions)
+                await context_runtime.update(self.core, self.household, self.wall_sessions, self.music_runtime)
             except (CoreError, OSError, ValueError, KeyError, TypeError):
                 _LOGGER.warning("Household context could not refresh; wall content expires rather than keeping old events.")
             await asyncio.sleep(20)
@@ -357,6 +357,8 @@ async def api_music_runtime(request):
                 await runtime.connect(body["token"])
             elif action == "observe" and set(body) == {"provider_id", "player_id"} and all(isinstance(v, str) for v in body.values()):
                 return _json(await runtime.observe(body["provider_id"], body["player_id"], _user(request)))
+            elif action == "collections" and set(body) == {"shared", "confirm"} and body["confirm"] is True and type(body["shared"]) is bool:
+                return _json(await runtime.set_collection_sharing(body["shared"]))
             elif action in ("heard", "decline") and set(body) == {"id", "confirm"} and body["confirm"] is True and isinstance(body["id"], str):
                 await getattr(runtime, action)(body["id"], _user(request))
             else:
@@ -1247,6 +1249,8 @@ async def api_context(request: web.Request) -> web.Response:
                 raise ValueError("Context changed. Refresh before saving.")
             settings = context.validate(body["settings"])
             known = view["people"].keys()
+            if any(view["person_roles"].get(person) != "child" for person in settings.get("school_departures", {})):
+                raise ValueError("School departures require confirmed household children.")
             if any(not set(r["people"]) <= known for r in settings["rules"] + list(settings["events"].values())):
                 raise ValueError("Confirm these existing HA people in This House first.")
             if not set(settings["events"]) <= {e["key"] for e in view["events"]} | saved["context"]["events"].keys():
@@ -1290,9 +1294,10 @@ async def api_wall(request: web.Request) -> web.Response:
                     state.wall_sessions[surface["id"]] = {"epoch": house["epoch"], "content": content}
                 else:
                     state.wall_sessions.pop(surface["id"], None)
-            view = await context_runtime.inspect(state.core, state.household, surface, display_session=content)
+            playback = await state.music_runtime.wall_playback()
+            view = await context_runtime.inspect(state.core, state.household, surface, display_session=content, playback=playback)
         if request.method == "POST":
-            await context_runtime.update(state.core, state.household, state.wall_sessions)
+            await context_runtime.update(state.core, state.household, state.wall_sessions, state.music_runtime)
         return _json(view["wall"])
     except ValueError as err:
         return _json({"error": str(err)}, 409)

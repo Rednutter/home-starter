@@ -32,7 +32,7 @@ def wall_cameras(saved, house, surface, inventory, states, now, *, include_unava
     return [e for e in choice["sources"] if e.startswith("camera.") and e in candidates & available and e not in hidden]
 
 
-async def inspect(core, store, surface=None, now=None, *, person_id=None, inputs=None, display_session=None):
+async def inspect(core, store, surface=None, now=None, *, person_id=None, inputs=None, display_session=None, playback=None):
     now = now or datetime.now(UTC)
     house, saved, inventory, states, zone, members = inputs or await snapshot(core, store)
     settings = saved["context"]
@@ -142,7 +142,9 @@ async def inspect(core, store, surface=None, now=None, *, person_id=None, inputs
                     events.extend(e for e in parsed if person_id is None or mapped or e["key"] in settings["events"])
                 if invalid:
                     issues.append("Some calendar entries could not be read")
-                expiries.append(datetime.fromisoformat(saved["verified"][key]["at"]) + timedelta(days=1))
+                expiries.append(
+                    now + timedelta(seconds=150) if key == "calendars" else datetime.fromisoformat(saved["verified"][key]["at"]) + timedelta(days=1)
+                )
             except (CoreError, ValueError, KeyError, TypeError):
                 issues.append(("Calendar" if key == "calendars" else "Collection source") + " temporarily unavailable")
     # Keep source-specific event keys for existing annotations; deduplicate overlapping upstream feeds.
@@ -192,6 +194,8 @@ async def inspect(core, store, surface=None, now=None, *, person_id=None, inputs
         result["wall"] = compose(
             {**result, "person_roles": school_roles, "school_sources": school_sources}, events, settings, people, now, zone, signals, display_session
         )
+        if playback is not None:
+            result["wall"]["household_status"]["now_playing"] = playback
     result["events"] = [
         {"key": e["key"], "title": e["title"], "start": e["start"].isoformat(), "all_day": e["all_day"], "proximity": context.proximity(e, now)}
         for e in events
@@ -200,7 +204,7 @@ async def inspect(core, store, surface=None, now=None, *, person_id=None, inputs
     return result
 
 
-async def update(core, store, sessions=None):
+async def update(core, store, sessions=None, music=None):
     house = store.load()
     if sessions is not None:
         from .wall_composer import moment
@@ -221,6 +225,7 @@ async def update(core, store, sessions=None):
     if not targets:
         return
     inputs = await snapshot(core, store)
+    playback = await music.wall_playback() if music is not None else []
     states = {s["entity_id"]: s for s in await core.states()}
     for surface in targets:
         entity = context.entity_id(surface["id"])
@@ -242,7 +247,7 @@ async def update(core, store, sessions=None):
             continue
         pending = (sessions or {}).get(surface["id"], {})
         active = pending.get("content") if pending.get("epoch") == house["epoch"] else None
-        view = await inspect(core, store, surface, inputs=inputs, display_session=active)
+        view = await inspect(core, store, surface, inputs=inputs, display_session=active, playback=playback)
         attributes = {k: view[k] for k in ("near", "ahead", "phase", "today_count", "ahead_count", "checked_at", "valid_until")}
         if records[path].get("context") == 2:
             attributes["briefing"] = view["briefing"]

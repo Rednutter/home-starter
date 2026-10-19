@@ -123,6 +123,17 @@ def forbidden_path(path: str) -> bool:
             "home_starter/icon.png",
             "home_starter/logo.png",
             "home_starter/server/homestarter/static/wall-morning.jpg",
+            *(
+                f"home_starter/server/homestarter/static/wallpapers/{period}-{name}.webp"
+                for period, names in {
+                    "morning": ("blue-hour", "river-mist", "granite-sunrise", "coastal-dawn"),
+                    "day": ("alpine-lake", "river-gums", "high-country", "coastal-bay"),
+                    "afternoon": ("valley-light", "riverbank", "granite-country", "coastal-grass"),
+                    "evening": ("golden-hills", "river-sunset", "coastal-dusk", "alpine-dusk"),
+                    "night": ("moonlit-valley", "river-stars", "alpine-stars", "coastal-moon"),
+                }.items()
+                for name in names
+            ),
             *(f"home_starter/server/homestarter/static/panel-{kind}.jpg" for kind in ("room", "today", "call", "cameras", "media")),
         )
     )

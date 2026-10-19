@@ -11,6 +11,14 @@ ZONE = "Australia/Sydney"
 
 
 def scenario(name):
+    if name == "school_unavailable":
+        case = scenario("school_monday")
+        case["view"]["school_sources"] = []
+        case["view"]["issues"] = ["Calendar temporarily unavailable"]
+        case["events"] = []
+        case["name"] = name
+        case["model"] = compose(case["view"], case["events"], case["settings"], case["people"], case["now"], ZONE, case["signals"])
+        return case
     if name in ("school_sunday", "school_sunday_late", "school_monday", "school_monday_night"):
         case = scenario("canonical_weekday" if name in ("school_monday", "school_monday_night") else "canonical_evening")
         if name == "school_sunday_late":
@@ -206,6 +214,7 @@ SCENARIOS = (
     "school_sunday_late",
     "school_monday_night",
     "school_monday",
+    "school_unavailable",
     "canonical_weekday",
     "canonical_evening",
     "busy_school_morning",

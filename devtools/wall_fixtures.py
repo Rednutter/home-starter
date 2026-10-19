@@ -8,6 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "home_starter/server"))
 sys.path.insert(0, str(ROOT / "tests"))
+from homestarter.wall import wallpapers  # noqa: E402
 from wall_scenarios import SCENARIOS, scenario  # noqa: E402
 
 
@@ -24,7 +25,9 @@ def main():
             .read_text(encoding="utf-8")
             .replace("const now = new Date();", "const now = new Date(" + json.dumps(value["clock"]) + ");")
         )
+        source = (static / "wall-wallpaper.js").read_text(encoding="utf-8") + "\n" + source
         cfg = {"title": "Fictional wall fixture", "surface_id": "example_wall", "epoch": 0, "context": "sensor.fixture"}
+        cfg["wallpapers"], wallpaper_styles = wallpapers()
         attrs = {
             "home_starter_context": {"surface": "example_wall", "epoch": 0},
             "checked_at": value["clock"],
@@ -53,7 +56,9 @@ def main():
             + name
             + "</title><style>body{margin:0;container-type:inline-size;--wall-landscape:url(data:image/jpeg;base64,"
             + image
-            + ");}"
+            + ");"
+            + wallpaper_styles
+            + "}"
             + css
             + "</style><body><script>"
             + script.replace("</", "<\\/")

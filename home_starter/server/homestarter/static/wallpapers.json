@@ -1,0 +1,229 @@
+{
+  "generator": "OpenAI built-in image_gen",
+  "date": "2026-10-19",
+  "kind": "AI-generated decorative landscapes with hidden fictional details",
+  "not_live_household_data": true,
+  "conversion": "WebP quality 62, centred 16:9 crop and resize to 1440x810 for the native HA message budget; source imagery retained locally outside the repo.",
+  "images": [
+    {
+      "id": "morning-blue-hour",
+      "period": "morning",
+      "file": "morning-blue-hour.webp",
+      "sha256": "058cbcc6fd13c3c788ef4a3b15d29fb81fc0df89a0506b1fb1a8f9f9938e4f41",
+      "source_sha256": "c4338e73732fc16c0354437ab273a780bf929032b23f5d2935f685d850974eed",
+      "width": 1440,
+      "height": 810,
+      "prompt": "Generate a single 16:9 landscape wallpaper image for a 1920x1080 household wall display. Photorealistic Australian high-country eucalyptus valley at blue hour before dawn, distant misty layered mountains, soft blue and lavender sky, calm cinematic natural photography, no text, no UI. Low contrast clean sky across upper half for clock and weather overlays. Include exactly one extremely subtle tiny dark flying saucer silhouette near the far right distant ridgeline, less than one percent image width, easy to miss and integrated into the photograph. Rich real landscape detail lower half. No other fantasy elements. Full bleed one image, not a collage. Save output for use as a local app wallpaper asset.",
+      "easter_egg": "Tiny dark flying saucer near the far right distant ridgeline"
+    },
+    {
+      "id": "morning-river-mist",
+      "period": "morning",
+      "file": "morning-river-mist.webp",
+      "sha256": "1408b56ad4ab85b4e2a55e1f55642bbb706cd9b411283ca360845afe39c144dd",
+      "source_sha256": "0da40b3d30dc5bec6fb32ebffcab2500bc3e224489c856fcd9e045b63c72067e",
+      "width": 1440,
+      "height": 810,
+      "prompt": "Use case: photorealistic-natural. Asset: a single full-bleed 16:9 landscape wallpaper for a 1920x1080 non-interactive household wall display. Scene: Early morning golden mist above a broad inland Australian river, river red gums and distant soft hills. Beautiful calm natural photographic composition; low-contrast clean upper-left and upper-middle sky for readable white clock and weather overlays. Rich realistic native landscape lower half. No text, UI, frames, collage or watermarks. One easter egg only: a tiny flying saucer silhouette nestled near the distant river bend. The hidden object must be extremely subtle, under one percent of image width, integrated in the scene, easy to miss; no other fantasy elements. ",
+      "easter_egg": "a tiny flying saucer silhouette nestled near the distant river bend"
+    },
+    {
+      "id": "morning-granite-sunrise",
+      "period": "morning",
+      "file": "morning-granite-sunrise.webp",
+      "sha256": "5e1b886b63ec5da0fddefd37c7099bff5f0bb9cf5d51943ec112d0479fbc8275",
+      "source_sha256": "680a282c02bf255b40467b1a6d218703801c0298c8fb51c9000e4a196d5cb29d",
+      "width": 1440,
+      "height": 810,
+      "prompt": "Use case: photorealistic-natural. Asset: a single full-bleed 16:9 landscape wallpaper for a 1920x1080 non-interactive household wall display. Scene: Warm sunrise across Australian alpine granite tors and sparse snow gums with a peach and muted blue sky. Beautiful calm natural photographic composition; low-contrast clean upper-left and upper-middle sky for readable white clock and weather overlays. Rich realistic native landscape lower half. No text, UI, frames, collage or watermarks. One easter egg only: a tiny friendly hand-drawn robot peeking from behind a rock at the far lower right. The hidden object must be extremely subtle, under one percent of image width, integrated in the scene, easy to miss; no other fantasy elements. ",
+      "easter_egg": "a tiny friendly hand-drawn robot peeking from behind a rock at the far lower right"
+    },
+    {
+      "id": "morning-coastal-dawn",
+      "period": "morning",
+      "file": "morning-coastal-dawn.webp",
+      "sha256": "5e163b82bf31c94db01c06bcffe310edcb770aa265d5eee920e22ef42368d6ef",
+      "source_sha256": "37d4e58154a187029c4cc9fd322d7642580cb8eb74ed4e5e76d28d4144be794e",
+      "width": 1440,
+      "height": 810,
+      "prompt": "Use case: photorealistic-natural. Asset: a single full-bleed 16:9 landscape wallpaper for a 1920x1080 non-interactive household wall display. Scene: Quiet pale dawn over an Australian coastal headland, sea mist and native grasses. Beautiful calm natural photographic composition; low-contrast clean upper-left and upper-middle sky for readable white clock and weather overlays. Rich realistic native landscape lower half. No text, UI, frames, collage or watermarks. One easter egg only: a tiny improbable paper boat perched among the far lower left grasses. The hidden object must be extremely subtle, under one percent of image width, integrated in the scene, easy to miss; no other fantasy elements. ",
+      "easter_egg": "a tiny improbable paper boat perched among the far lower left grasses"
+    },
+    {
+      "id": "day-alpine-lake",
+      "period": "day",
+      "file": "day-alpine-lake.webp",
+      "sha256": "36ecdac6fc8eeb13213a4f2f68698596c926203e4bd3fa972dc1e02ee86e8fbe",
+      "source_sha256": "26f0d84263b416be9be8b55b8c4a380cf5ae1f30e957c60a8e329323318dafc3",
+      "width": 1440,
+      "height": 810,
+      "prompt": "Use case: photorealistic-natural. Asset: a single full-bleed 16:9 landscape wallpaper for a 1920x1080 non-interactive household wall display. Scene: Clear soft daylight over an Australian alpine lake framed by snow gums and distant forested mountains. Beautiful calm natural photographic composition; low-contrast clean upper-left and upper-middle sky for readable white clock and weather overlays. Rich realistic native landscape lower half. No text, UI, frames, collage or watermarks. One easter egg only: a tiny dark flying saucer just above the far right mountain horizon. The hidden object must be extremely subtle, under one percent of image width, integrated in the scene, easy to miss; no other fantasy elements. ",
+      "easter_egg": "a tiny dark flying saucer just above the far right mountain horizon"
+    },
+    {
+      "id": "day-river-gums",
+      "period": "day",
+      "file": "day-river-gums.webp",
+      "sha256": "629ab5245e4893810bba711cb484e50c2eeaaca244a68dcdab60eecbbc5798d3",
+      "source_sha256": "eeb9e26617c8d4603363ed0af72c5c02272875726a2b4b5c981f9b942dffedf6",
+      "width": 1440,
+      "height": 810,
+      "prompt": "Use case: photorealistic-natural. Asset: a single full-bleed 16:9 landscape wallpaper for a 1920x1080 non-interactive household wall display. Scene: Tranquil broad Australian river under muted blue daylight, red gum reflections and distant rolling farmland. Beautiful calm natural photographic composition; low-contrast clean upper-left and upper-middle sky for readable white clock and weather overlays. Rich realistic native landscape lower half. No text, UI, frames, collage or watermarks. One easter egg only: a tiny original whimsical cartoon forest creature peeking from a tree near the lower right. The hidden object must be extremely subtle, under one percent of image width, integrated in the scene, easy to miss; no other fantasy elements. ",
+      "easter_egg": "a tiny original whimsical cartoon forest creature peeking from a tree near the lower right"
+    },
+    {
+      "id": "day-high-country",
+      "period": "day",
+      "file": "day-high-country.webp",
+      "sha256": "488eabb6ae8f9135c8867f469451e113cff0478c71e7aff46588433825830647",
+      "source_sha256": "a5b10f7178df00c59795bed075d99d119e2a5778633975850a538bb6fcf33206",
+      "width": 1440,
+      "height": 810,
+      "prompt": "Use case: photorealistic-natural. Asset: a single full-bleed 16:9 landscape wallpaper for a 1920x1080 non-interactive household wall display. Scene: Australian high country open grassland and distant blue mountain layers under soft high cloud, peaceful midday. Beautiful calm natural photographic composition; low-contrast clean upper-left and upper-middle sky for readable white clock and weather overlays. Rich realistic native landscape lower half. No text, UI, frames, collage or watermarks. One easter egg only: a tiny old-fashioned rocket almost hidden behind a rock at the far lower left. The hidden object must be extremely subtle, under one percent of image width, integrated in the scene, easy to miss; no other fantasy elements. ",
+      "easter_egg": "a tiny old-fashioned rocket almost hidden behind a rock at the far lower left"
+    },
+    {
+      "id": "day-coastal-bay",
+      "period": "day",
+      "file": "day-coastal-bay.webp",
+      "sha256": "4e8fe173b3be08b2604b9e0be264cf7c9d83fb044de69df966acf4e4dab7c460",
+      "source_sha256": "af261691d3e6e62aa11406e724020b2ca8fe71ee5f492c368f17c4d86c550ce5",
+      "width": 1440,
+      "height": 810,
+      "prompt": "Use case: photorealistic-natural. Asset: a single full-bleed 16:9 landscape wallpaper for a 1920x1080 non-interactive household wall display. Scene: Soft daytime light over a sheltered Australian coastal bay with eucalyptus trees and sandstone, restrained natural colors. Beautiful calm natural photographic composition; low-contrast clean upper-left and upper-middle sky for readable white clock and weather overlays. Rich realistic native landscape lower half. No text, UI, frames, collage or watermarks. One easter egg only: a tiny original round cartoon robot tucked behind a coastal shrub near lower right. The hidden object must be extremely subtle, under one percent of image width, integrated in the scene, easy to miss; no other fantasy elements. ",
+      "easter_egg": "a tiny original round cartoon robot tucked behind a coastal shrub near lower right"
+    },
+    {
+      "id": "afternoon-valley-light",
+      "period": "afternoon",
+      "file": "afternoon-valley-light.webp",
+      "sha256": "1b79500a1a7311e0428cac797cb8765d75df043f85385cc98d65f4f65a1bfa89",
+      "source_sha256": "83afae396b6f09955c06fa3581c98393e309da4b546a1d39ebe2901f8cea66a4",
+      "width": 1440,
+      "height": 810,
+      "prompt": "Use case: photorealistic-natural. Asset: a single full-bleed 16:9 landscape wallpaper for a 1920x1080 non-interactive household wall display. Scene: Australian rolling valley in gentle late afternoon light, eucalyptus woodland and soft gold grass, spacious hazy sky. Beautiful calm natural photographic composition; low-contrast clean upper-left and upper-middle sky for readable white clock and weather overlays. Rich realistic native landscape lower half. No text, UI, frames, collage or watermarks. One easter egg only: a tiny flying saucer silhouette tucked against a distant right-hand hill. The hidden object must be extremely subtle, under one percent of image width, integrated in the scene, easy to miss; no other fantasy elements. ",
+      "easter_egg": "a tiny flying saucer silhouette tucked against a distant right-hand hill"
+    },
+    {
+      "id": "afternoon-riverbank",
+      "period": "afternoon",
+      "file": "afternoon-riverbank.webp",
+      "sha256": "d6fe92faef7bc164cce8e7d23836e4d44b16b06788a36b4ff7984ca9223a7b9c",
+      "source_sha256": "32b5c001b5b8b847f84d521f120cae5e0d676c4342fe145cf11ae7483d0ffe69",
+      "width": 1440,
+      "height": 810,
+      "prompt": "Use case: photorealistic-natural. Asset: a single full-bleed 16:9 landscape wallpaper for a 1920x1080 non-interactive household wall display. Scene: Warm afternoon Australian riverbank under towering river red gums, distant quiet hills and muted sky. Beautiful calm natural photographic composition; low-contrast clean upper-left and upper-middle sky for readable white clock and weather overlays. Rich realistic native landscape lower half. No text, UI, frames, collage or watermarks. One easter egg only: a tiny original whimsical cartoon creature peeking from behind a low foreground log. The hidden object must be extremely subtle, under one percent of image width, integrated in the scene, easy to miss; no other fantasy elements. ",
+      "easter_egg": "a tiny original whimsical cartoon creature peeking from behind a low foreground log"
+    },
+    {
+      "id": "afternoon-granite-country",
+      "period": "afternoon",
+      "file": "afternoon-granite-country.webp",
+      "sha256": "39f6bdd76114126ba21d98ea7201016996aabcb2f431c24303856ee7ad70cbf5",
+      "source_sha256": "06a8d170fde5966d7b8f41c236a4bd877675751ce7ebd3fdca7659815acd0777",
+      "width": 1440,
+      "height": 810,
+      "prompt": "Use case: photorealistic-natural. Asset: a single full-bleed 16:9 landscape wallpaper for a 1920x1080 non-interactive household wall display. Scene: Australian granite boulders overlooking a long quiet valley in soft afternoon sunlight, native grasses. Beautiful calm natural photographic composition; low-contrast clean upper-left and upper-middle sky for readable white clock and weather overlays. Rich realistic native landscape lower half. No text, UI, frames, collage or watermarks. One easter egg only: a tiny metallic robot antenna peeking out behind a distant foreground rock at the lower right. The hidden object must be extremely subtle, under one percent of image width, integrated in the scene, easy to miss; no other fantasy elements. ",
+      "easter_egg": "a tiny metallic robot antenna peeking out behind a distant foreground rock at the lower right"
+    },
+    {
+      "id": "afternoon-coastal-grass",
+      "period": "afternoon",
+      "file": "afternoon-coastal-grass.webp",
+      "sha256": "405513bd9fe9631cd414e260ee0d2a522707c55bc070b70788c026382a086c8b",
+      "source_sha256": "c21c8ae0db2f566216d3a42e04d45fed13b1eddfbbbaa2fc263b263043e2b3f2",
+      "width": 1440,
+      "height": 810,
+      "prompt": "Use case: photorealistic-natural. Asset: a single full-bleed 16:9 landscape wallpaper for a 1920x1080 non-interactive household wall display. Scene: Late afternoon on a quiet Australian headland, gentle ocean blue and golden native grasses, light haze. Beautiful calm natural photographic composition; low-contrast clean upper-left and upper-middle sky for readable white clock and weather overlays. Rich realistic native landscape lower half. No text, UI, frames, collage or watermarks. One easter egg only: a tiny paper airplane improbably resting in a distant bush near lower left. The hidden object must be extremely subtle, under one percent of image width, integrated in the scene, easy to miss; no other fantasy elements. ",
+      "easter_egg": "a tiny paper airplane improbably resting in a distant bush near lower left"
+    },
+    {
+      "id": "evening-golden-hills",
+      "period": "evening",
+      "file": "evening-golden-hills.webp",
+      "sha256": "c2249bcfdade6dd0988ad693b8207a9bf0c7c4e3900e774f5c3769f521e1fc91",
+      "source_sha256": "d6d1c5f1e3f95cd5267b188b086c14d5044ba6406290e039ff4bff4a028b7398",
+      "width": 1440,
+      "height": 810,
+      "prompt": "Use case: photorealistic-natural. Asset: a single full-bleed 16:9 landscape wallpaper for a 1920x1080 non-interactive household wall display. Scene: Golden hour Australian eucalyptus hills, distant ridgelines receding into soft amber haze, restrained sunset colors. Beautiful calm natural photographic composition; low-contrast clean upper-left and upper-middle sky for readable white clock and weather overlays. Rich realistic native landscape lower half. No text, UI, frames, collage or watermarks. One easter egg only: a tiny dark flying saucer silhouette hovering very low over a distant ridge on the right. The hidden object must be extremely subtle, under one percent of image width, integrated in the scene, easy to miss; no other fantasy elements. ",
+      "easter_egg": "a tiny dark flying saucer silhouette hovering very low over a distant ridge on the right"
+    },
+    {
+      "id": "evening-river-sunset",
+      "period": "evening",
+      "file": "evening-river-sunset.webp",
+      "sha256": "ee2f17f0e6113416c9df98e5d8fd886d3d9fe21157ef88bba30746ce35c7401a",
+      "source_sha256": "f71e5878a3a63e928f6c585ea41c9dc647a84a752c38cf9e08a2a8af5c5f1c0c",
+      "width": 1440,
+      "height": 810,
+      "prompt": "Use case: photorealistic-natural. Asset: a single full-bleed 16:9 landscape wallpaper for a 1920x1080 non-interactive household wall display. Scene: Quiet Australian river reflecting muted rose and amber evening sky, dark red gum silhouettes and distant hills. Beautiful calm natural photographic composition; low-contrast clean upper-left and upper-middle sky for readable white clock and weather overlays. Rich realistic native landscape lower half. No text, UI, frames, collage or watermarks. One easter egg only: a tiny friendly original cartoon robot peering from behind a riverside tree at the lower right. The hidden object must be extremely subtle, under one percent of image width, integrated in the scene, easy to miss; no other fantasy elements. ",
+      "easter_egg": "a tiny friendly original cartoon robot peering from behind a riverside tree at the lower right"
+    },
+    {
+      "id": "evening-coastal-dusk",
+      "period": "evening",
+      "file": "evening-coastal-dusk.webp",
+      "sha256": "015531874245f7ba588e259d1238ca42861ec4dcca1c5f3b01f8b86b5589e00e",
+      "source_sha256": "0fa60f3af8b6edb77ff8b3d264d79e1d188e136a5cfbe0056bde7d37b8401fca",
+      "width": 1440,
+      "height": 810,
+      "prompt": "Use case: photorealistic-natural. Asset: a single full-bleed 16:9 landscape wallpaper for a 1920x1080 non-interactive household wall display. Scene: Blue and dusty rose dusk over an Australian rocky coastal headland, calm ocean and native shrubs. Beautiful calm natural photographic composition; low-contrast clean upper-left and upper-middle sky for readable white clock and weather overlays. Rich realistic native landscape lower half. No text, UI, frames, collage or watermarks. One easter egg only: a tiny silhouette of an improbable old-fashioned rocket on a far distant rocky outcrop. The hidden object must be extremely subtle, under one percent of image width, integrated in the scene, easy to miss; no other fantasy elements. ",
+      "easter_egg": "a tiny silhouette of an improbable old-fashioned rocket on a far distant rocky outcrop"
+    },
+    {
+      "id": "evening-alpine-dusk",
+      "period": "evening",
+      "file": "evening-alpine-dusk.webp",
+      "sha256": "8349db4158d43afa74fc5335a0b49a69c453f420890ec99262946faca24f2828",
+      "source_sha256": "4aa6141ed12f2c7bf3aa4fc342bf59d424ba6e6ecdca9f79b6909ef8954741e4",
+      "width": 1440,
+      "height": 810,
+      "prompt": "Use case: photorealistic-natural. Asset: a single full-bleed 16:9 landscape wallpaper for a 1920x1080 non-interactive household wall display. Scene: Australian alpine snow gum woodland and distant lake at purple-blue evening dusk, gentle last warm light. Beautiful calm natural photographic composition; low-contrast clean upper-left and upper-middle sky for readable white clock and weather overlays. Rich realistic native landscape lower half. No text, UI, frames, collage or watermarks. One easter egg only: a tiny original round cartoon creature hiding partly behind a lower right granite boulder. The hidden object must be extremely subtle, under one percent of image width, integrated in the scene, easy to miss; no other fantasy elements. ",
+      "easter_egg": "a tiny original round cartoon creature hiding partly behind a lower right granite boulder"
+    },
+    {
+      "id": "night-moonlit-valley",
+      "period": "night",
+      "file": "night-moonlit-valley.webp",
+      "sha256": "641f2483882a7d609b6fedd2044c67bb717a943bf3977b94443ceb1ba4b9a042",
+      "source_sha256": "ea911b452688c64effd6e8957259f46ba5235278d18ec29c98b7fa6fada2b648",
+      "width": 1440,
+      "height": 810,
+      "prompt": "Use case: photorealistic-natural. Asset: a single full-bleed 16:9 landscape wallpaper for a 1920x1080 non-interactive household wall display. Scene: Dark moonlit Australian eucalyptus valley beneath a natural subdued starry indigo sky, low moon glow off-frame, layered mountains. Beautiful calm natural photographic composition; low-contrast clean upper-left and upper-middle sky for readable white clock and weather overlays. Rich realistic native landscape lower half. No text, UI, frames, collage or watermarks. One easter egg only: a tiny UFO silhouette just above the distant right horizon with no bright lights. The hidden object must be extremely subtle, under one percent of image width, integrated in the scene, easy to miss; no other fantasy elements. Keep the whole scene naturally dark and restful; no bright moon or large bright objects.",
+      "easter_egg": "a tiny UFO silhouette just above the distant right horizon with no bright lights"
+    },
+    {
+      "id": "night-river-stars",
+      "period": "night",
+      "file": "night-river-stars.webp",
+      "sha256": "7a7cc8c9d443c4fc2cfabf8d0e6afe869a752d09aa8c09418bd5c16667439f77",
+      "source_sha256": "8c94ce76d513310dc3a05539bd8adc4aa719c696feb0286b046ef935c8ed7c86",
+      "width": 1440,
+      "height": 810,
+      "prompt": "Use case: photorealistic-natural. Asset: a single full-bleed 16:9 landscape wallpaper for a 1920x1080 non-interactive household wall display. Scene: Quiet very dark Australian river under a sparse starry sky, subtle blue moonlight on still water and river red gum silhouettes. Beautiful calm natural photographic composition; low-contrast clean upper-left and upper-middle sky for readable white clock and weather overlays. Rich realistic native landscape lower half. No text, UI, frames, collage or watermarks. One easter egg only: a tiny original friendly cartoon robot barely visible peeking from behind a foreground tree on the lower right. The hidden object must be extremely subtle, under one percent of image width, integrated in the scene, easy to miss; no other fantasy elements. Keep the whole scene naturally dark and restful; no bright moon or large bright objects.",
+      "easter_egg": "a tiny original friendly cartoon robot barely visible peeking from behind a foreground tree on the lower right"
+    },
+    {
+      "id": "night-alpine-stars",
+      "period": "night",
+      "file": "night-alpine-stars.webp",
+      "sha256": "fc450c346157f19bc815cd81e568f682432ab0d8a84ae558b180ce80ed5fed57",
+      "source_sha256": "189071427960b62bdf19c48928965a64d390ad86d327ccee8d8fd43482498a5a",
+      "width": 1440,
+      "height": 810,
+      "prompt": "Use case: photorealistic-natural. Asset: a single full-bleed 16:9 landscape wallpaper for a 1920x1080 non-interactive household wall display. Scene: Australian alpine lake at night with distant mountain silhouettes, dark navy sky and restrained faint Milky Way, natural night photography. Beautiful calm natural photographic composition; low-contrast clean upper-left and upper-middle sky for readable white clock and weather overlays. Rich realistic native landscape lower half. No text, UI, frames, collage or watermarks. One easter egg only: a tiny dark flying saucer silhouette near the far left horizon with no glow. The hidden object must be extremely subtle, under one percent of image width, integrated in the scene, easy to miss; no other fantasy elements. Keep the whole scene naturally dark and restful; no bright moon or large bright objects.",
+      "easter_egg": "a tiny dark flying saucer silhouette near the far left horizon with no glow"
+    },
+    {
+      "id": "night-coastal-moon",
+      "period": "night",
+      "file": "night-coastal-moon.webp",
+      "sha256": "8509e1194d8b0f3d1e6b8b3e2731ab7c8209b7ab164a538d43307175a44920ab",
+      "source_sha256": "8415368f323a27aac8c34511228900895c7ec315486deb9e5dc9f3485757a171",
+      "width": 1440,
+      "height": 810,
+      "prompt": "Use case: photorealistic-natural. Asset: a single full-bleed 16:9 landscape wallpaper for a 1920x1080 non-interactive household wall display. Scene: Moonlit Australian rocky coast with native coastal shrubs and calm dark ocean, subdued silver-blue reflections and deep indigo sky. Beautiful calm natural photographic composition; low-contrast clean upper-left and upper-middle sky for readable white clock and weather overlays. Rich realistic native landscape lower half. No text, UI, frames, collage or watermarks. One easter egg only: a tiny original whimsical cartoon creature barely peeking over a foreground rock at the lower right. The hidden object must be extremely subtle, under one percent of image width, integrated in the scene, easy to miss; no other fantasy elements. Keep the whole scene naturally dark and restful; no bright moon or large bright objects.",
+      "easter_egg": "a tiny original whimsical cartoon creature barely peeking over a foreground rock at the lower right"
+    }
+  ]
+}

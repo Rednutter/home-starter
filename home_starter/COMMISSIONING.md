@@ -1,5 +1,62 @@
 # First-run commissioning and returning-home audit
 
+## Reconciled delivery record — 19 October 2026 (0.8.39)
+
+This record distinguishes shipped source, live configuration and remaining work.
+The earlier dated acceptance entries below remain historical evidence, not fresh
+proof for every destination or a claim that the full Notion design is implemented.
+
+- Live readback found six intended MA users exactly once, three available Spotify
+  providers (Grant, House, House #2), and no Renae provider. Renae is pending;
+  no extra provider was created. The allocator's live tier/concurrency/recovery
+  evidence is recorded in the 18 October entry below, not repeated overnight.
+- The later explicit native MA collection-sharing choice is persisted separately
+  and preserves playback enforcement. Shared collection buckets, typed search,
+  paging and honest partial-source state are shipped in this release.
+- Speaker naming/visibility cleanup preserved IDs and enabled state. All eight
+  speakers, including the living-area Pi, workshop and master bedroom, are
+  selected on shared Home Starter surfaces. MA group membership was read back:
+  Kitchen Area has two members, Morning Group five and Everywhere eight.
+  Home Starter group starts and audible group synchronisation remain unverified;
+  individual-speaker controls stay enabled without pretending otherwise.
+- The Pi's 3.5 mm output played audibly through the stereo amp, confirmed by the
+  user. The agreed analogue setting is −6 dB; MA was adjusted to 10%. Reboot
+  persistence of that mixer setting has not been established.
+- Selected Cirrus timetables retain native ordering/provenance, merged double
+  lessons, slim aligned breaks and confirmed school departure. From noon the
+  child cards preview tomorrow while today's household events retain prominence.
+  Calendar proof remains valid only for its unchanged approved source signature;
+  fresh calendar reads retain short expiry and do not reuse stale class data.
+- Daytime preserves three person cards and a merged Today/upcoming chronology.
+  Night is 20:00–05:00: clock, date, forecast and restrained household/media
+  status, without planning cards. The common confirmed school leave time remains
+  an unboxed note. The 20 generated local landscapes select once per household
+  time period, stay fixed on reload and keep the night choice across midnight.
+- Live Pi capture confirmed quiet night, the confirmed school departure and no
+  planning containers. Display/audio/voice remained active. The separate output
+  schedule disabled HDMI after 22:00 without stopping those services. Earlier
+  cursor/reboot and explicit off/wake checks remain documented separately.
+- Climate reports actual power/mode rather than the stored fan setting; active
+  lights use compact warm-white outline icons. Now playing uses current MA
+  queue ownership and catalogue station identity, rather than transport markers.
+
+Validation for this slice: 790 Python tests, 71 JavaScript tests, Ruff lint/format,
+isolated calendar authentication/classification browser acceptance, and 22
+fictional wall scenarios at 1920×1080 and 1366×768. The wall check caught and
+covered a missing-timetable card-height defect. Privacy checks cover the exact
+release index; only the explicitly reviewed generated images are permitted.
+Remote CI results belong to the corresponding GitHub commit and must be checked
+separately from these local results.
+
+Remaining design/acceptance work: extended Cirrus Due Work/RSS/A-B-week ingestion,
+verified uniform-rule extraction, richer relevance-driven daytime/week horizons,
+Home Starter group playback, audible multiroom synchronisation, and reboot mixer
+persistence. Cloud/star pareidolia and robotic animals are background ideas, not
+claims about the first generated library. Raw feeds, private screen captures,
+credentials, provider tokens and local deployment journals remain outside Git.
+
+## Connection and classification implementation
+
 Current connection work is exposed at `/api/connections` and the same connection
 view in first-run setup and Service setup. Preparation reconciles configured MA
 household users and uniquely named existing Spotify providers. Renae's absent

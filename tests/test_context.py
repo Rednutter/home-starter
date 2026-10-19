@@ -19,6 +19,14 @@ ZONE = "Australia/Sydney"
 NOW = datetime(2026, 6, 8, 7, 0, tzinfo=ZoneInfo(ZONE))
 
 
+def test_school_departure_settings_validate_explicit_local_times():
+    value = {**c.empty(), "school_departures": {"example_child": "08:30"}}
+    assert c.validate(value) == value
+    for invalid in ([], {"example_child": "24:00"}, {"example_child": True}, {"example_child": "8:30"}):
+        with pytest.raises(ValueError):
+            c.validate({**c.empty(), "school_departures": invalid})
+
+
 def event(title="Example commitment", start=None, minutes=60):
     start = start or NOW + timedelta(hours=2)
     return {"summary": title, "start": {"dateTime": start.isoformat()}, "end": {"dateTime": (start + timedelta(minutes=minutes)).isoformat()}}
@@ -176,12 +184,12 @@ async def configured(make_env):
     return env, store, house, saved, source
 
 
-@pytest.mark.parametrize("failure", ["expired", "identity", "unavailable", "no_source", "malformed", "excluded"])
+@pytest.mark.parametrize("failure", ["future_proof", "identity", "unavailable", "no_source", "malformed", "excluded"])
 async def test_unverified_or_missing_calendar_never_reuses_event_payload(make_env, failure):
     env, store, house, saved, source = await configured(make_env)
     assert "Example commitment" in (await runtime.inspect(env.core, store, house["surfaces"][0]))["near"] + (await runtime.inspect(env.core, store))["ahead"]
-    if failure == "expired":
-        saved["verified"]["calendars"]["at"] = (datetime.now(UTC) - timedelta(days=2)).isoformat()
+    if failure == "future_proof":
+        saved["verified"]["calendars"]["at"] = (datetime.now(UTC) + timedelta(days=2)).isoformat()
     elif failure == "identity":
         env.mock.entity_registry[-1]["id"] = "replacement_identity"
     elif failure == "unavailable":
@@ -196,6 +204,25 @@ async def test_unverified_or_missing_calendar_never_reuses_event_payload(make_en
     store.write(store.readiness_path, saved)
     view = await runtime.inspect(env.core, store, house["surfaces"][0])
     assert "Example commitment" not in view["near"] + view["ahead"] and view["issues"]
+
+
+async def test_approved_calendar_reads_refresh_after_one_day_without_recommissioning(make_env):
+    env, store, house, saved, source = await configured(make_env)
+    saved["verified"]["calendars"]["at"] = (datetime.now(UTC) - timedelta(days=30)).isoformat()
+    store.write(store.readiness_path, saved)
+    view = await runtime.inspect(env.core, store, house["surfaces"][0])
+    assert not view["issues"] and "Example commitment" in view["near"] + view["ahead"]
+    assert datetime.fromisoformat(view["valid_until"]) > datetime.now(UTC)
+    assert r.load(store, house) == saved  # Health reads cannot change consent or create revision races.
+    env.mock.calendar_events[source] = [{}]
+    failed = await runtime.inspect(env.core, store, house["surfaces"][0])
+    assert failed["issues"] and "Example commitment" not in failed["near"] + failed["ahead"]
+    env.mock.calendar_events[source] = [event(start=datetime.now(UTC) + timedelta(hours=2))]
+    recovered = await runtime.inspect(env.core, store, house["surfaces"][0])
+    assert not recovered["issues"] and "Example commitment" in recovered["near"] + recovered["ahead"]
+    inventory = await collect_inventory(env.core)
+    legacy = {**saved, "choices": {"waste": saved["choices"]["calendars"]}, "verified": {"waste": saved["verified"]["calendars"]}}
+    assert not r.proof_valid(legacy, "waste", inventory)  # Other functional proofs retain their TTL.
 
 
 async def test_context_admin_save_reload_preserves_proofs_and_rejects_stale_writes(make_env):
@@ -522,7 +549,7 @@ async def test_native_school_path_obeys_shared_consent_identity_scope_and_failur
     inputs = (house, saved, inv, await env.core.states(), ZONE, [{"id": "native_child", "name": "Fictional pupil", "role": "child", "confirmed": True}])
     result = await runtime.inspect(env.core, store, house["surfaces"][0], now=NOW, inputs=inputs)
     child = result["wall"]["school"]["children"][0]
-    assert bool(child["periods"]) == (mode == "show")
+    assert bool(child["periods"]) == (mode in {"show", "expired"})
     assert "Fictional class" not in str(result["wall"]["timeline"])
     assert "Fictional class" not in str(result["events"])
     personal = await runtime.inspect(env.core, store, house["surfaces"][0], person_id="child", now=NOW, inputs=inputs)

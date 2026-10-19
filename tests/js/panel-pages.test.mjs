@@ -146,7 +146,7 @@ test('Music Assistant library uses listener-owned state and exact permitted spea
  const view={epoch:0,person_id:'example',players:[{...player,available:true,single:true},{...player,entity_id:'media_player.offline',name:'Offline speaker',available:false,single:true}],default_destination:player.entity_id,browse:true,library:[{id:'fixture-item',title:'Example radio',kind:'radio'}],favorites:[],recent:[],books:[{id:'fixture-book',title:'Example book',kind:'audiobook',position:600,duration:3600}],session:null,delayed:null,sleep:null};
  const host={style:{setProperty(){}},requestUpdate(){},_hsPage:{path:'media',destination:player.entity_id,music:{view,at:Date.now(),loading:false,query:'',delay:0}}};
  const output=scene('media',{owner:'example',players:[player]}, {[player.entity_id]:livePlayer,'media_player.offline':livePlayer},host,{}, {music_backend:'fixture_addon'});
- assert.match(output.markup,/Music Assistant library/);assert.match(output.markup,/10 of 60 minutes/);assert.match(output.markup,/Example radio/);
+ assert.match(output.markup,/Collections/);assert.match(output.markup,/10 of 60 minutes/);assert.match(output.markup,/Example radio/);
  assert.match(output.markup,/data-entity="media_player.offline"[^>]*disabled/);
  assert.doesNotMatch(output.markup,/data-command="group"/);
  host._hsPage.music.editing=true;host._hsPage.music.draft='Typing a new query';
@@ -157,4 +157,13 @@ test('Music Assistant library uses listener-owned state and exact permitted spea
  assert.match(personal.markup,/Example room speaker/);
  view.person_id='other';host._hsPage.music.at=Date.now();
  assert.doesNotMatch(scene('media',{owner:'example'}, {},host,{}, {music_backend:'fixture_addon'}).markup,/Example book|Example radio/);
+});
+
+test('combined collections show paging, honest partial state and no account plumbing',()=>{
+ const view={epoch:0,person_id:null,players:[{...player,available:true,single:true}],default_destination:player.entity_id,browse:true,collection:{title:'Playlists',root:'bucket',total:85,incomplete:true},library:[{id:'one',title:'Same title',kind:'playlist',folder:false},{id:'page',title:'More playlists',kind:'folder',folder:true,continuation:true}],favorites:[],recent:[],books:[]};
+ const host={style:{setProperty(){}},requestUpdate(){},_hsPage:{path:'media',music:{view,at:Date.now(),loading:false,query:'',delay:0}}};
+ const output=scene('media',{players:[player]},{[player.entity_id]:livePlayer},host,{}, {music_backend:'fixture_addon'});
+ assert.match(output.markup,/<h2>Playlists<\/h2>/);assert.match(output.markup,/85 items across your connected sources/);
+ assert.match(output.markup,/Some sources are temporarily unavailable/);assert.match(output.markup,/More playlists/);
+ assert.doesNotMatch(output.markup,/spotify--|provider_filter|client_secret/);
 });

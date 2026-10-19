@@ -4,6 +4,45 @@ The Pi keeps its existing native HA dashboard, dedicated restricted account,
 Chromium kiosk profile, systemd services, health endpoint and 180-degree output.
 This is a passive shared board, not an enlarged AirTouch control surface.
 
+When no selected camera is available, the same bottom region shows current media
+title, artist and room from admitted household players. Paused/stopped players
+and stale context leave no media card. Available cameras retain priority.
+Playback comes from fresh MA players/active queues, deduplicated by queue ownership
+rather than media title. Group members do not produce extra cards; independent
+queues remain distinct. Only title/artist/room cross into the wall projection.
+Radio uses its catalogue station name, never delivery URLs or transport markers.
+The Lights cell keeps its large anchor icon and shows confirmed-on lights/groups
+as a compact row of warm-white outline icons beneath the heading. Native icon
+metadata selects the shape; unknown types use a bulb. Selected group members are
+not counted twice. Off/unavailable lights have no lit icon; overflow uses +N.
+
+The right timeline is one full-height surface. Its detailed focus-day list is
+followed immediately by a subtle divider and compact future days, with no fixed
+split or separate Week ahead card. Future rows yield space to today's events.
+Evening/night focus-day selection and the three morning school cards are unchanged.
+From noon until night mode, the school cards independently select tomorrow's
+dated native classes and confirmed departure, labelled Tomorrow. This does not
+move today's remaining appointments out of the main timeline or replace current
+weather with a forecast. Tomorrow's school attendance is one compact household
+row below today. Missing tomorrow data never reuses today's classes.
+
+Kitchen Wall Sendspin uses the PortAudio device-name match `bcm2835 Headphones`
+for its 3.5 mm stereo amp feed. An ALSA string such as
+`plughw:CARD=Headphones,DEV=0` can appear accepted during startup but fail when
+PortAudio opens playback. Verify a RUNNING hardware stream, not just MA's playing
+state. The USB microphone/voice path is independent.
+Confirmed `context.school_departures` maps child identities to local HH:MM times;
+these apply only to dated native school periods, never inferred school days.
+Timetables use person-tinted, subject-only lesson cards, muted completed lessons
+and gentle current-period emphasis. Native times stay in the state model, not
+the lesson cards; multiplier badges are hidden. Each native period owns a
+grid slot; consecutive equal subjects (including Cirrus's one-minute transitions)
+join into a card spanning those slots. User-confirmed Recess/Lunch gaps use slim,
+unlabelled fixed-height separators. Matching bell times stay aligned across children;
+different source schedules retain their own native cadence. Shared header and
+footer rows keep names/departures above the aligned timetable and extra confirmed
+requirements below. Night mode keeps its existing compact summaries.
+
 ## Data and composition
 
 `context_runtime.inspect` reads the existing verified consolidated calendar,
@@ -255,22 +294,36 @@ for its linked children; missing periods, suppressed dates and expired attendanc
 never create assumed school commitments. Other dated household events stay in
 the timeline in time order. Live Monday has one 8:50 School row for three children.
 
-## Compact night presentation (0.8.37)
+## Quiet night presentation (0.8.39)
 
-Night now runs from 21:00 inclusive to 05:00 exclusive in the household timezone.
-It retains the reference anchors, three shallow person cards and household
-timeline. Native school attendance, confirmed requirements and the next linked
-commitment replace full class lists; week and routine camera/light/security
-details recede. Missing timetables never imply a school day. Actual overnight
-events and safety exceptions retain their existing priority. The photograph
-reclaims space under shallow cards; no new containers or scrolling are added.
-At midnight the same upcoming morning becomes Today, rather than jumping to
-the following day. At 05:00 the full class presentation returns. Temperature
+Night now runs from 20:00 inclusive to 05:00 exclusive in the household timezone.
+It retains a quieter clock/date/weather header and restrained home/media status.
+All person cards, timetables and household timelines are omitted from the night
+DOM, with no empty planning containers. A small unboxed school departure beneath
+the date appears only when all mapped children share the same confirmed future
+leave time. Safety exceptions and temporary display
+sessions remain available. At midnight the forecast becomes Today rather than
+jumping to the following day. At 05:00 the full class presentation returns. Temperature
 labels distinguish High/Low forecasts from Now observations, without arrows.
 Visual night treatment does not change the Pi monitor's hardware brightness.
-Live acceptance confirmed three 184px-high cards, all four household timeline
-entries, High 23° / Low 11°, no class/week lists, and no clipping or cursor after
-reload. Boundary regressions cover 20:59, 21:00, midnight, 04:59 and 05:00.
+Boundary regressions cover 19:59, 20:00, midnight, 04:59 and 05:00. The previous
+compact three-card night presentation was superseded by the quieter landscape.
+
+Wallpapers are bundled locally with a legacy-image fallback, without remote
+image requests. Morning 05:00–10:00, day 10:00–14:00, afternoon 14:00–17:00,
+evening 17:00–20:00 and night 20:00–05:00 each select one landscape from their
+own pool using household timezone, date and screen identity. Selection stays
+fixed throughout that period and across reloads; the night selection also
+survives midnight. The generated decorative scenes contain tiny hidden fictional
+details; they are not live weather or household photographs. Provenance, prompts
+and image hashes live in `static/wallpapers.json`. The native configuration size
+test enforces HA's existing message budget.
+The initial library contains 20 landscapes (four per period). Live Pi acceptance
+on 19 October confirmed the normal night selection, no planning containers, the
+confirmed shared school departure, local starry backdrop and restrained status.
+Display/audio/voice services remained active; the screen-power schedule was not
+changed. Cloud/star pareidolia and robotic animals remain ideas for later images,
+not features claimed for the first library.
 
 Weather presentation (0.8.38) normally occupies two lines: a balanced icon and
 inline temperature labels, then a short condition/preview label. The group is
@@ -278,10 +331,23 @@ centred within its existing hero column. Preview omits the repeated weekday and
 current observation. Only a weather exception or significant rain probability
 (60% or higher) adds a third line. Missing forecast values remain explicit.
 
+Morning recovery (0.8.39) separates durable approved-source commissioning from
+ephemeral calendar data. The same source/choice signature remains mandatory;
+calendar data is fetched each update and expires within 150 seconds (wall within
+75 seconds). No event cache is reused on failed reads. Health reads neither
+change consent nor write settings. Camera/waste verification TTLs are unchanged.
+Person cards retain timetables and promote a configured Leave time, otherwise a
+native first-period Starts time. Kit and travel remain explicit. Timeline times
+refer to event starts; departure details are labelled separately. Missing data
+does not stretch cards across the screen or claim school attendance.
+Live acceptance recovered the 30-hour-old selection without re-authentication:
+three cards, all 21 native periods, four household entries, repeated fresh reads
+and unchanged calendar classifications. Cursor and screen-power checks passed.
+
 ## Nightly screen power
 
 Kitchen Wall's HDMI-A-1 output sleeps from 22:00 inclusive to 06:00 exclusive in
-Australia/Sydney time, independently of the wall's 21:00–05:00 content mode.
+Australia/Sydney time, independently of the wall's 20:00–05:00 content mode.
 `screen_power.py` uses the existing native Wayland `wlopm` power protocol and
 verifies the returned output state, including disabled HDMI after standby's
 hotplug cycle. The user service/timer runs at both daily

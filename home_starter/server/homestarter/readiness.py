@@ -126,7 +126,11 @@ def proof_valid(value, key, inventory, now=None):
     now = now or datetime.now(UTC)
     try:
         checked = datetime.fromisoformat(proof["at"])
-        return timedelta(0) <= now - checked <= timedelta(days=1) and proof["signature"] == selection_signature(choice, inventory)
+        age = now - checked
+        # Calendar commissioning verifies an approved source selection, not a
+        # daily consent boundary. Runtime reads verify its data afresh. Identity
+        # or choice changes still invalidate this proof; other checks keep TTLs.
+        return age >= timedelta(0) and (key == "calendars" or age <= timedelta(days=1)) and proof["signature"] == selection_signature(choice, inventory)
     except (KeyError, ValueError, TypeError):
         return False
 
