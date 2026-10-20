@@ -1,5 +1,8 @@
 import json
+import shlex
+import subprocess
 from datetime import datetime
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -36,13 +39,13 @@ def test_power_recovery_is_idempotent_and_confirms_real_output_state():
     reconcile("HDMI-A-1", "on", execute)
     assert changes == [
         ["/usr/bin/wlopm", "--off", "HDMI-A-1"],
-        ["/usr/bin/wlr-randr", "--output", "HDMI-A-1", "--on", "--transform", "180"],
+        ["/usr/bin/wlr-randr", "--output", "HDMI-A-1", "--on", "--mode", "1920x1080@60Hz", "--transform", "180"],
         ["/usr/bin/wlopm", "--on", "HDMI-A-1"],
     ]
     with pytest.raises(RuntimeError, match="unavailable"):
-        reconcile("missing", "off", execute)
+        reconcile("missing", "off", execute, wait=lambda _: None)
     with pytest.raises(RuntimeError, match="did not confirm"):
-        reconcile("HDMI-A-1", "off", lambda _: json.dumps([{"output": "HDMI-A-1", "power-mode": "on"}]))
+        reconcile("HDMI-A-1", "off", lambda _: json.dumps([{"output": "HDMI-A-1", "power-mode": "on"}]), wait=lambda _: None)
 
 
 def test_standby_hotplug_guard_preserves_existing_compositor_configuration():
@@ -73,3 +76,51 @@ def test_disabled_hdmi_is_off_and_explicit_morning_wake_restores_it():
     assert not enabled
     reconcile("HDMI-A-1", "on", execute)
     assert enabled
+
+
+def test_wake_retries_a_stale_output_configuration_and_rechecks_physical_output():
+    enabled, calls, waits = False, [], []
+
+    def execute(command):
+        nonlocal enabled
+        calls.append(command)
+        if command == ["/usr/bin/wlopm", "--json"]:
+            return json.dumps([{"output": "HDMI-A-1" if enabled else "NOOP-1", "power-mode": "on"}])
+        if command == ["/usr/bin/wlr-randr", "--json"]:
+            return json.dumps([{"name": "HDMI-A-1", "enabled": enabled}])
+        if command[0] == "/usr/bin/wlr-randr":
+            assert command[command.index("--mode") + 1] == "1920x1080@60Hz"
+            if not waits:
+                raise subprocess.CalledProcessError(1, command, stderr="failed to apply configuration")
+            enabled = True
+        return ""
+
+    reconcile("HDMI-A-1", "on", execute, wait=waits.append)
+    assert enabled and waits == [1]
+    assert calls.count(["/usr/bin/wlr-randr", "--json"]) == 2
+
+
+def test_permanent_wake_failure_is_bounded_and_never_confuses_headless_with_hdmi():
+    wake_calls, waits = [], []
+
+    def execute(command):
+        if command == ["/usr/bin/wlopm", "--json"]:
+            return json.dumps([{"output": "NOOP-1", "power-mode": "on"}])
+        if command == ["/usr/bin/wlr-randr", "--json"]:
+            return json.dumps([{"name": "HDMI-A-1", "enabled": False}])
+        wake_calls.append(command)
+        raise subprocess.CalledProcessError(1, command)
+
+    with pytest.raises(RuntimeError, match="on failed after 3 attempts"):
+        reconcile("HDMI-A-1", "on", execute, wait=waits.append)
+    assert len(wake_calls) == 3 and waits == [1, 2]
+    assert all(command[0] == "/usr/bin/wlr-randr" for command in wake_calls)
+
+
+def test_startup_pins_wake_mode_without_forcing_overnight_power_on():
+    service = Path(__file__).parents[1] / "devtools/kitchen_wall/home-starter-display.service"
+    line = next(line for line in service.read_text().splitlines() if line.startswith("ExecStartPre=") and "wlr-randr" in line)
+    command = shlex.split(line.partition("=")[2])
+    assert command[command.index("--mode") + 1] == "1920x1080@60Hz"
+    assert command[command.index("--transform") + 1] == "180"
+    assert "--on" not in command

@@ -378,7 +378,8 @@ Run `systemctl --user daemon-reload`, then
 `systemctl --user enable --now home-starter-screen-power.timer` and
 `systemctl --user start home-starter-screen-power.service`.
 The live Pi confirmed output off → on → scheduled off while all kiosk/audio/voice
-services remained active. The actual 06:00 timer firing has not yet occurred.
+services remained active. The initial short-cycle test did not establish a full overnight wake. The later
+morning failure and follow-up are recorded below.
 To disable scheduling, stop/disable the timer, restore the saved rc.xml (remove
 the owned rc.xml if the backup is empty), reload labwc, and enable HDMI with
 `wlr-randr --output HDMI-A-1 --on --transform 180` followed by
@@ -403,3 +404,30 @@ remain outside copy and controls. Live native configuration readback verified th
 wall and both existing specialist panels; the Pi capture confirmed normal night
 mode and equally sized forecast temperatures. Daytime fitting is synthetic browser
 evidence, not a claim that daytime was observed live after the evening deployment.
+
+
+### Morning HDMI recovery follow-up
+
+On 21 October the timer remained active, but repeated morning wake requests failed.
+The monitor was connected while HDMI-A-1 was disabled and NOOP-1 was powered.
+labwc reported failed HDMI swapchain tests and rejected the output configuration;
+Chromium/audio/voice continued. A user hard reboot restored the graphics session.
+After reboot the monitor selected its preferred 1920x1080 at approximately 100 Hz.
+
+The installed helper now requests supported 1920x1080 at 60 Hz explicitly,
+retains 180-degree rotation, and makes at most three fresh state/configuration
+attempts with short backoff. Individual utility calls time out after three
+seconds, keeping the worst-case retry sequence inside the service timeout.
+Kiosk startup pins the same mode without forcing power on outside the schedule.
+A persistent graphics failure still reports failure; it is never counted as a
+successful wake because a headless output is powered. No reboot, privilege rule,
+audio change or compositor replacement was added.
+
+Live verification passed a 45-second standby and a separate 120-second standby
+through the installed scheduled service. Both allowed the monitor's hotplug to
+settle to disabled HDMI plus NOOP, then restored physical HDMI at 60 Hz.
+The installed service reported success, the power timer was re-enabled/active,
+and display/audio/voice stayed active. Original helper/service files were backed
+up on the Pi. The refresh-rate pin is a mitigation, not proof that 100 Hz caused
+the underlying graphics failure. A full subsequent overnight interval has not
+yet been observed.

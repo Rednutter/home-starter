@@ -41,6 +41,9 @@ Pi output power is separate: off 22:00–06:00 Australia/Sydney using wlopm and 
 user screen-power timer. Keep Chromium/audio/voice running; verify off and wake.
 The monitor hotplugs on standby: retain labwc's auto-enable guard and explicit
 wlr-randr wake; disabled HDMI with a NOOP fallback is a valid overnight state.
+Pin kiosk startup/wake to supported 1920x1080 at 60 Hz, retaining 180-degree
+rotation. Startup must not force power on overnight. Bound HDMI reconnect retries
+and verify the physical output; headless power-on is not successful monitor wake.
 Explicit event links/calendar ownership win; a unique leading "Name · event"
 calendar label may identify a confirmed person. Never infer school/kit/travel.
 School timetables use explicit child/source mappings and dated native periods;

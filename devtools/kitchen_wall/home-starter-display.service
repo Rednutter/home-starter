@@ -7,7 +7,7 @@ StartLimitIntervalSec=0
 Type=simple
 Environment=WAYLAND_DISPLAY=wayland-0
 ExecStartPre=/usr/bin/test -S %t/wayland-0
-ExecStartPre=-/usr/bin/wlr-randr --output HDMI-A-1 --transform 180
+ExecStartPre=-/usr/bin/wlr-randr --output HDMI-A-1 --mode 1920x1080@60Hz --transform 180
 ExecStart=%h/.local/share/home-starter/venv/bin/python %h/.local/share/home-starter/display.py
 Restart=always
 RestartSec=10

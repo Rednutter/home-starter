@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Request explicit 1080p 60 Hz at wall wake/startup, retaining rotation and
+  overnight power policy. Retry transient HDMI reconfiguration with bounded fresh
+  state checks; never accept powered headless output as a successful monitor wake.
+
 - Keep timeline headings/dates tied to the events shown, independently of school
   preview. Fill measured space with whole future entries through the selected
   three-week horizon; remove fixed day/row quotas and the seven-day filter.
