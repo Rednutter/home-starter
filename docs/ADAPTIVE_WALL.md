@@ -322,11 +322,17 @@ The initial library contains 20 landscapes (four per period). Live Pi acceptance
 on 19 October confirmed the normal night selection, no planning containers, the
 confirmed shared school departure, local starry backdrop and restrained status.
 Display/audio/voice services remained active; the screen-power schedule was not
-changed. Cloud/star pareidolia and robotic animals remain ideas for later images,
-not features claimed for the first library.
+changed. The initial twenty landscapes are unchanged. Additional generated discoveries
+now use a separate 42-item local pool (forty atlas sprites plus two cutouts),
+including robot animals, tiny aircraft/spacecraft and cloud/constellation shapes.
+They occupy reserved visible space in the wall header and interactive Media/person
+artwork, clear of copy and controls. Selection is stable per screen/daypart and
+across midnight; no animation, network requests or tap targets. Generated-source
+and packaged hashes are recorded in `static/decorations.json`.
 
 Weather presentation (0.8.38) normally occupies two lines: a balanced icon and
-inline temperature labels, then a short condition/preview label. The group is
+inline temperature labels, then a short condition/preview label. Both numbers
+now share the same size: Now/High by day, High/Low in preview. The group is
 centred within its existing hero column. Preview omits the repeated weekday and
 current observation. Only a weather exception or significant rain probability
 (60% or higher) adds a third line. Missing forecast values remain explicit.
@@ -377,3 +383,23 @@ To disable scheduling, stop/disable the timer, restore the saved rc.xml (remove
 the owned rc.xml if the backup is empty), reload labwc, and enable HDMI with
 `wlr-randr --output HDMI-A-1 --on --transform 180` followed by
 `wlopm --on HDMI-A-1` within the graphical account's Wayland environment.
+
+
+### Chronology and discovery follow-up
+
+The detailed agenda heading and date describe the displayed day, independently
+of the children's tomorrow preview. Selected future events remain eligible through
+the existing 21-day discovery horizon, including subsequent weekends/weeks.
+The renderer measures available height and shows a chronological prefix of whole
+future rows/day headings; the divider follows the detailed entries. It refits on
+resize and font readiness, without scrolling, row/day quotas or blank headings.
+Distant chronology does not imply an urgent preparation requirement.
+
+Verification: 793 Python and 72 JavaScript tests, Ruff and privacy checks passed.
+All 22 fictional wall scenarios passed at 1920×1080 and 1366×768. The measured
+sparse-agenda case fits eight/seven future days respectively and restores rows
+after resizing. Generated interactive tablet/phone-size fixtures verify decorations
+remain outside copy and controls. Live native configuration readback verified the
+wall and both existing specialist panels; the Pi capture confirmed normal night
+mode and equally sized forecast temperatures. Daytime fitting is synthetic browser
+evidence, not a claim that daytime was observed live after the evening deployment.

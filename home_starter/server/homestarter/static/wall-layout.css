@@ -14,7 +14,7 @@ home-starter-ambient-wall { display:block; }
 .wall-weather-reading svg { width:64px; height:64px; color:#f9d768; stroke-width:1.5; }
 .wall-weather-reading strong { font-size:64px; font-weight:400; }
 .wall-temperature { display:flex; align-items:baseline; gap:8px; white-space:nowrap; }
-.wall-temperature > span { font-size:40px; }
+.wall-temperature > span { font-size:64px; }
 .wall-temperature small { font-size:22px; color:var(--wall-muted); }
 .wall-weather h2 { font-size:28px; font-weight:400; margin-top:8px; }
 .wall-weather p { color:var(--wall-muted); font-size:24px; margin-top:8px; }
@@ -186,7 +186,7 @@ home-starter-ambient-wall { display:block; }
  .wall-weather-reading { gap:12px; }
  .wall-weather-reading svg { width:48px; height:48px; }
  .wall-weather-reading strong { font-size:48px; }
- .wall-temperature > span { font-size:30px; }
+ .wall-temperature > span { font-size:48px; }
  .wall-temperature small { font-size:17px; }
  .wall-weather h2 { font-size:22px; margin-top:6px; }
  .wall-weather p { font-size:19px; margin-top:4px; }
@@ -284,7 +284,7 @@ home-starter-ambient-wall { display:block; }
 .hs-wall[data-night="true"] .wall-weather { justify-self:end; }
 .hs-wall[data-night="true"] .wall-weather-reading strong { font-size:48px; }
 .hs-wall[data-night="true"] .wall-weather-reading svg { width:48px; height:48px; }
-.hs-wall[data-night="true"] .wall-temperature > span { font-size:32px; }
+.hs-wall[data-night="true"] .wall-temperature > span { font-size:48px; }
 .hs-wall[data-night="true"] .wall-weather h2 { font-size:24px; }
 .hs-wall[data-night="true"] .wall-bottom .wall-surface { background:#07131d30; box-shadow:none; backdrop-filter:none; padding:14px 18px; border-radius:16px; }
 .hs-wall[data-night="true"] .wall-status-icon,.hs-wall[data-night="true"] .wall-status-cell:first-child .wall-status-icon { width:40px; height:40px; background:none; }
@@ -299,7 +299,14 @@ home-starter-ambient-wall { display:block; }
  .hs-wall[data-night="true"] .wall-weather-reading { flex-wrap:wrap; gap:8px; }
  .hs-wall[data-night="true"] .wall-weather-reading strong { font-size:36px; }
  .hs-wall[data-night="true"] .wall-weather-reading svg { width:32px; height:32px; }
- .hs-wall[data-night="true"] .wall-temperature > span { font-size:26px; }
+ .hs-wall[data-night="true"] .wall-temperature > span { font-size:36px; }
  .hs-wall[data-night="true"] .wall-weather h2 { font-size:20px; }
  .hs-wall[data-night="true"] .wall-bottom { grid-row:3; }
 }
+
+.wall-upcoming [hidden],.wall-upcoming[hidden] { display:none !important; }
+
+/* Extra discoveries occupy the sky gap between the clock and weather, never cards. */
+.wall-header { position:relative; }
+.wall-header::after { content:""; position:absolute; width:46px; height:46px; left:50%; top:4px; background-image:var(--hs-decor-image); background-position:var(--hs-decor-position); background-size:var(--hs-decor-size); background-repeat:no-repeat; pointer-events:none; opacity:.8; }
+.hs-wall[data-night="true"] .wall-header::after { opacity:.45; }

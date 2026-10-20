@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 
-const render=new Function("hass","variables","html","window","helpers",readFileSync("home_starter/server/homestarter/static/panel-content.js","utf8"));
+const render=new Function("hass","variables","html","window","helpers",readFileSync("home_starter/server/homestarter/static/decorative.js","utf8")+"\n"+readFileSync("home_starter/server/homestarter/static/panel-content.js","utf8"));
 const html=(strings,...values)=>strings.map((s,i)=>s+(typeof values[i]==="string"?values[i]:"")).join("");
 function scene(states={},changes={},user={},search="") {
   return render({states,user,config:{time_zone:"Australia/Sydney"},locale:{language:"en"}}, {panel:{title:"Example panel",base:"/example-panel",path:"/example-panel/home",targets:{climate:"/example-panel/climate"},people:[{name:"House",path:"/example-panel/home",icon:"mdi:home-outline"}],climate:"climate.example",zones:[],calendars:[],media:[],lights:[],alerts:[],bins:false,...changes}},html,{location:{search}});

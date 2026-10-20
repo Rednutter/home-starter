@@ -143,6 +143,8 @@ def reference_panels(rows, future, people, signals, local, cue, issues, exceptio
         week_days.setdefault(row["date"], row)
     primary = tomorrow if focus["preview"] else dated or tomorrow or later
     label = "Tomorrow" if focus["preview"] else "Today" if dated else "Tomorrow" if tomorrow else "Coming up"
+    agenda_date = primary[0]["date"] if primary else focus["date"]
+    primary = [r for r in primary if r["date"] == agenda_date]
     secondary = dated if focus["preview"] else dated[1:] if len(dated) > 1 else tomorrow if dated else later
     secondary_label = "Tonight" if focus["preview"] else "Later today" if len(dated) > 1 else "Tomorrow" if dated and tomorrow else "Week ahead"
     context_cards = [
@@ -270,7 +272,8 @@ def reference_panels(rows, future, people, signals, local, cue, issues, exceptio
         "cards": cards[:3],
         "timeline": {
             "label": label,
-            "date_label": (local + timedelta(days=int(label == "Tomorrow"))).strftime("%a %d %b"),
+            "date": agenda_date,
+            "date_label": date.fromisoformat(agenda_date).strftime("%a %d %b"),
             "items": primary[:5],
         },
         "secondary": {"label": secondary_label, "items": [] if focus.get("night") else secondary[:3]},
@@ -386,7 +389,8 @@ def school_placement(panels, school, rows, future, settings, people, local):
         panels["timeline"]["label"] == "Tomorrow" and school["date"] == (local + timedelta(days=1)).date().isoformat()
     ):
         panels["timeline"].update(
-            label=panels["focus"]["label"],
+            label="Today" if school["date"] == local.date().isoformat() else "Tomorrow",
+            date=school["date"],
             date_label=date.fromisoformat(school["date"]).strftime("%a %d %b"),
             items=sorted(selected, key=lambda r: r.get("starts_at") or school["date"]),
         )
@@ -476,7 +480,7 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
             rows.append(row)
             if leave and e["end"] > local:
                 movements.append((leave, e["start"], row))
-        elif day <= 7 or link.get("early_attention") or link.get("wall_role") in ("preparation", "holiday"):
+        else:
             future.append(row)
     rows.sort(key=lambda r: r["starts_at"])
     future.sort(key=lambda r: r["starts_at"])
@@ -634,7 +638,7 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
     # One chronological surface: detailed focus day, then compact future days.
     # Build from all admitted events so tomorrow is not lost to the old
     # secondary-panel selection or the week preview's per-day truncation.
-    focus_date = panels["focus"]["date"]
+    focus_date = panels["timeline"]["date"]
     days = {}
     presented_ids = {r["id"] for r in panels["timeline"]["items"]}
     upcoming = [*future, *(school.get("attendance", []) if school and school["date"] != focus_date else [])]
@@ -642,9 +646,16 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
         if row["date"] > focus_date and row["id"] not in presented_ids:
             day_label = "Tomorrow" if row["day_offset"] == 1 else row["day_label"]
             days.setdefault(row["date"], {"date": row["date"], "label": day_label, "items": []})["items"].append(row)
-    panels["upcoming_days"] = list(days.values())[:6] if not focus["night"] else []
+    panels["upcoming_days"] = list(days.values()) if not focus["night"] else []
     if focus["night"]:
         panels["week"] = []
+    # Chronology can fill the available space through the admitted horizon;
+    # distant events still need explicit preparation intent to demand attention.
+    attention_future = [
+        r
+        for r in future
+        if r["day_offset"] <= 7 or links.get(r["id"], {}).get("early_attention") or links.get(r["id"], {}).get("wall_role") in ("preparation", "holiday")
+    ]
     # Row/session deadlines expire independently in the renderer. Expiring a
     # transient must not invalidate the underlying board until the next poll.
     return {
@@ -666,7 +677,7 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
         else "Still to come today",
         "next_movement": cue,
         "today_items": rows[:today_limit],
-        "future_attention": future[:future_limit] if urgent or baseline == "overnight" else future[:17],
+        "future_attention": attention_future[:future_limit] if urgent or baseline == "overnight" else attention_future[:17],
         "household_exception": exceptions[:2],
         "active_context": transient[:2],
         "weather": weather,

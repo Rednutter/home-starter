@@ -6,6 +6,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from .context import entity_id
+from .decorative import styles as decoration_styles
 
 
 @lru_cache(maxsize=1)
@@ -20,14 +21,14 @@ def wallpapers():
         image = base64.b64encode((static / "wallpapers" / row["file"]).read_bytes()).decode()
         images.append({"id": row["id"], "period": row["period"]})
         styles.append(f"--wallpaper-{row['id']}:url(data:image/webp;base64,{image});")
-    return images, "".join(styles)
+    return images, "".join(styles) + decoration_styles()
 
 
 def apply(generated, house, policy):
     from .surfaces import fingerprint
 
     static = Path(__file__).parent / "static"
-    source = (static / "wall-wallpaper.js").read_text(encoding="utf-8") + "\n" + (static / "wall-content.js").read_text(encoding="utf-8")
+    source = "\n".join((static / name).read_text(encoding="utf-8") for name in ("decorative.js", "wall-wallpaper.js", "wall-content.js"))
     css = (static / "wall-layout.css").read_text(encoding="utf-8")
     backdrop = static / "wall-morning.jpg"
     image = "url(data:image/jpeg;base64," + base64.b64encode(backdrop.read_bytes()).decode() + ")" if backdrop.exists() else "none"

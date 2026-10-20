@@ -92,7 +92,7 @@ def apply_pages(generated, house, items, areas, policy):
     common["scopes"] = {}
     common["alerts"] = [control(i) for i in generated["admitted"] if i["level"] == 0]
     shell = (static / "panel-shell.js").read_text(encoding="utf-8")
-    body = (static / "panel-music.js").read_text(encoding="utf-8") + "\n" + (static / "panel-pages.js").read_text(encoding="utf-8")
+    body = "\n".join((static / name).read_text(encoding="utf-8") for name in ("decorative.js", "panel-music.js", "panel-pages.js"))
     css = overview["extra_styles"].replace(".hs-panel {", ".hs-panel, #card {", 1) + "\n" + (static / "panel-pages.css").read_text(encoding="utf-8")
     config.setdefault("button_card_templates", {})["home_starter_page"] = {
         "show_icon": False,

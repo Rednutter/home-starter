@@ -25,7 +25,7 @@ def main():
             .read_text(encoding="utf-8")
             .replace("const now = new Date();", "const now = new Date(" + json.dumps(value["clock"]) + ");")
         )
-        source = (static / "wall-wallpaper.js").read_text(encoding="utf-8") + "\n" + source
+        source = "\n".join((static / name).read_text(encoding="utf-8") for name in ("decorative.js", "wall-wallpaper.js")) + "\n" + source
         cfg = {"title": "Fictional wall fixture", "surface_id": "example_wall", "epoch": 0, "context": "sensor.fixture"}
         cfg["wallpapers"], wallpaper_styles = wallpapers()
         attrs = {
@@ -48,8 +48,10 @@ def main():
             + json.dumps(hass)
             + ","
             + json.dumps({"wall_json": json.dumps(cfg)})
-            + ",(_,body)=>body,{innerHeight:window.innerHeight,customElements:window.customElements,"
+            + ",(_,body)=>{window.fixtureBody=body;return '<home-starter-ambient-wall></home-starter-ambient-wall>';},"
+            + "{innerHeight:window.innerHeight,customElements:window.customElements,"
             + "matchMedia:window.matchMedia.bind(window),location:{search:'?kiosk'}});"
+            + "document.querySelector('home-starter-ambient-wall').content=window.fixtureBody;"
         )
         page = (
             "<!doctype html><html lang='en'><meta charset='utf-8'><meta name='viewport' content='width=device-width'><title>Fictional "

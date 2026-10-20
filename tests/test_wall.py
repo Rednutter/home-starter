@@ -39,7 +39,18 @@ def test_reference_wall_uses_bounded_single_panel_and_no_operating_actions():
     assert root["tap_action"] == root["hold_action"] == root["double_tap_action"] == {"action": "none"}
     assert "data:image/jpeg;base64" in root["extra_styles"]
     catalogue = json.loads(root["variables"]["wall_json"])["wallpapers"]
-    assert len(catalogue) == root["extra_styles"].count("data:image/webp;base64,") == 20
+    assert len(catalogue) == 20
+    assert root["extra_styles"].count("data:image/webp;base64,") == 23
     assert "const wallWallpaper=" in root["custom_fields"]["wall"]
     assert len(json.dumps(generated["config"]).encode()) < 4 * 1024 * 1024
     assert "call-service" not in str(root) and '"action": "navigate"' not in str(root)
+
+
+def test_extra_decorations_have_recorded_generated_provenance_and_packaged_hashes():
+    static = Path(__file__).parents[1] / "home_starter/server/homestarter/static"
+    manifest = json.loads((static / "decorations.json").read_text())
+    assert manifest["not_live_household_data"] is True
+    assert manifest["generator"] == "OpenAI built-in image_gen"
+    assert sum(row.get("count", 1) for row in manifest["images"]) == 42
+    for row in manifest["images"]:
+        assert sha256((static / row["file"]).read_bytes()).hexdigest() == row["sha256"]

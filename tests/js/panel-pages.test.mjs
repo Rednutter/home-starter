@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 const shell=readFileSync('home_starter/server/homestarter/static/panel-shell.js','utf8');
-const content=readFileSync('home_starter/server/homestarter/static/panel-pages.js','utf8');
+const content=readFileSync('home_starter/server/homestarter/static/decorative.js','utf8')+'\n'+readFileSync('home_starter/server/homestarter/static/panel-pages.js','utf8');
 const render=new Function('hass','variables','html','window','helpers',shell+'\n'+readFileSync('home_starter/server/homestarter/static/panel-music.js','utf8')+'\n'+content);
 const base='/example-panel';
 const player={entity_id:'media_player.example',name:'Example room speaker',domain:'media_player',interaction:'both',attributes:{}};

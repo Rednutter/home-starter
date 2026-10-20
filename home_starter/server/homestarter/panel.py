@@ -6,6 +6,8 @@ from html import escape
 from pathlib import Path
 from urllib.parse import urlsplit
 
+from .decorative import styles as decoration_styles
+
 
 def resource_ready(resources, component="button-card"):
     """Only recognize an installed same-origin module, never fetch third-party JS."""
@@ -319,7 +321,7 @@ def apply(generated, house, climate, policy, *, items=(), areas=()):
     from .surfaces import card_for, fingerprint, navigation, section
 
     static = Path(__file__).parent / "static"
-    content = (static / "panel-content.js").read_text(encoding="utf-8")
+    content = (static / "decorative.js").read_text(encoding="utf-8") + "\n" + (static / "panel-content.js").read_text(encoding="utf-8")
     css = (static / "panel-layout.css").read_text(encoding="utf-8")
     backdrop = static / "panel-room.jpg"
     image = "url(data:image/jpeg;base64," + base64.b64encode(backdrop.read_bytes()).decode() + ")" if backdrop.exists() else "none"
@@ -330,7 +332,7 @@ def apply(generated, house, climate, policy, *, items=(), areas=()):
         asset = static / f"panel-{kind}.jpg"
         value = "url(data:image/jpeg;base64," + base64.b64encode(asset.read_bytes()).decode() + ")" if asset.exists() else "none"
         art.append(f"--hs-{kind}-art: {value};")
-    css = ":host { " + " ".join(art) + " }\n" + css
+    css = ":host { " + " ".join(art) + decoration_styles() + " }\n" + css
     config = generated["config"]
     base = "/" + generated["url_path"]
     # Every overview destination remains useful even before sources are selected.

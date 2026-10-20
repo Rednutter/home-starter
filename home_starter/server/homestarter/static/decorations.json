@@ -1,0 +1,32 @@
+{
+  "generator": "OpenAI built-in image_gen",
+  "date": "2026-10-20",
+  "not_live_household_data": true,
+  "conversion": "Transparent cutouts cropped to alpha bounds, resized within 192x128, WebP quality 82. Original generated images retained locally. Atlas cells individually alpha-cropped and padded into an 8x5 grid of 128px square cells. Final atlas resized to 640x400 (80px square cells), WebP quality 72; displayed at 44\u201346px.",
+  "images": [
+    {
+      "id": "saucer",
+      "file": "decor-saucer.webp",
+      "sha256": "08bd6a61ed34a18ad2cf282d14fec772882049be2427f07bd6d25be8820276c4",
+      "source_sha256": "58234cab89190239c7b01086c9b45685f1111144e85c2b0589ce78fdcbb96258",
+      "description": "Distant pewter flying saucer"
+    },
+    {
+      "id": "owl",
+      "file": "decor-owl.webp",
+      "sha256": "d6050651d7b088291de69f66b7ecf14cbcbdc7c208855d2fbd6b2b53250506d5",
+      "source_sha256": "722478adb9c0946df1b42e72855bf1a839ccc347965d0c842448e3bd440e7ee9",
+      "description": "Distant bronze mechanical owl in flight"
+    },
+    {
+      "id": "atlas",
+      "file": "decor-atlas.webp",
+      "sha256": "1de58caec85cff80b2ce51db9b3c40d68d01f0a105d9680c19d3b1b21f18c218",
+      "source_sha256": "e631603e35d1359973814d0d28e291183306e57f5fa87f1d4f10265681f43fe5",
+      "columns": 8,
+      "rows": 5,
+      "count": 40,
+      "description": "Forty distinct photographic cutouts: flying saucer, owl, balloon, fox, rocket, turtle, crane, airship, astronaut, kangaroo, sailing ship, dragonfly, cat, rover, whale, biplane, rabbit cloud, dragon cloud, elephant cloud, whale constellation, ringed planet, kookaburra, snail, dinosaur, submarine, dog, telescope, flying fish, floating island, penguin, butterfly, satellite, echidna, hang-glider, platypus, balloon treehouse, crescent, wombat, flying car, octopus."
+    }
+  ]
+}

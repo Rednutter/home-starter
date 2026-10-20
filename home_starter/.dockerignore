@@ -13,6 +13,10 @@
 !server/homestarter/static/wall-morning.jpg
 !server/homestarter/static/wall-imagery.json
 !server/homestarter/static/wallpapers.json
+!server/homestarter/static/decor-saucer.webp
+!server/homestarter/static/decor-owl.webp
+!server/homestarter/static/decor-atlas.webp
+!server/homestarter/static/decorations.json
 !server/homestarter/static/wallpapers/
 !server/homestarter/static/wallpapers/morning-blue-hour.webp
 !server/homestarter/static/wallpapers/morning-river-mist.webp

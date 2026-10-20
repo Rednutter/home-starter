@@ -123,6 +123,9 @@ def forbidden_path(path: str) -> bool:
             "home_starter/icon.png",
             "home_starter/logo.png",
             "home_starter/server/homestarter/static/wall-morning.jpg",
+            "home_starter/server/homestarter/static/decor-saucer.webp",
+            "home_starter/server/homestarter/static/decor-owl.webp",
+            "home_starter/server/homestarter/static/decor-atlas.webp",
             *(
                 f"home_starter/server/homestarter/static/wallpapers/{period}-{name}.webp"
                 for period, names in {

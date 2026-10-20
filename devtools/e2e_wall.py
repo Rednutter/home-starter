@@ -48,6 +48,8 @@ def main():
                 assert labels_inline, (name, width, "temperature label stacked below number")
                 label_tops = wall.locator(".wall-temperature small").evaluate_all("nodes=>nodes.map(e=>e.getBoundingClientRect().top)")
                 assert not label_tops or max(label_tops) - min(label_tops) < 2, (name, width, "weather labels have different baselines")
+                sizes = wall.locator(".wall-temperature > :first-child").evaluate_all("nodes=>nodes.map(e=>getComputedStyle(e).fontSize)")
+                assert len(set(sizes)) <= 1, (name, width, "forecast temperature demoted")
                 assert not wall.locator(
                     ".wall-family-card:not(:has(.wall-card-fact,.wall-school-periods,.wall-school-fallback,.wall-school-rules,.wall-night-summary,.wall-night-rule))"
                 ).count(), (
@@ -105,6 +107,26 @@ def main():
                 ):
                     page.screenshot(path=str(output / (name + "-" + str(width) + ".png")))
                 print(f"{name} {width}x{height}: ambient anchors, no empty islands, borders, clipping or overlapping times")
+            page.goto((source / "canonical_weekday.html").as_uri())
+            fitted = page.evaluate("""async()=>{
+                const host=document.querySelector('home-starter-ambient-wall'),panel=host.querySelector('.wall-timeline');
+                panel.querySelector(':scope > ol').innerHTML='';
+                let future=panel.querySelector('.wall-upcoming');
+                if(!future){future=document.createElement('div');future.className='wall-upcoming';panel.append(future);}
+                future.innerHTML=Array.from({length:18},(_,n)=>`<section class="wall-upcoming-day"><h3>Day ${n+1}</h3>
+                  <ol><li class="wall-upcoming-row"><span class="wall-dot"></span><time>9:00</time><p>Activity ${n+1}</p></li></ol></section>`).join('');
+                const fit=async()=>{host._fitAgenda();await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);};
+                await fit();
+                const count=()=>[...future.querySelectorAll('li')].filter(e=>!e.hidden).length;
+                const full=count(),last=[...future.querySelectorAll('li')].filter(e=>!e.hidden).at(-1);
+                const inside=last.getBoundingClientRect().bottom<=panel.getBoundingClientRect().bottom;
+                panel.style.maxHeight='350px';await fit();const compact=count();
+                panel.style.maxHeight='';await fit();
+                return {full,compact,restored:count(),inside};
+            }""")
+            assert fitted["full"] > 6 and fitted["compact"] < fitted["full"], (width, fitted)
+            assert fitted["restored"] == fitted["full"] and fitted["inside"], (width, fitted)
+            print(f"Measured agenda {width}: {fitted['full']} future days fit; resize restores full rows without clipping")
             if width == 1920:
                 page.goto((source / "canonical_evening.html").as_uri())
                 result = page.evaluate("""async()=>{

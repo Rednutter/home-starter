@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-const render=new Function("hass","variables","html","window",["wall-wallpaper.js","wall-content.js"].map(name=>readFileSync(new URL("../../home_starter/server/homestarter/static/"+name,import.meta.url),"utf8")).join("\n"));
+const render=new Function("hass","variables","html","window",["decorative.js","wall-wallpaper.js","wall-content.js"].map(name=>readFileSync(new URL("../../home_starter/server/homestarter/static/"+name,import.meta.url),"utf8")).join("\n"));
 function scene(model={},attrs={},extraStates={},configChanges={}) {
  const until=new Date(Date.now()+60000).toISOString();
  const config={title:"Example board",surface_id:"wall",epoch:2,context:"sensor.context",...configChanges};

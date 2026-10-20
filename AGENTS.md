@@ -14,6 +14,9 @@ rules must be mounted-wall/route scoped and removed on interactive navigation.
 Wall Now playing reads active MA queues, once per group, never deduplicated by
 title. Radio shows catalogue station names; publish no raw queue/stream payloads.
 The right timeline is one surface with a content-positioned future-day divider.
+Its label/date follow the actual detailed day, independently of school preview.
+Admit the full selected three-week horizon; fit whole future entries to measured
+space, without a weekday cutoff, fixed row quota, scrolling or clipped entries.
 Pi music uses 3.5 mm to the stereo amp; Sendspin's PortAudio name is
 `bcm2835 Headphones`, not the ALSA plughw string. Keep the USB mic independent.
 Kitchen Wall uses labwc/Wayland: use its dedicated transparent cursor theme,
@@ -28,7 +31,10 @@ Restore full detail at 05:00.
 Wallpapers are local generated landscapes with subtle hidden decorative details.
 Keep one selection per morning/day/afternoon/evening/night, stable on reload and
 across midnight; choose from each period's pool daily, never rotate within it.
-Weather preview emphasises labelled High/Low; daytime emphasises Now. No arrows.
+Extra discoveries come from a 42-item local generated pool, placed clear of copy
+and cards on the wall and interactive Media/person artwork. Select per screen
+and daypart; remain stable on reload and across midnight; never intercept taps.
+Weather uses equally sized labelled High/Low in preview and Now/High by day. No arrows.
 Weather stays two lines: balanced icon/inline temperature labels, then one brief
 description. Extra text is reserved for meaningful weather exceptions.
 Pi output power is separate: off 22:00–06:00 Australia/Sydney using wlopm and the

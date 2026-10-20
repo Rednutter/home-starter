@@ -90,15 +90,9 @@ const schoolPanel=!night&&school?.children?.length?school.children.map((child,n)
  return `<section class="wall-family-card wall-school-child wall-tone-${n%3}" data-kind="person" data-key="school-${esc(child.person)}" data-status="${esc(child.status)}" style="grid-column:${n+1}" data-dense="${dense}" data-importance="${esc(child.importance || "upcoming")}"><header><div class="wall-avatar">${avatar({title:child.name,avatar_entity:cfg.people?.[child.person]})}</div><div><h2>${esc(child.name)}</h2><p class="wall-person-day" data-departure="${Boolean(child.next_departure)}">${readyLabel}</p></div></header><div class="wall-card-facts wall-school-day">${periods.length?`<ol class="wall-school-periods" style="grid-template-rows:${grid.slots.join(" ")}">${periods.map(periodRow).join("")}</ol>${child.periods.length>shown?`<p class="wall-school-more">+${child.periods.length-shown} later classes</p>`:""}`:!dated.length&&!rules.length?`<p class="wall-school-fallback">${esc(child.fallback)}</p>`:""}</div><div class="wall-school-extra">${dated.length?`<div class="wall-school-dated">${dated.map(r=>fact(r,true)).join("")}</div>`:""}${requirements}${upcoming.map(r=>fact(r,true)).join("")}</div></section>`;
 }).join(""):"";
 const upcomingDays=night?[]:(model.upcoming_days || model.week || []);
-const upcoming=(budget)=>{
- let remaining=small?6:8;
+const upcoming=()=>{
  return upcomingDays.map((day,n)=>{
-  const items=[];budget-=small?30:38;
-  for(const row of rows(day.items,remaining)){
-   const cost=(small?29:36)*(1+Math.floor((row.title.length+(row.people?.join(" ").length || 0))/32));
-   if(cost>budget)break;
-   items.push(row);budget-=cost;remaining--;
-  }
+  const items=rows(day.items,Infinity);
   if(!items.length)return "";
   return `<section class="wall-upcoming-day"><h3>${esc(day.label)}</h3><ol>${items.map(r=>`<li class="wall-upcoming-row wall-tone-${n%3}"><span class="wall-dot"></span><time>${esc(shortTime(r.time))}</time><p>${esc(nice(r.title))}${r.people?.length&&!r.person_title?`<span> · ${esc(r.people.join(" · "))}</span>`:""}</p></li>`).join("")}</ol></section>`;
  }).join("");
@@ -107,8 +101,7 @@ const timeline=(panel,secondary=false)=>{
  const available=rows(panel?.items,secondary?3:small?4:5),items=[];
  let capacity=secondary?(small?2:3):small?5:7;
  for(const r of available){const cost=1+(r.title.length>28?0.5:0)+(!secondary&&(r.detail||location(r))?0.5:0)+(secondary&&r.day_offset>0?0.5:0);if(cost>capacity&&items.length)break;items.push(r);capacity-=cost;}
- const primaryHeight=items.reduce((height,r)=>height+(small?55:65)+(r.detail||location(r)||r.people?.length?(small?30:35):0)+(r.title.length>28?(small?25:31):0),0);
- const future=upcoming(window.innerHeight*.76-(small?110:130)-primaryHeight);
+ const future=upcoming();
  if(!items.length&&!future)return "";
  return `<section class="wall-surface ${secondary?"wall-secondary":"wall-timeline"}"><header><h2>${esc(panel?.label || (secondary?"Upcoming":"Today"))}</h2>${!secondary?`<p>${esc(panel?.date_label || date({weekday:"short",day:"numeric",month:"short"}))}</p>`:""}</header><ol>${items.map((r,n)=>`<li class="wall-line-item wall-tone-${n%3}"><time aria-label="${esc((r.time&&r.time!=="All day"?"Starts ":"")+(r.time || r.when))}">${r.time&&r.time!=="All day"?"<small>Starts</small>":""}${esc(shortTime(r.time || r.when))}</time><span class="wall-dot"></span><div><h3>${esc(nice(r.title))}</h3><div class="wall-line-meta">${secondary?(r.day_offset>0?`<p>${esc(r.day_label)}</p>`:""):`${r.people?.length&&!r.person_title?`<p>${esc(r.people.join(" · "))}</p>`:""}${location(r)?`<p>${esc(location(r))}</p>`:""}${r.detail?`<p class="wall-leave">${icon("car")}${esc(r.leave_at&&r.id!==model.next_movement?.id?"Leave "+clock(r.leave_at):r.detail)}</p>`:""}`}</div></div></li>`).join("")}</ol>${future?`<div class="wall-upcoming" aria-label="Upcoming days">${future}</div>`:""}</section>`;
 };
@@ -160,7 +153,7 @@ if(session?.kind==="camera" && /^camera\.[a-z0-9_]+$/.test(session.camera || "")
 const overlay=session?`<section class="wall-session" aria-label="Temporary display session"><div><h2>${esc(session.title)}</h2>${picture}${session.kind==="camera"&&!picture?"<p>Camera view unavailable</p>":""}<p class="wall-session-body">${esc(session.body)}</p><p>Returns to the family board automatically</p></div></section>`:"";
 const alerts=exceptions.filter(r=>r.kind!=="weather");
 const primaryAgenda=night?"":timeline(model.timeline);
-const body=`<main class="hs-wall" data-fresh="${fresh}" data-night="${night}" data-wallpaper-period="${wallpaper.period}" data-wallpaper="${wallpaper.id || "fallback"}" data-wall-surface="${esc(cfg.surface_id)}" data-cursor-hidden="${kiosk}" data-state="${esc(model.day_state)}" data-mode="${esc(model.focus?.mode || "today")}" data-phase="${esc(model.phase || "morning")}" data-agenda="${primaryAgenda?"visible":"hidden"}" style="--wall-chrome:${kiosk?0:56}px${wallpaper.id?`;--wall-landscape:var(--wallpaper-${wallpaper.id})`:""}" aria-label="${esc(cfg.title)} household board">${alerts.length?`<aside class="wall-alerts">${icon("alert")}${esc(alerts.map(r=>r.title+" · "+r.detail).join(" · "))}</aside>`:""}<header class="wall-header"><div class="wall-clock"><time>${esc(date({hour:"numeric",minute:"2-digit",hour12:false}).replace(/^0/,""))}</time><p>${esc(date({weekday:"long",day:"numeric",month:"short"})).replace(",","")}</p>${nightReadiness}</div>${weatherPanel}</header>${night?"":`<div class="wall-family${schoolPanel?" wall-family-school":""}" data-incomplete="${familyIncomplete}" data-count="${schoolPanel?school.children.length:cards.length}" aria-label="${esc(school?.label || "Household plans")}">${schoolPanel || family}</div><aside class="wall-agenda">${primaryAgenda}</aside>`}<footer class="wall-bottom">${household}${cameraPanel}</footer>${overlay}</main>`;
+const body=`<main class="hs-wall" data-fresh="${fresh}" data-night="${night}" data-wallpaper-period="${wallpaper.period}" data-wallpaper="${wallpaper.id || "fallback"}" data-wall-surface="${esc(cfg.surface_id)}" data-cursor-hidden="${kiosk}" data-state="${esc(model.day_state)}" data-mode="${esc(model.focus?.mode || "today")}" data-phase="${esc(model.phase || "morning")}" data-agenda="${primaryAgenda?"visible":"hidden"}" style="${decorationStyle(now,hass.config.time_zone,cfg.surface_id)};--wall-chrome:${kiosk?0:56}px${wallpaper.id?`;--wall-landscape:var(--wallpaper-${wallpaper.id})`:""}" aria-label="${esc(cfg.title)} household board">${alerts.length?`<aside class="wall-alerts">${icon("alert")}${esc(alerts.map(r=>r.title+" · "+r.detail).join(" · "))}</aside>`:""}<header class="wall-header"><div class="wall-clock"><time>${esc(date({hour:"numeric",minute:"2-digit",hour12:false}).replace(/^0/,""))}</time><p>${esc(date({weekday:"long",day:"numeric",month:"short"})).replace(",","")}</p>${nightReadiness}</div>${weatherPanel}</header>${night?"":`<div class="wall-family${schoolPanel?" wall-family-school":""}" data-incomplete="${familyIncomplete}" data-count="${schoolPanel?school.children.length:cards.length}" aria-label="${esc(school?.label || "Household plans")}">${schoolPanel || family}</div><aside class="wall-agenda">${primaryAgenda}</aside>`}<footer class="wall-bottom">${household}${cameraPanel}</footer>${overlay}</main>`;
 if(window.customElements&&typeof HTMLElement!=="undefined"&&!window.customElements.get("home-starter-ambient-wall")) {
  // HA uses nested shadow roots. Scope the document-wide rule to this mounted wall
  // route in kiosk mode; remove every injected style/listener on navigation or detach.
@@ -198,8 +191,33 @@ if(window.customElements&&typeof HTMLElement!=="undefined"&&!window.customElemen
    dispose(){clear();for(const event of events)view.removeEventListener(event,sync);}};
  };
  class AmbientWall extends HTMLElement {
-  connectedCallback(){this._cursorGuard ||= cursorGuard(this);this._cursorGuard.set(this.querySelector('.hs-wall'));}
-  disconnectedCallback(){this._cursorGuard?.dispose();this._cursorGuard=null;}
+  connectedCallback(){
+   this._cursorGuard ||= cursorGuard(this);this._cursorGuard.set(this.querySelector('.hs-wall'));
+   this._resize ||= new ResizeObserver(()=>this._fitAgenda());this._resize.observe(this);
+   document.fonts?.ready.then(()=>{if(this.isConnected)this._fitAgenda();});
+   this._fitAgenda();
+  }
+  disconnectedCallback(){this._cursorGuard?.dispose();this._cursorGuard=null;this._resize?.disconnect();this._resize=null;cancelAnimationFrame(this._fitFrame);}
+  _fitAgenda(){
+   cancelAnimationFrame(this._fitFrame);
+   this._fitFrame=requestAnimationFrame(()=>{
+    const panel=this.querySelector('.wall-timeline'),future=panel?.querySelector('.wall-upcoming');
+    if(!future)return;
+    const days=[...future.children];future.hidden=false;
+    for(const day of days){day.hidden=false;for(const row of day.querySelectorAll('li'))row.hidden=false;}
+    const bottom=panel.getBoundingClientRect().bottom-parseFloat(getComputedStyle(panel).paddingBottom);
+    let full=false,visible=0;
+    for(const day of days){
+     let count=0;
+     for(const row of day.querySelectorAll('li')){
+      if(full||row.getBoundingClientRect().bottom>bottom){row.hidden=true;full=true;}
+      else {count++;visible++;}
+     }
+     day.hidden=count===0;
+    }
+    future.hidden=visible===0;
+   });
+  }
   set content(value) {
    if(value===this._content)return;
    this._content=value;
@@ -208,7 +226,7 @@ if(window.customElements&&typeof HTMLElement!=="undefined"&&!window.customElemen
    const next=parsed.content.querySelector(".hs-wall"),old=this.querySelector(".hs-wall");
    const keys=root=>[...(root?.querySelectorAll("[data-key]") || [])].map(e=>e.dataset.key).join("|");
    const changed=old&&next&&(keys(old)!==keys(next)||old.dataset.mode!==next.dataset.mode);
-   const update=()=>{if(generation===this._generation){this.innerHTML=value;this._cursorGuard?.set(this.querySelector(".hs-wall"));}};
+   const update=()=>{if(generation===this._generation){this.innerHTML=value;this._cursorGuard?.set(this.querySelector(".hs-wall"));this._fitAgenda();}};
    this._transition?.skipTransition();
    if(changed&&old.dataset.fresh==="true"&&next.dataset.fresh==="true"&&document.startViewTransition&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     this._transition=document.startViewTransition(update);

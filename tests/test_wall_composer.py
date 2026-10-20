@@ -331,3 +331,37 @@ def test_evening_preparation_uses_only_confirmed_next_day_rules_and_respects_exc
 )
 def test_wall_locations_are_human_labels_without_postal_addresses(raw, title, expected):
     assert short_location(raw, title) == expected
+
+
+def test_school_agenda_heading_matches_its_date_instead_of_household_preview():
+    from homestarter.wall_composer import school_placement
+
+    case = scenario("school_monday")
+    model = case["model"]
+    assert model["timeline"]["label"] == "Today"
+    model["focus"].update(label="Tomorrow", preview=True)
+    result = school_placement(model, model["school"], [], [], case["settings"], case["people"], case["now"].astimezone(ZoneInfo(ZONE)))
+    assert result["timeline"]["label"] == "Today"
+    assert result["timeline"]["date"] == model["school"]["date"]
+
+
+def test_upcoming_agenda_admits_more_than_six_days_beyond_friday():
+    case = scenario("completely_quiet")
+    now = case["now"]
+    events = []
+    for offset in range(1, 18):
+        start = (now + timedelta(days=offset)).replace(hour=10, minute=0)
+        events.append(
+            {
+                "key": f"future-{offset}",
+                "calendar": "calendar.family",
+                "title": f"Activity {offset}",
+                "start": start,
+                "end": start + timedelta(hours=1),
+                "location": "",
+                "all_day": False,
+            }
+        )
+    model = compose(case["view"], events, case["settings"], {}, now, ZONE)
+    assert len(model["upcoming_days"]) > 6
+    assert model["upcoming_days"][-1]["date"] == events[-1]["start"].date().isoformat()

@@ -330,7 +330,7 @@ const click = event => {
 
  if(event.target.closest?.('[data-command]')) {if(event.target.type !== "range") void command(event);} else navigate(event);};
 
-let pageMarkup=(state.error ? `<p class="hs-feedback" role="alert">${esc(state.error)}</p>` : "")+body;
+let pageMarkup=`<div style="${decorationStyle(new Date(),hass.config.time_zone,common.surface_id+':'+(focus.owner || 'house'))}">`+(state.error ? `<p class="hs-feedback" role="alert">${esc(state.error)}</p>` : "")+body+"</div>";
 if(musicBackend && music && musicState.editing && state.bodyMarkup !== undefined) pageMarkup=state.bodyMarkup;
 else state.bodyMarkup=pageMarkup;
 const pageTemplate=html`<div class="hs-page-content" @click=${click} @change=${change} @submit=${musicSearch} @input=${musicInput} @mousedown=${stop} @touchstart=${stop} @touchend=${stop} .innerHTML=${pageMarkup}></div>`;

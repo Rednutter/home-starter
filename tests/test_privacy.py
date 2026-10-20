@@ -59,6 +59,11 @@ def test_packaging_uses_deny_by_default_source_allowlist():
     assert included("server/homestarter/static/wall-morning.jpg")
     assert included("server/homestarter/static/wall-imagery.json")
     assert included("server/homestarter/static/wallpapers.json")
+    for name in ("saucer", "owl", "atlas"):
+        path = "home_starter/server/homestarter/static/decor-" + name + ".webp"
+        assert included(path.removeprefix("home_starter/"))
+        assert not forbidden_path(path)
+    assert forbidden_path("home_starter/server/homestarter/static/decor-private.webp")
     assert included("server/homestarter/static/wallpapers/night-moonlit-valley.webp")
     for row in json.loads(Path("home_starter/server/homestarter/static/wallpapers.json").read_text())["images"]:
         assert included("server/homestarter/static/wallpapers/" + row["file"])

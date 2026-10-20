@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Keep timeline headings/dates tied to the events shown, independently of school
+  preview. Fill measured space with whole future entries through the selected
+  three-week horizon; remove fixed day/row quotas and the seven-day filter.
+- Give both labelled weather temperatures equal visual weight.
+- Add 42 varied local generated discoveries in visible wall/interactive artwork
+  space. Keep selections stable per screen/daypart and clear of text and controls.
+
 ## 0.8.39
 
 - Make night a quiet landscape with clock, weather and a restrained status strip;

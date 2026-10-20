@@ -34,7 +34,7 @@ const tile = (kind,title,ico,body,detail,target,setup=false) => {
 };
 const alert = cfg.alerts.map(get).find(s=>s?.state === "on");
 const climateTag = cfg.targets.climate ? "a" : "section";
-const body = `<main class="hs-panel" style="--hs-chrome-height:${kioskActive ? 0 : 56}px" aria-label="${esc(cfg.title)}">
+const body = `<main class="hs-panel" style="${decorationStyle(now,hass.config.time_zone,cfg.base)};--hs-chrome-height:${kioskActive ? 0 : 56}px" aria-label="${esc(cfg.title)}">
   <header class="hs-header"><div><time class="hs-time">${esc(date({hour:"numeric",minute:"2-digit"}))}</time><span class="hs-date">${esc(date({weekday:"short",day:"numeric",month:"short"}))}</span></div>${weatherText ? `<span class="hs-weather">${icon("mdi:weather-partly-cloudy")}${weatherText}</span>` : ""}</header>
   ${alert ? `<aside class="hs-alert" role="alert">${icon("mdi:alert")} ${esc(alert.attributes.friendly_name)} needs attention</aside>` : ""}
   <div class="hs-board">

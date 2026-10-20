@@ -77,3 +77,7 @@
   .hs-household a { min-height: 66px; }
 }
 @media (prefers-reduced-motion: reduce) { .hs-panel * { scroll-behavior: auto; } }
+
+/* The Media tile reserves the right artwork margin; decorations never catch taps. */
+.hs-tile.hs-media { padding-right:80px; }
+.hs-tile.hs-media::after { content:""; position:absolute; right:20px; bottom:48px; width:44px; height:44px; background-image:var(--hs-decor-image); background-position:var(--hs-decor-position); background-size:var(--hs-decor-size); background-repeat:no-repeat; pointer-events:none; opacity:.85; }
