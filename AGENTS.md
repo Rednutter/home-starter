@@ -42,6 +42,9 @@ Priority actions occupy the full header, hide weather and move the agenda down
 beside unchanged people cards. Use confirmed Leave times, a 15-minute lead and
 10-minute factual passed-time grace; never assert someone stayed home or is late.
 One ranked action wins; expired priority restores weather/full agenda automatically.
+Priority uses amber soon/immediate and muted coral passed-time glass, a departure
+icon and prominent leave action. Fade once per alert identity, never per poll;
+respect reduced motion and keep person/timeline/utility geometry unchanged.
 Bins use an owned native HA Local Calendar with actual all-day collection dates.
 Read back native UIDs, journal uncertain writes, preserve unrelated calendars and
 external edits. HA WebSocket writes use dtstart/dtend, REST reads start/end.

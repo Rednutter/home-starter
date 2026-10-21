@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Strengthen wall departure alerts with amber/coral glass, a departure icon,
+  a larger leave action and a single motion-aware entrance per alert.
+
 - Wall: forecast High leads the two-line weather block; supported daily weather
   exceptions have condition-specific badges, and timeline days share dated forecasts.
 - Confirmed departures temporarily use the full top band, moving the measured

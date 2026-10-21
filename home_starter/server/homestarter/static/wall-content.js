@@ -124,7 +124,7 @@ const weatherLabel=preview?(model.focus?.label || "Tomorrow"):"Weather";
 const weatherSummary=[preview?weatherLabel:null,preview?temperature(weather?.low)&&temperature(weather.low)+" low":temperature(weather?.temperature)&&temperature(weather.temperature)+" now",condition,weather?.high==null?"Forecast high unavailable":null].filter(Boolean).join(" · ") || "Weather unavailable";
 const weatherImpact=weather?.warning?.message || (typeof weather?.precipitation_probability==="number"&&weather.precipitation_probability>=60?`${weather.precipitation_probability}% chance of rain`:"");
 const weatherPanel=`<section class="wall-weather" data-severity="${esc(weather?.warning?.level || "ordinary")}" aria-label="${esc(weatherLabel)}"><div class="wall-weather-reading">${weatherCondition?icon(weatherIcon(weatherCondition)):""}${reading(weather?.high,"High",true)}${weather?.warning?`<span class="wall-weather-badge">${icon(({heat:"thermometer",cold:"cold",wind:"wind",storm:"storm",rain:"rain"})[weather.warning.kind] || "alert")}${esc(weather.warning.label)}</span>`:""}</div><h2>${esc(weatherSummary)}</h2>${weatherImpact?`<p class="wall-weather-impact">${esc(weatherImpact)}</p>`:""}</section>`;
-const priorityPanel=priority?`<section class="wall-priority" aria-label="Household action" data-expires="${esc(priority.expires_at)}" data-level="${esc(priority.level)}"><h1>${esc(priority.title)}</h1>${priority.people?.length?`<p>${esc(priority.people.join(" · "))}</p>`:""}${priority.location?`<p>${esc(priority.location)}</p>`:""}<p class="wall-priority-action">${priority.starts_at?`Starts ${esc(clock(priority.starts_at))} · `:""}<strong>${esc(priority.action)}</strong></p></section>`:"";
+const priorityPanel=priority?`<section class="wall-priority" aria-label="Household action" data-priority-id="${esc(priority.id)}" data-expires="${esc(priority.expires_at)}" data-level="${esc(priority.level)}"><div class="wall-priority-heading"><span class="wall-priority-icon">${icon(priority.kind==="departure"?"car":priority.kind==="event"||priority.kind==="preparation"?"calendar":"alert")}</span><h1>${esc(priority.title)}</h1></div>${priority.people?.length?`<p>${esc(priority.people.join(" · "))}</p>`:""}${priority.location?`<p>${esc(priority.location)}</p>`:""}<p class="wall-priority-action">${priority.starts_at?`Starts ${esc(clock(priority.starts_at))} · `:""}<strong>${esc(priority.action)}</strong></p></section>`:"";
 const status=fresh?model.household_status || {}:{};
 const lightsOn=Array.isArray(status.lights_on)?status.lights_on:[];
 const lightShapes={
@@ -168,7 +168,7 @@ if(session?.kind==="camera" && /^camera\.[a-z0-9_]+$/.test(session.camera || "")
 const overlay=session?`<section class="wall-session" aria-label="Temporary display session"><div><h2>${esc(session.title)}</h2>${picture}${session.kind==="camera"&&!picture?"<p>Camera view unavailable</p>":""}<p class="wall-session-body">${esc(session.body)}</p><p>Returns to the family board automatically</p></div></section>`:"";
 const alerts=exceptions.filter(r=>r.kind!=="weather");
 const primaryAgenda=night?"":timeline(model.timeline);
-const body=`<main class="hs-wall" data-fresh="${fresh}" data-night="${night}" data-priority="${Boolean(priority)}" data-wallpaper-period="${wallpaper.period}" data-wallpaper="${wallpaper.id || "fallback"}" data-wall-surface="${esc(cfg.surface_id)}" data-cursor-hidden="${kiosk}" data-state="${esc(model.day_state)}" data-mode="${esc(model.focus?.mode || "today")}" data-phase="${esc(model.phase || "morning")}" data-agenda="${primaryAgenda?"visible":"hidden"}" style="${decorationStyle(now,hass.config.time_zone,cfg.surface_id)};--wall-chrome:${kiosk?0:56}px${wallpaper.id?`;--wall-landscape:var(--wallpaper-${wallpaper.id})`:""}" aria-label="${esc(cfg.title)} household board">${alerts.length?`<aside class="wall-alerts">${icon("alert")}${esc(alerts.map(r=>r.title+" · "+r.detail).join(" · "))}</aside>`:""}<header class="wall-header"><div class="wall-clock"><time>${esc(date({hour:"numeric",minute:"2-digit",hour12:false}).replace(/^0/,""))}</time><p>${esc(date({weekday:"long",day:"numeric",month:"short"})).replace(",","")}</p>${nightReadiness}</div>${priorityPanel || weatherPanel}${priority?`<template class="wall-priority-fallback">${weatherPanel}</template>`:""}</header>${night?"":`<div class="wall-family${schoolPanel?" wall-family-school":""}" data-incomplete="${familyIncomplete}" data-count="${schoolPanel?school.children.length:cards.length}" aria-label="${esc(school?.label || "Household plans")}">${schoolPanel || family}</div><aside class="wall-agenda">${primaryAgenda}</aside>`}<footer class="wall-bottom" data-region="utility" data-content="${esc(model.utility?.kind || "household")}">${utilityPanel}</footer>${overlay}</main>`;
+const body=`<main class="hs-wall" data-fresh="${fresh}" data-night="${night}" data-priority="${Boolean(priority)}" data-priority-level="${esc(priority?.level || "")}" data-wallpaper-period="${wallpaper.period}" data-wallpaper="${wallpaper.id || "fallback"}" data-wall-surface="${esc(cfg.surface_id)}" data-cursor-hidden="${kiosk}" data-state="${esc(model.day_state)}" data-mode="${esc(model.focus?.mode || "today")}" data-phase="${esc(model.phase || "morning")}" data-agenda="${primaryAgenda?"visible":"hidden"}" style="${decorationStyle(now,hass.config.time_zone,cfg.surface_id)};--wall-chrome:${kiosk?0:56}px${wallpaper.id?`;--wall-landscape:var(--wallpaper-${wallpaper.id})`:""}" aria-label="${esc(cfg.title)} household board">${alerts.length?`<aside class="wall-alerts">${icon("alert")}${esc(alerts.map(r=>r.title+" · "+r.detail).join(" · "))}</aside>`:""}<header class="wall-header"><div class="wall-clock"><time>${esc(date({hour:"numeric",minute:"2-digit",hour12:false}).replace(/^0/,""))}</time><p>${esc(date({weekday:"long",day:"numeric",month:"short"})).replace(",","")}</p>${nightReadiness}</div>${priorityPanel || weatherPanel}${priority?`<template class="wall-priority-fallback">${weatherPanel}</template>`:""}</header>${night?"":`<div class="wall-family${schoolPanel?" wall-family-school":""}" data-incomplete="${familyIncomplete}" data-count="${schoolPanel?school.children.length:cards.length}" aria-label="${esc(school?.label || "Household plans")}">${schoolPanel || family}</div><aside class="wall-agenda">${primaryAgenda}</aside>`}<footer class="wall-bottom" data-region="utility" data-content="${esc(model.utility?.kind || "household")}">${utilityPanel}</footer>${overlay}</main>`;
 if(window.customElements&&typeof HTMLElement!=="undefined"&&!window.customElements.get("home-starter-ambient-wall")) {
  // HA uses nested shadow roots. Scope the document-wide rule to this mounted wall
  // route in kiosk mode; remove every injected style/listener on navigation or detach.
@@ -208,7 +208,7 @@ if(window.customElements&&typeof HTMLElement!=="undefined"&&!window.customElemen
  class AmbientWall extends HTMLElement {
   connectedCallback(){
    this._cursorGuard ||= cursorGuard(this);this._cursorGuard.set(this.querySelector('.hs-wall'));
-   this._expirePriority();
+   this._expirePriority();this._priorityAppearance();
     this._resize ||= new ResizeObserver(()=>this._fitAgenda());this._resize.observe(this);
    document.fonts?.ready.then(()=>{if(this.isConnected)this._fitAgenda();});
    this._fitAgenda();
@@ -238,6 +238,11 @@ if(window.customElements&&typeof HTMLElement!=="undefined"&&!window.customElemen
      if(future)future.hidden=visible===0;
    });
   }
+   _priorityAppearance(){
+    const root=this.querySelector('.hs-wall'),key=root?.querySelector('.wall-priority')?.dataset.priorityId || "";
+    if(key&&key!==this._priorityKey)root.dataset.priorityEnter="true";
+    this._priorityKey=key;
+   }
    _expirePriority(){
     clearTimeout(this._priorityTimer);
     const root=this.querySelector('.hs-wall'),panel=root?.querySelector('.wall-priority');
@@ -247,7 +252,7 @@ if(window.customElements&&typeof HTMLElement!=="undefined"&&!window.customElemen
     this._priorityTimer=setTimeout(()=>{
      const fallback=root.querySelector('.wall-priority-fallback');
      if(fallback){panel.replaceWith(fallback.content.cloneNode(true));fallback.remove();}
-     root.dataset.priority="false";this._fitAgenda();
+     root.dataset.priority="false";this._priorityKey="";this._fitAgenda();
     },Math.max(0,delay));
    }
   set content(value) {
@@ -258,7 +263,7 @@ if(window.customElements&&typeof HTMLElement!=="undefined"&&!window.customElemen
    const next=parsed.content.querySelector(".hs-wall"),old=this.querySelector(".hs-wall");
    const keys=root=>[...(root?.querySelectorAll("[data-key]") || [])].map(e=>e.dataset.key).join("|");
    const changed=old&&next&&(keys(old)!==keys(next)||old.dataset.mode!==next.dataset.mode);
-   const update=()=>{if(generation===this._generation){this.innerHTML=value;this._cursorGuard?.set(this.querySelector(".hs-wall"));this._expirePriority();this._fitAgenda();}};
+   const update=()=>{if(generation===this._generation){this.innerHTML=value;this._cursorGuard?.set(this.querySelector(".hs-wall"));this._expirePriority();this._priorityAppearance();this._fitAgenda();}};
    this._transition?.skipTransition();
    if(changed&&old.dataset.fresh==="true"&&next.dataset.fresh==="true"&&document.startViewTransition&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     this._transition=document.startViewTransition(update);

@@ -466,3 +466,8 @@ Live HA readback verified six unique all-day events and the Pi screenshot showed
 the real tomorrow timetable, forecast and bin action. Priority layout evidence is
 synthetic browser acceptance, not a claim that a departure alert occurred live.
 Private screenshots and timetable payloads remain outside Git.
+
+Priority treatment uses amber glass for soon, stronger amber for immediate action
+and muted coral for a passed leave time. A departure icon and enlarged bold action
+lead the header; the date and names recede. The 450 ms entrance runs once per alert
+identity, never per clock refresh, and respects reduced motion.

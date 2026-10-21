@@ -45,7 +45,29 @@ def main():
                     assert wall.locator(".wall-priority").get_by_text("School run in 10 minutes").is_visible()
                     assert abs(wall.locator(".wall-family").bounding_box()["y"] - wall.locator(".wall-agenda").bounding_box()["y"]) < 1
                     assert wall.locator(".wall-header").bounding_box()["width"] > width * 0.9
+                    page.wait_for_timeout(500)  # Let the single entrance settle before the visual capture.
                     page.screenshot(path=str(output / ("priority-school-" + str(width) + ".png")))
+                    treatment = page.evaluate("""()=>{
+                        const host=document.querySelector('home-starter-ambient-wall');
+                        const root=host.querySelector('.hs-wall');
+                        const header=root.querySelector('.wall-header');
+                        const action=root.querySelector('.wall-priority strong');
+                        const detail=root.querySelector('.wall-priority > p');
+                        const size=parseFloat(getComputedStyle(action).fontSize)>parseFloat(getComputedStyle(detail).fontSize);
+                        const entering=root.dataset.priorityEnter==='true';
+                        const colours=['soon','immediate','overdue'].map(level=>{
+                            root.dataset.priorityLevel=level;return getComputedStyle(header).backgroundImage;
+                        });
+                        host.content=window.fixtureBody+' ';
+                        return {size,entering,distinct:new Set(colours).size===3,
+                          noRepeat:host.querySelector('.hs-wall').dataset.priorityEnter!=='true'};
+                    }""")
+                    assert all(treatment.values()), (name, width, treatment)
+                    wall.evaluate("e=>e.dataset.priorityEnter='true'")
+                    page.emulate_media(reduced_motion="reduce")
+                    assert wall.locator(".wall-header").evaluate("e=>getComputedStyle(e).animationName") == "none"
+                    wall.evaluate("e=>delete e.dataset.priorityEnter")
+                    page.emulate_media(reduced_motion="no-preference")
                 for region in (
                     (".wall-household", ".wall-bottom")
                     if wall.get_attribute("data-priority") == "true"
