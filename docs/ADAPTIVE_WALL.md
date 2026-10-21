@@ -471,3 +471,8 @@ Priority treatment uses amber glass for soon, stronger amber for immediate actio
 and muted coral for a passed leave time. A departure icon and enlarged bold action
 lead the header; the date and names recede. The 450 ms entrance runs once per alert
 identity, never per clock refresh, and respects reduced motion.
+
+The alert clock is reduced to the normal hero scale so the action leads. Golden
+amber glass replaces the brown tint. Only departure references matching the
+active action/person are subdued; other appointments retain their emphasis.
+Timeline metadata wraps whole facts with spacing rather than separator dots.

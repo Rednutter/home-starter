@@ -54,12 +54,17 @@ def main():
                         const action=root.querySelector('.wall-priority strong');
                         const detail=root.querySelector('.wall-priority > p');
                         const size=parseFloat(getComputedStyle(action).fontSize)>parseFloat(getComputedStyle(detail).fontSize);
+                        const related=root.querySelectorAll('.wall-person-day[data-priority-related="true"]').length===3;
+                        const unrelated=[...root.querySelectorAll('.wall-line-item')].filter(row=>row.querySelector('h3').textContent==='Dental')
+                          .every(row=>row.querySelector('.wall-leave')?.dataset.priorityRelated==='false');
+                        const cleanSeparators=[...root.querySelectorAll('.wall-line-meta p+p')]
+                          .every(node=>getComputedStyle(node,'::before').content==='none');
                         const entering=root.dataset.priorityEnter==='true';
                         const colours=['soon','immediate','overdue'].map(level=>{
                             root.dataset.priorityLevel=level;return getComputedStyle(header).backgroundImage;
                         });
                         host.content=window.fixtureBody+' ';
-                        return {size,entering,distinct:new Set(colours).size===3,
+                        return {size,related,unrelated,cleanSeparators,entering,distinct:new Set(colours).size===3,
                           noRepeat:host.querySelector('.hs-wall').dataset.priorityEnter!=='true'};
                     }""")
                     assert all(treatment.values()), (name, width, treatment)

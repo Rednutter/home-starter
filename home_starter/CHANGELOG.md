@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Rebalance departure alerts with a smaller clock and warmer amber glass;
+  quiet only matching departure references and remove wrapping metadata dots.
+
 - Strengthen wall departure alerts with amber/coral glass, a departure icon,
   a larger leave action and a single motion-aware entrance per alert.
 
