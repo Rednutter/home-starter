@@ -6,7 +6,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import pytest
-from kitchen_wall.install_screen_power import prevent_auto_wake
+from kitchen_wall.install_screen_power import prevent_auto_wake, standard_drm_environment
 from kitchen_wall.screen_power import power_mode, reconcile
 
 
@@ -124,3 +124,13 @@ def test_startup_pins_wake_mode_without_forcing_overnight_power_on():
     assert command[command.index("--mode") + 1] == "1920x1080@60Hz"
     assert command[command.index("--transform") + 1] == "180"
     assert "--on" not in command
+
+
+def test_standard_drm_preserves_keyboard_cursor_and_comments():
+    original = "# Pi keyboard\nXKB_DEFAULT_LAYOUT=us\nXCURSOR_THEME=home-starter-hidden\n"
+    revised = standard_drm_environment(original)
+    assert revised == original + "WLR_DRM_FORCE_LIBLIFTOFF=0\n"
+    assert standard_drm_environment(revised) == revised
+    assert standard_drm_environment("WLR_DRM_FORCE_LIBLIFTOFF=1\n") == "WLR_DRM_FORCE_LIBLIFTOFF=0\n"
+    with pytest.raises(ValueError, match="Ambiguous"):
+        standard_drm_environment("WLR_DRM_FORCE_LIBLIFTOFF=1\nWLR_DRM_FORCE_LIBLIFTOFF=0\n")

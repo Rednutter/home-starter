@@ -23,6 +23,21 @@ def prevent_auto_wake(source):
     return ET.tostring(root, encoding="unicode") + "\n"
 
 
+def standard_drm_environment(source):
+    """Use wlroots atomic DRM instead of labwc-pi's forced optional backend."""
+    key = "WLR_DRM_FORCE_LIBLIFTOFF"
+    lines = source.splitlines()
+    matches = [index for index, line in enumerate(lines) if line.strip().startswith(key + "=")]
+    if len(matches) > 1:
+        raise ValueError("Ambiguous graphics backend settings; preserve them for review.")
+    setting = key + "=0"
+    if matches:
+        lines[matches[0]] = setting
+    else:
+        lines.append(setting)
+    return "\n".join(lines) + "\n"
+
+
 def main():
     pid = subprocess.check_output(["pgrep", "-u", str(os.getuid()), "-x", "labwc"], text=True).strip()  # noqa: S603,S607 -- fixed own-user compositor probe
     if not pid.isdecimal():
@@ -36,8 +51,17 @@ def main():
     if not backup.exists():
         backup.write_text(before)
     config.write_text(prevent_auto_wake(before))
+    environment = config.with_name("environment")
+    original = environment.read_text() if environment.exists() else ""
+    environment_backup = environment.with_name("environment.before-home-starter-drm")
+    if not environment_backup.exists():
+        environment_backup.write_text(original)
+    environment.write_text(standard_drm_environment(original))
     os.kill(int(pid), signal.SIGHUP)
-    print("HDMI standby reconnect wake disabled; original labwc configuration preserved.")
+    print(
+        "HDMI standby reconnect wake disabled; original labwc configuration preserved. "
+        "Standard DRM backend prepared; restart the graphics session to activate it."
+    )
 
 
 if __name__ == "__main__":

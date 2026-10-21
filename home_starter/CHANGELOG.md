@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Follow time and current wall content with physical monitor brightness:
+  day 100%, evening 65%, quiet night 25%, with an expiring priority boost.
+  Keep 22:00-06:00 power-off authoritative. Confirm DDC backlight readback;
+  exchange only authenticated short-lived mode hints, never household payloads.
+
+- Pi wake: replace the forced optional libliftoff backend implicated in recurring
+  HDMI CRTC/swapchain failures with wlroots standard atomic DRM. Preserve original
+  compositor settings and activate via graphics restart; retain the existing
+  physical-output checks, schedule, cursor, rotation and independent audio.
+
 - Rebalance departure alerts with a smaller clock and warmer amber glass;
   quiet only matching departure references and remove wrapping metadata dots.
 

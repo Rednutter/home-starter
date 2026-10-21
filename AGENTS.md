@@ -50,10 +50,18 @@ Read back native UIDs, journal uncertain writes, preserve unrelated calendars an
 external edits. HA WebSocket writes use dtstart/dtend, REST reads start/end.
 Derive out-tonight/today labels from the collection date; useful morning ends at
 noon without claiming collection occurred. Keep the bottom utility slot replaceable.
+Hardware brightness follows time/content through authenticated expiring mode hints
+and DDC readback: day 100%, evening 65%, quiet night 25%, active priority 100%.
+Never send names/events to the Pi brightness route or grant arbitrary commands.
+Overnight power-off wins and must issue no DDC queries.
 Pi output power is separate: off 22:00–06:00 Australia/Sydney using wlopm and the
 user screen-power timer. Keep Chromium/audio/voice running; verify off and wake.
 The monitor hotplugs on standby: retain labwc's auto-enable guard and explicit
 wlr-randr wake; disabled HDMI with a NOOP fallback is a valid overnight state.
+The Pi launcher forces libliftoff; the dedicated wall environment overrides
+WLR_DRM_FORCE_LIBLIFTOFF=0 after recurring CRTC/swapchain wake failures. Preserve
+the original environment backup; activation requires a graphics-session restart.
+Short standby tests do not establish overnight reliability.
 Pin kiosk startup/wake to supported 1920x1080 at 60 Hz, retaining 180-degree
 rotation. Startup must not force power on overnight. Bound HDMI reconnect retries
 and verify the physical output; headless power-on is not successful monitor wake.

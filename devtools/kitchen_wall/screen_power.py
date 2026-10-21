@@ -54,13 +54,22 @@ def reconcile(output, desired, execute, mode="1920x1080@60Hz", *, attempts=3, wa
 def main():
     os.environ.setdefault("XDG_RUNTIME_DIR", "/run/user/" + str(os.getuid()))
     os.environ.setdefault("WAYLAND_DISPLAY", "wayland-0")
-    desired = power_mode(datetime.now(ZoneInfo(os.environ.get("WALL_TIMEZONE", "Australia/Sydney"))))
+    now = datetime.now(ZoneInfo(os.environ.get("WALL_TIMEZONE", "Australia/Sydney")))
+    desired = power_mode(now)
 
     def execute(command):
         return subprocess.run(command, capture_output=True, text=True, check=True, timeout=3).stdout  # noqa: S603 -- fixed display utilities and separate arguments
 
     reconcile(os.environ.get("WALL_OUTPUT", "HDMI-A-1"), desired, execute, os.environ.get("WALL_MODE", "1920x1080@60Hz"))
     print("Wall display power verified: " + desired)
+    if desired == "on":
+        from brightness import apply
+
+        try:
+            confirmed = apply(os.environ.get("WALL_OUTPUT", "HDMI-A-1"), now, execute)
+            print(f"Wall hardware brightness verified: {confirmed}%")
+        except (OSError, ValueError, RuntimeError, subprocess.SubprocessError):
+            print("Wall hardware brightness unavailable; physical power verification remains successful.")
 
 
 if __name__ == "__main__":

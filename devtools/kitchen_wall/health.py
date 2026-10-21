@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only endpoint health; no HA credential, remote commands or media metadata."""
+"""Endpoint health and bounded brightness hints; no HA credential or household payloads."""
 
 import hmac
 import json
@@ -12,13 +12,13 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.request import urlopen
 
-from websockets.exceptions import WebSocketException
-from websockets.sync.client import connect
-
 CONFIG = Path.home() / ".config/home-starter/endpoint.json"
 
 
 def display_authenticated(config, tabs):
+    from websockets.exceptions import WebSocketException
+    from websockets.sync.client import connect
+
     expected = config.get("display_user_id")
     if not expected:
         return False
@@ -55,6 +55,9 @@ def service(name):
 
 def voice_status():
     """Keep only connection/mute booleans from the loopback peripheral snapshot."""
+    from websockets.exceptions import WebSocketException
+    from websockets.sync.client import connect
+
     try:
         with connect("ws://127.0.0.1:6055", open_timeout=2, close_timeout=1, max_size=65536) as socket:
             value = json.loads(socket.recv(timeout=2))
@@ -85,6 +88,7 @@ def health(config):
         pass
     voice_connected, voice_muted = voice_status()
     return {
+        "brightness_control": True,
         "version": 1,
         "online": True,
         "checked_at": datetime.now(UTC).isoformat(),
@@ -107,8 +111,7 @@ def health(config):
     }
 
 
-def main():
-    config = json.loads(CONFIG.read_text(encoding="utf-8"))
+def handler(config):
     key = config["health_key"]
     if not isinstance(key, str) or len(key) < 32:
         raise ValueError("Configure a dedicated health key.")
@@ -130,10 +133,47 @@ def main():
             self.end_headers()
             self.wfile.write(body)
 
+        def do_POST(self):
+            if self.path != "/presentation" or not hmac.compare_digest(self.headers.get("Authorization", ""), "Bearer " + key):
+                self.send_error(404)
+                return
+            try:
+                from brightness import PRESENTATION, validate_presentation
+
+                self.connection.settimeout(3)
+                length = int(self.headers.get("Content-Length", "0"))
+                if not 0 < length <= 256:
+                    raise ValueError("Unsupported signal size")
+                value = validate_presentation(json.loads(self.rfile.read(length)), datetime.now(UTC))
+                # Only a short-lived enum and expiry are accepted. No calendar or browser data.
+                from tempfile import NamedTemporaryFile
+
+                with NamedTemporaryFile(mode="w", dir=PRESENTATION.parent, delete=False) as stream:
+                    json.dump(value, stream)
+                    temporary = Path(stream.name)
+                temporary.replace(PRESENTATION)
+                subprocess.run(
+                    ["/usr/bin/systemctl", "--user", "start", "--no-block", "home-starter-screen-power.service"],
+                    check=True,
+                    timeout=3,
+                    capture_output=True,
+                )  # noqa: S603 -- fixed scheduled policy, never arbitrary commands or brightness values
+            except (OSError, ValueError, TypeError, subprocess.SubprocessError):
+                self.send_error(400)
+                return
+            self.send_response(204)
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+
         def log_message(self, *_args):
             pass
 
-    ThreadingHTTPServer((config.get("health_bind", "0.0.0.0"), config.get("health_port", 8741)), Handler).serve_forever()
+    return Handler
+
+
+def main():
+    config = json.loads(CONFIG.read_text(encoding="utf-8"))
+    ThreadingHTTPServer((config.get("health_bind", "0.0.0.0"), config.get("health_port", 8741)), handler(config)).serve_forever()
 
 
 if __name__ == "__main__":

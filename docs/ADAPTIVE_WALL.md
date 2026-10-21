@@ -476,3 +476,74 @@ The alert clock is reduced to the normal hero scale so the action leads. Golden
 amber glass replaces the brown tint. Only departure references matching the
 active action/person are subdued; other appointments retain their emphasis.
 Timeline metadata wraps whole facts with spacing rather than separator dots.
+
+
+### Recurrent HDMI failure: standard DRM backend
+
+The 22 October 06:00 timer ran, but the physical HDMI output stayed disabled.
+The compositor logged libliftoff `drmCrtcGetSequence: Invalid argument` and
+failed HDMI swapchain tests. Repeated explicit 60 Hz wake requests failed while
+Chromium continued on NOOP. Yesterday's short-cycle tests did not establish
+overnight reliability. The same monitor previously worked with DAKboard OS.
+
+The Raspberry Pi `labwc-pi` launcher forces `WLR_DRM_FORCE_LIBLIFTOFF=1`.
+The installed wlroots 0.20.2 source makes that an optional path; its default
+uses atomic DRM without libliftoff. The dedicated wall installer now writes
+`WLR_DRM_FORCE_LIBLIFTOFF=0` in the user's labwc environment, preserving the
+original file as `environment.before-home-starter-drm`. Keyboard settings,
+transparent cursor theme and the existing hotplug guard remain intact.
+This changes backend selection at graphics-session startup; reconfiguration
+alone is insufficient. Restart LightDM with a locally entered sudo password.
+Never record that password or add broad passwordless administration rules.
+
+Live graphics restart restored physical 1920x1080 at 60 Hz, rotated 180 degrees.
+The scheduled service then passed separate 10-second and 60-second standby
+cycles after HDMI settled to disabled plus NOOP. A longer cycle was interrupted
+and its cleanup restored both physical HDMI and the production timer.
+Audio/voice retained their original PIDs/start times through the restart.
+The captured physical wall image was populated and cursor-free.
+No new libliftoff/swapchain errors appeared during those checks.
+A full overnight interval with this backend has **not** yet been observed;
+short cycles must never be reported as overnight acceptance.
+
+Rollback: restore only the recorded backend variable (or remove it if originally
+absent) from the local backup, preserving subsequent keyboard/cursor changes,
+then restart the graphics session. The 22:00-06:00 Sydney schedule, 60 Hz pin,
+bounded physical-output verification and independent audio remain unchanged.
+At the user's request the Lenovo monitor's hardware brightness was raised from
+89/100 to 100/100 through DDC/CI and read back; no page brightness filter changed.
+
+
+### Adaptive physical brightness
+
+The dedicated Pi power service now controls the identified HDMI monitor's backlight
+over DDC/CI, with hardware readback: 100% from 06:00, 65% from 18:00, and 25%
+from 20:00. The independent 22:00-06:00 power-off policy takes precedence and
+performs no DDC requests while off. This changes the physical backlight, not CSS,
+wall colours or interactive tablet/phone brightness.
+
+The existing authenticated endpoint poller sends only mode and expires_at
+to POST /presentation. Modes are normal, quiet, attention and offline.
+Signals come only from the mapped surface's owned, fresh context; priority expiry
+caps the boost. Attention selects 100%, quiet caps at 25%, and offline caps at 40%.
+Expired/missing hints fall back to local time policy. The next scheduled update
+reconciles expiry; there is no permanent priority-brightness reservation.
+
+The receiver accepts at most 256 bytes and 150 seconds of lifetime, uses the
+existing dedicated bearer key, returns 404 for unauthorized requests and accepts
+no arbitrary commands, values, paths, names or event payloads. Its only activation
+is the fixed scheduled screen-power unit, which enforces the local power policy.
+DDC discovery must uniquely match HDMI-A-1; writes are skipped when already correct
+and every changed value is read back. A brightness failure is reported separately
+and does not falsely turn a successful physical wake into a power failure.
+The Debian DDC utility is installed by bootstrap or retained as a checksum-verified
+user-local package on the inspected Pi. No new administrator privilege rule exists.
+
+Live production delivery reported normal mode and 100/100 hardware brightness.
+A brief bounded injected quiet/attention acceptance test read back 25/100 then
+100/100 and restored the real production signal; these are explicit test modes,
+not a claim that actual evening/night content was observed in the morning.
+Regression coverage checks time boundaries, action expiry, foreign/stale context,
+DDC output identity/readback/idempotence and HTTP authentication/body limits.
+All 821 Python and 75 JavaScript regressions passed. Private screenshots and
+temporary test/deployment material remain outside Git.

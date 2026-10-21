@@ -98,13 +98,16 @@ by the current Home Starter listener controls.
 
 Reproducible files are in `devtools/kitchen_wall`. The inspected Pi uses its existing
 desktop autologin and Wayland session. User systemd units start a dedicated Chromium
-kiosk/profile and a small authenticated read-only health service. Chromium retains
+kiosk/profile and a small authenticated health/brightness service. Chromium retains
 its sandbox and uses a restricted HA account. The local debugging port binds only
 loopback. It must never be forwarded publicly. The profile stores its HA refresh
 credential and is private to the display account; it is not an administrator login.
 
-The health endpoint accepts a dedicated bearer key, exposes no remote commands,
-and returns no media metadata or HA token. Wrong authentication returns 404. Browser
+The health endpoint accepts a dedicated bearer key and returns no media metadata
+or HA token. Its authenticated /presentation route additionally accepts only a
+short-lived display-mode enum and expiry for hardware brightness. It can activate
+only the fixed scheduled power/brightness policy; it exposes no arbitrary commands
+or browser access. The independent overnight power-off policy always wins. Wrong authentication returns 404. Browser
 health checks the configured dashboard URL and uses local CDP to confirm that the
 expected non-administrator HA account is connected. It does not claim that physical
 HDMI, kiosk hardware identity, power-loss recovery or an acoustic test was verified.

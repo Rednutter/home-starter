@@ -242,6 +242,44 @@ def endpoint_entity(identifier):
     return "sensor.home_starter_endpoint_" + digest(identifier)[:12]
 
 
+def endpoint_presentation(endpoint, house, states, now):
+    """Project only an expiring display mode, never events, names or browser data."""
+    from .context import entity_id
+
+    attrs = states.get(entity_id(endpoint["surface_id"]), {}).get("attributes", {})
+    expected = {"surface": endpoint["surface_id"], "epoch": house["epoch"]}
+    fallback = {"mode": "offline", "expires_at": (now + timedelta(seconds=75)).timestamp()}
+    try:
+        expiry = datetime.fromisoformat(attrs["valid_until"])
+        checked = datetime.fromisoformat(attrs["checked_at"])
+        if attrs.get("home_starter_context") != expected or not timedelta(seconds=-5) <= now - checked <= timedelta(seconds=150) or expiry <= now:
+            return fallback
+        wall = attrs["wall"]
+        priority = wall.get("priority") or {}
+        priority_expiry = datetime.fromisoformat(priority["expires_at"]) if priority else now
+        mode = "attention" if priority_expiry > now else "quiet" if wall.get("focus", {}).get("night") is True else "normal"
+        expiry = min(expiry, now + timedelta(seconds=75), priority_expiry) if mode == "attention" else min(expiry, now + timedelta(seconds=75))
+        return {"mode": mode, "expires_at": expiry.timestamp()}
+    except (KeyError, ValueError, TypeError, AttributeError):
+        return fallback
+
+
+async def send_endpoint_presentation(session, endpoint, key, signal):
+    # Reuse the configured private endpoint and dedicated credential; no redirects.
+    url = endpoint["health_url"].removesuffix("/health") + "/presentation"
+    try:
+        async with session.post(
+            url,
+            headers={"Authorization": "Bearer " + key},
+            json=signal,
+            timeout=aiohttp.ClientTimeout(total=4),
+            allow_redirects=False,
+        ) as response:
+            return response.status == 204
+    except (aiohttp.ClientError, TimeoutError, OSError, ValueError):
+        return False
+
+
 async def poll_endpoints(session, core, store):
     house = store.load()
     config = load(store, house)
@@ -301,6 +339,9 @@ async def poll_endpoints(session, core, store):
                     raise ValueError("Unsupported health status")
                 attrs[field] = value[field]
             online = True
+            if value.get("brightness_control") is True:
+                signal = endpoint_presentation(endpoint, house, states, now)
+                attrs["brightness_signal_delivered"] = await send_endpoint_presentation(session, endpoint, keys[endpoint["id"]], signal)
         except (aiohttp.ClientError, TimeoutError, OSError, ValueError, KeyError, TypeError):
             attrs["issue"] = "Device offline or health feedback unavailable"
         await core.context_state(entity, {"state": "online" if online else "offline", "attributes": attrs})
