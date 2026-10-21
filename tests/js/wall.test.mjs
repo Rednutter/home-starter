@@ -215,6 +215,12 @@ test("schedule days use their own dated forecast and bin identity",()=>{
  assert.match(body,/Forecast high 22 degrees/);
  assert.match(body,/data-bin="general"/);
  assert.match(body,/data-bin="recycling"/);
+ const bin={...event,title:"Bins out tonight",bin_types:["general","organics"],detail:"Green + General waste"};
+ const compact=scene({timeline:{label:"Today",items:[bin]},upcoming_days:[{label:"Tomorrow",items:[bin]}]});
+ assert.match(compact,/Bins out tonight/);
+ assert.match(compact,/data-bin="organics"/);
+ assert.doesNotMatch(compact,/Green \+ General waste|wall-bin-label/);
+
  assert.match(scene({upcoming_days:[{label:"Next week",items:[event]}]}),/Forecast unavailable/);
 });
 test("utility slot permits structured replacement with escaped text",()=>{

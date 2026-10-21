@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Keep wall bin timeline entries to their illustrated icons and heading; omit
+  the redundant bin-type detail line in both current and upcoming entries.
+
 - Follow time and current wall content with physical monitor brightness:
   day 100%, evening 65%, quiet night 25%, with an expiring priority boost.
   Keep 22:00-06:00 power-off authoritative. Confirm DDC backlight readback;
