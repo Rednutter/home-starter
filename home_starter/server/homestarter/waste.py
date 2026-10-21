@@ -277,7 +277,7 @@ def view(value, zone, now=None):
     schedules = {r["year"]: r for r in value["schedules"]}
     today = local.date()
     delta = (c["day"] - today.weekday()) % 7
-    if delta == 0 and local.hour >= 6:
+    if delta == 0 and local.hour >= 12:
         delta = 7
     next_date = today + timedelta(days=delta)
     annual = schedules.get(next_date.year)
@@ -313,7 +313,7 @@ def view(value, zone, now=None):
     if delta == 1 and local.hour >= 18:
         result.update(bin_night=True, attention="tonight", title="Bins tonight")
     elif delta == 0:
-        result.update(attention="morning", title="Bins out this morning")
+        result.update(attention="morning", title="Bins today")
     if result["attention"]:
         labels = {s["id"]: s["label"] for s in c["services"]}
         result["summary"] = result["title"] + "\n\n" + " · ".join(labels[t] for t in result["next"]["types"])

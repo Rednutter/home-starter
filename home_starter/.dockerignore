@@ -44,3 +44,7 @@
 !rootfs/etc/services.d/home-starter/
 !rootfs/etc/services.d/home-starter/run
 !rootfs/etc/services.d/home-starter/finish
+
+!server/homestarter/static/bin-general.webp
+!server/homestarter/static/bin-recycling.webp
+!server/homestarter/static/bin-organics.webp

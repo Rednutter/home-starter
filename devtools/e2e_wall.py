@@ -39,7 +39,18 @@ def main():
                     assert wall.locator(".wall-source-note").is_visible()
                     assert wall.locator(".wall-family-card").evaluate_all("nodes=>nodes.every(e=>e.clientHeight<320&&e.clientWidth<500)")
                     assert "School today" not in wall.inner_text()
-                for region in (".wall-weather", ".wall-household", ".wall-bottom"):
+                if name == "priority_school":
+                    assert wall.get_attribute("data-priority") == "true"
+                    assert not wall.locator(".wall-header > .wall-weather").count()
+                    assert wall.locator(".wall-priority").get_by_text("School run in 10 minutes").is_visible()
+                    assert abs(wall.locator(".wall-family").bounding_box()["y"] - wall.locator(".wall-agenda").bounding_box()["y"]) < 1
+                    assert wall.locator(".wall-header").bounding_box()["width"] > width * 0.9
+                    page.screenshot(path=str(output / ("priority-school-" + str(width) + ".png")))
+                for region in (
+                    (".wall-household", ".wall-bottom")
+                    if wall.get_attribute("data-priority") == "true"
+                    else (".wall-weather", ".wall-household", ".wall-bottom")
+                ):
                     assert wall.locator(region).is_visible(), (name, region)
                 labels_inline = wall.locator(".wall-temperature").evaluate_all(
                     """nodes=>nodes.every(e=>{const number=e.firstElementChild.getBoundingClientRect(),label=e.lastElementChild.getBoundingClientRect();
@@ -78,7 +89,7 @@ def main():
                 if name == "canonical_evening":
                     assert wall.get_attribute("data-mode") == "tomorrow_preview"
                     assert wall.locator('.wall-family-card[data-kind="person"]').count() == 3
-                    assert wall.locator(".wall-timeline h2").inner_text() == "Tomorrow"
+                    assert wall.locator(".wall-timeline h2").evaluate("e=>e.firstChild.textContent") == "Tomorrow"
                     assert abs(boxes[1][0] - reference_boxes[1][0]) < 1 and abs(boxes[1][1] - reference_boxes[1][1]) < 70
                 if name in ("school_sunday", "school_sunday_late", "school_monday", "school_monday_night"):
                     night = name in ("school_sunday_late", "school_monday_night")

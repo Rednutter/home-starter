@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Wall: forecast High leads the two-line weather block; supported daily weather
+  exceptions have condition-specific badges, and timeline days share dated forecasts.
+- Confirmed departures temporarily use the full top band, moving the measured
+  timeline down without moving person cards; priority expires back to normal.
+- Council bins reconcile to an owned HA Local Calendar using actual collection dates,
+  native UID readback and write journals. Illustrated bin identities come from the
+  supplied artwork. Existing calendars remain intact; morning relevance ends at noon.
+- Bottom household/media content now occupies a replaceable utility slot.
+
 - Request explicit 1080p 60 Hz at wall wake/startup, retaining rotation and
   overnight power policy. Retry transient HDMI reconfiguration with bounded fresh
   state checks; never accept powered headless output as a successful monitor wake.

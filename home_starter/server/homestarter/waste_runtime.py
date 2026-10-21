@@ -114,6 +114,18 @@ async def inspect(core, store, now=None):
         except CoreError:
             result["entity_issue"] = "Native bin entity inspection is unavailable."
     result["entities_ready"] = bool(value["confirmed"]) and result["entity_issue"] is None
+    from . import bin_calendar
+
+    record = bin_calendar.load(store, house)
+    result["calendar"] = {"state": "not detected" if record is None else "connected but incomplete", "entity": (record or {}).get("entity")}
+    if record and record.get("entity"):
+        try:
+            await bin_calendar.check(core, record)
+            expected = bin_calendar.desired(value, (await core.config())["time_zone"], now or datetime.now(UTC))
+            complete = bool(expected) and all(record.get("events", {}).get(day, {}).get("uid") for day in expected)
+            result["calendar"]["state"] = "connected" if complete else "connected but incomplete"
+        except (CoreError, ValueError):
+            result["calendar"]["state"] = "needs attention"
     return result
 
 
@@ -171,3 +183,6 @@ async def tick(provider, core, store, now=None):
     if not value["checked_at"] or now - waste.timestamp(value["checked_at"]) >= interval:
         await waste.refresh(provider, core, store, house, now)
     await project(core, store, house, now)
+    from .bin_calendar import reconcile
+
+    await reconcile(core, store, house, now)

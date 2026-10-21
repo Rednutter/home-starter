@@ -13,9 +13,20 @@ const valid=r=>!r.expires_at || new Date(r.expires_at)>now;
 const kiosk=new URLSearchParams(window.location.search).has("kiosk")&&!new URLSearchParams(window.location.search).has("disable_km");
 const small=window.innerHeight<850;
 const night=Boolean(model.focus?.night);
+const priority=model.priority&&valid(model.priority)?model.priority:null;
 const wallpaper=wallWallpaper(now,hass.config.time_zone,cfg.surface_id,cfg.wallpapers);
 // Authored outline geometry is shared by native HA and isolated previews.
 const shapes={home:'<path d="m3 11 9-8 9 8M5 10v11h5v-7h4v7h5V10"/>',car:'<path d="m5 8 2-4h10l2 4M4 17v3m16-3v3"/><rect x="3" y="8" width="18" height="10" rx="3"/><path d="M6 13h2m8 0h2"/>',calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 11h18"/>',check:'<circle cx="12" cy="12" r="9"/><path d="m7 12 3 3 7-7"/>',sun:'<circle cx="12" cy="12" r="4"/><path d="M12 1v3m0 16v3M1 12h3m16 0h3M4 4l2 2m12 12 2 2M4 20l2-2M18 6l2-2"/>',cloud:'<path d="M6 18a5 5 0 1 1 1-10 6 6 0 0 1 11 2 4 4 0 0 1 0 8Z"/>',thermometer:'<path d="M9 14V5a3 3 0 0 1 6 0v9a5 5 0 1 1-6 0Z"/><path d="M12 8v10"/>',lock:'<rect x="5" y="10" width="14" height="12" rx="2"/><path d="M8 10V6a4 4 0 0 1 8 0v4m-4 5v3"/>',music:'<path d="M9 18V5l12-3v13M9 8l12-3"/><ellipse cx="6" cy="18" rx="3" ry="3"/><ellipse cx="18" cy="15" rx="3" ry="3"/>',light:'<path d="M8 15a7 7 0 1 1 8 0l-1 4H9ZM9 22h6"/>',camera:'<rect x="2" y="5" width="14" height="14" rx="3"/><path d="m16 10 6-4v12l-6-4"/>',alert:'<path d="m12 2 10 19H2ZM12 8v5m0 3v1"/>'};
+Object.assign(shapes,{
+ rain:'<path d="M6 15a5 5 0 1 1 1-10 6 6 0 0 1 11 2 4 4 0 0 1 0 8M7 19l-1 3m7-3-1 3m7-3-1 3"/>',
+ storm:'<path d="M6 15a5 5 0 1 1 1-10 6 6 0 0 1 11 2 4 4 0 0 1 0 8M13 12l-4 6h5l-3 5"/>',
+ wind:'<path d="M2 8h14a3 3 0 1 0-3-3M2 12h18a3 3 0 1 1-3 3M2 16h6"/>',
+ cold:'<path d="M12 2v20M3 7l18 10M3 17 21 7M9 4l3 3 3-3M9 20l3-3 3 3"/>',
+ bin:'<path d="M5 6h14l-1 14H6ZM4 6h16M9 3h6v3M9 10v6m6-6v6"/><circle cx="7" cy="22" r="1"/><circle cx="17" cy="22" r="1"/>'
+});
+const weatherIcon=value=>/lightning/.test(value||"")?"storm":/rain|pouring|hail|snow/.test(value||"")?"rain":/wind/.test(value||"")?"wind":["sunny","clear-night","clear night"].includes(value)?"sun":"cloud";
+const dayWeather=day=>typeof day?.high==="number"&&Number.isFinite(day.high)?`<span class="wall-day-weather" aria-label="Forecast high ${esc(Math.round(day.high))} degrees">${icon(weatherIcon(day.condition))}${esc(Math.round(day.high))}°${day.warning?`<small title="${esc(day.warning.message)}">${icon("alert")}</small>`:""}</span>`:'<span class="wall-day-weather wall-forecast-unavailable" aria-label="Forecast unavailable">—</span>';
+const bins=row=>row.bin_types?.length?`<span class="wall-bin-icons" aria-label="${esc(row.bin_types.join(", "))}">${row.bin_types.map(kind=>`<span data-bin="${esc(kind)}">${icon("bin")}</span>`).join("")}</span>`:"";
 const icon=name=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${shapes[name] || shapes.calendar}</svg>`;
 const nice=value=>String(value || "").replace(/\s+-\s+/g," · ");
 const shortTime=value=>String(value || "").replace(/\s+pm$/i,"");
@@ -94,27 +105,26 @@ const upcoming=()=>{
  return upcomingDays.map((day,n)=>{
   const items=rows(day.items,Infinity);
   if(!items.length)return "";
-  return `<section class="wall-upcoming-day"><h3>${esc(day.label)}</h3><ol>${items.map(r=>`<li class="wall-upcoming-row wall-tone-${n%3}"><span class="wall-dot"></span><time>${esc(shortTime(r.time))}</time><p>${esc(nice(r.title))}${r.people?.length&&!r.person_title?`<span> · ${esc(r.people.join(" · "))}</span>`:""}</p></li>`).join("")}</ol></section>`;
+  return `<section class="wall-upcoming-day"><h3>${esc(day.label)}${dayWeather(day.weather)}</h3><ol>${items.map(r=>`<li class="wall-upcoming-row wall-tone-${n%3}"><span class="wall-dot"></span><time>${esc(shortTime(r.time))}</time><p>${bins(r)}${esc(nice(r.title))}${r.bin_types?.length&&r.detail?`<span class="wall-bin-label">${esc(r.detail)}</span>`:""}${r.people?.length&&!r.person_title?`<span> · ${esc(r.people.join(" · "))}</span>`:""}</p></li>`).join("")}</ol></section>`;
  }).join("");
 };
 const timeline=(panel,secondary=false)=>{
- const available=rows(panel?.items,secondary?3:small?4:5),items=[];
- let capacity=secondary?(small?2:3):small?5:7;
- for(const r of available){const cost=1+(r.title.length>28?0.5:0)+(!secondary&&(r.detail||location(r))?0.5:0)+(secondary&&r.day_offset>0?0.5:0);if(cost>capacity&&items.length)break;items.push(r);capacity-=cost;}
+  const items=rows(panel?.items,Infinity);
  const future=upcoming();
  if(!items.length&&!future)return "";
- return `<section class="wall-surface ${secondary?"wall-secondary":"wall-timeline"}"><header><h2>${esc(panel?.label || (secondary?"Upcoming":"Today"))}</h2>${!secondary?`<p>${esc(panel?.date_label || date({weekday:"short",day:"numeric",month:"short"}))}</p>`:""}</header><ol>${items.map((r,n)=>`<li class="wall-line-item wall-tone-${n%3}"><time aria-label="${esc((r.time&&r.time!=="All day"?"Starts ":"")+(r.time || r.when))}">${r.time&&r.time!=="All day"?"<small>Starts</small>":""}${esc(shortTime(r.time || r.when))}</time><span class="wall-dot"></span><div><h3>${esc(nice(r.title))}</h3><div class="wall-line-meta">${secondary?(r.day_offset>0?`<p>${esc(r.day_label)}</p>`:""):`${r.people?.length&&!r.person_title?`<p>${esc(r.people.join(" · "))}</p>`:""}${location(r)?`<p>${esc(location(r))}</p>`:""}${r.detail?`<p class="wall-leave">${icon("car")}${esc(r.leave_at&&r.id!==model.next_movement?.id?"Leave "+clock(r.leave_at):r.detail)}</p>`:""}`}</div></div></li>`).join("")}</ol>${future?`<div class="wall-upcoming" aria-label="Upcoming days">${future}</div>`:""}</section>`;
+ return `<section class="wall-surface ${secondary?"wall-secondary":"wall-timeline"}"><header><h2>${esc(panel?.label || (secondary?"Upcoming":"Today"))}${dayWeather(panel?.weather)}</h2>${!secondary?`<p>${esc(panel?.date_label || date({weekday:"short",day:"numeric",month:"short"}))}</p>`:""}</header><ol>${items.map((r,n)=>`<li class="wall-line-item wall-tone-${n%3}"><time aria-label="${esc((r.time&&r.time!=="All day"?"Starts ":"")+(r.time || r.when))}">${r.time&&r.time!=="All day"?"<small>Starts</small>":""}${esc(shortTime(r.time || r.when))}</time><span class="wall-dot"></span><div><h3>${bins(r)}${esc(nice(r.title))}</h3><div class="wall-line-meta">${secondary?(r.day_offset>0?`<p>${esc(r.day_label)}</p>`:""):`${r.people?.length&&!r.person_title?`<p>${esc(r.people.join(" · "))}</p>`:""}${location(r)?`<p>${esc(location(r))}</p>`:""}${r.detail?`<p class="${r.leave_at?"wall-leave":"wall-event-detail"}">${r.leave_at?icon("car"):""}${esc(r.leave_at&&r.id!==model.next_movement?.id?"Leave "+clock(r.leave_at):r.detail)}</p>`:""}`}</div></div></li>`).join("")}</ol>${future?`<div class="wall-upcoming" aria-label="Upcoming days">${future}</div>`:""}</section>`;
 };
 const weather=model.weather;
 const temperature=value=>typeof value==="number"&&Number.isFinite(value)?Math.round(value)+"°":null;
 const preview=Boolean(model.focus?.preview || night);
-const weatherCondition=preview?weather?.forecast_condition:weather?.condition;
-const condition=weatherCondition?.replace(/partlycloudy/g,"Partly cloudy").replace(/^./,c=>c.toUpperCase());
+const weatherCondition=weather?.forecast_condition || (!preview?weather?.condition:null);
+const condition=weatherCondition?.replace(/partlycloudy/g,"Partly cloudy").replace(/[-_]/g," ").replace(/^./,c=>c.toUpperCase());
 const reading=(value,label,primary=false)=>temperature(value)?`<div class="wall-temperature${primary?" wall-temperature-primary":""}"><${primary?"strong":"span"}>${esc(temperature(value))}</${primary?"strong":"span"}><small>${esc(label)}</small></div>`:"";
 const weatherLabel=preview?(model.focus?.label || "Tomorrow"):"Weather";
-const weatherSummary=[preview?weatherLabel:null,condition,weather?.high==null?"Forecast high unavailable":null].filter(Boolean).join(" · ") || "Weather unavailable";
-const weatherImpact=exceptions.find(e=>e.kind==="weather")?.title || (typeof weather?.precipitation_probability==="number"&&weather.precipitation_probability>=60?`${weather.precipitation_probability}% chance of rain`:"");
-const weatherPanel=`<section class="wall-weather" aria-label="${esc(weatherLabel)}"><div class="wall-weather-reading">${weatherCondition?icon(["sunny","clear night"].includes(weatherCondition)?"sun":"cloud"):""}${preview?reading(weather?.high,"High",true)+reading(weather?.low,"Low"):reading(weather?.temperature,"Now",true)+reading(weather?.high,"High")}</div><h2>${esc(weatherSummary)}</h2>${weatherImpact?`<p class="wall-weather-impact">${esc(weatherImpact)}</p>`:""}</section>`;
+const weatherSummary=[preview?weatherLabel:null,preview?temperature(weather?.low)&&temperature(weather.low)+" low":temperature(weather?.temperature)&&temperature(weather.temperature)+" now",condition,weather?.high==null?"Forecast high unavailable":null].filter(Boolean).join(" · ") || "Weather unavailable";
+const weatherImpact=weather?.warning?.message || (typeof weather?.precipitation_probability==="number"&&weather.precipitation_probability>=60?`${weather.precipitation_probability}% chance of rain`:"");
+const weatherPanel=`<section class="wall-weather" data-severity="${esc(weather?.warning?.level || "ordinary")}" aria-label="${esc(weatherLabel)}"><div class="wall-weather-reading">${weatherCondition?icon(weatherIcon(weatherCondition)):""}${reading(weather?.high,"High",true)}${weather?.warning?`<span class="wall-weather-badge">${icon(({heat:"thermometer",cold:"cold",wind:"wind",storm:"storm",rain:"rain"})[weather.warning.kind] || "alert")}${esc(weather.warning.label)}</span>`:""}</div><h2>${esc(weatherSummary)}</h2>${weatherImpact?`<p class="wall-weather-impact">${esc(weatherImpact)}</p>`:""}</section>`;
+const priorityPanel=priority?`<section class="wall-priority" aria-label="Household action" data-expires="${esc(priority.expires_at)}" data-level="${esc(priority.level)}"><h1>${esc(priority.title)}</h1>${priority.people?.length?`<p>${esc(priority.people.join(" · "))}</p>`:""}${priority.location?`<p>${esc(priority.location)}</p>`:""}<p class="wall-priority-action">${priority.starts_at?`Starts ${esc(clock(priority.starts_at))} · `:""}<strong>${esc(priority.action)}</strong></p></section>`:"";
 const status=fresh?model.household_status || {}:{};
 const lightsOn=Array.isArray(status.lights_on)?status.lights_on:[];
 const lightShapes={
@@ -144,6 +154,11 @@ const cameraPicture=c=>{
 };
 const mediaPanel=playing.length?`<section class="wall-camera-status wall-media-status wall-surface" aria-label="Now playing"><div class="wall-camera-heading"><span class="wall-status-icon">${icon("music")}</span><div><h2>Now playing</h2></div></div><div class="wall-active-status">${playing.map(r=>`<section><h3>${esc(r.title)}</h3><p>${esc([r.artist,r.room].filter(Boolean).join(" · "))}</p></section>`).join("")}</div></section>`:"";
 const cameraPanel=mediaPanel || (cameras.length||active.length?`<section class="wall-camera-status wall-surface" aria-label="Cameras and active context">${cameras.length?`<div class="wall-camera-heading"><span class="wall-status-icon">${icon("camera")}</span><div><h2>Cameras</h2><p>${esc(cameras.filter(c=>c.available).length+" available")}</p></div></div><div class="wall-cameras">${cameras.map(c=>`<figure>${cameraPicture(c)}<figcaption>${esc(c.name)}${!c.available?" · Unavailable":""}</figcaption></figure>`).join("")}</div>`:`<div class="wall-active-status">${active.map(r=>`<section><h3>${esc(r.title)}</h3><p>${esc(r.detail)}</p></section>`).join("")}</div>`}</section>`:model.issues?.length?`<aside class="wall-source-note" role="status">${esc(model.issues.some(s=>s.includes("Calendar"))?"Calendar temporarily unavailable":"Some household information is temporarily unavailable")}</aside>`:"");
+// Replaceable utility slot: structured escaped data, never arbitrary HTML.
+const utility=model.utility || {kind:"household"};
+const utilityPanel=utility.kind==="message"&&utility.title?
+ `<section class="wall-surface wall-utility-message"><h2>${esc(utility.title)}</h2><p>${esc(utility.body)}</p></section>`:
+ household+cameraPanel;
 const session=model.display_session && valid(model.display_session) ? model.display_session : null;
 let picture="";
 if(session?.kind==="camera" && /^camera\.[a-z0-9_]+$/.test(session.camera || "")) {
@@ -153,7 +168,7 @@ if(session?.kind==="camera" && /^camera\.[a-z0-9_]+$/.test(session.camera || "")
 const overlay=session?`<section class="wall-session" aria-label="Temporary display session"><div><h2>${esc(session.title)}</h2>${picture}${session.kind==="camera"&&!picture?"<p>Camera view unavailable</p>":""}<p class="wall-session-body">${esc(session.body)}</p><p>Returns to the family board automatically</p></div></section>`:"";
 const alerts=exceptions.filter(r=>r.kind!=="weather");
 const primaryAgenda=night?"":timeline(model.timeline);
-const body=`<main class="hs-wall" data-fresh="${fresh}" data-night="${night}" data-wallpaper-period="${wallpaper.period}" data-wallpaper="${wallpaper.id || "fallback"}" data-wall-surface="${esc(cfg.surface_id)}" data-cursor-hidden="${kiosk}" data-state="${esc(model.day_state)}" data-mode="${esc(model.focus?.mode || "today")}" data-phase="${esc(model.phase || "morning")}" data-agenda="${primaryAgenda?"visible":"hidden"}" style="${decorationStyle(now,hass.config.time_zone,cfg.surface_id)};--wall-chrome:${kiosk?0:56}px${wallpaper.id?`;--wall-landscape:var(--wallpaper-${wallpaper.id})`:""}" aria-label="${esc(cfg.title)} household board">${alerts.length?`<aside class="wall-alerts">${icon("alert")}${esc(alerts.map(r=>r.title+" · "+r.detail).join(" · "))}</aside>`:""}<header class="wall-header"><div class="wall-clock"><time>${esc(date({hour:"numeric",minute:"2-digit",hour12:false}).replace(/^0/,""))}</time><p>${esc(date({weekday:"long",day:"numeric",month:"short"})).replace(",","")}</p>${nightReadiness}</div>${weatherPanel}</header>${night?"":`<div class="wall-family${schoolPanel?" wall-family-school":""}" data-incomplete="${familyIncomplete}" data-count="${schoolPanel?school.children.length:cards.length}" aria-label="${esc(school?.label || "Household plans")}">${schoolPanel || family}</div><aside class="wall-agenda">${primaryAgenda}</aside>`}<footer class="wall-bottom">${household}${cameraPanel}</footer>${overlay}</main>`;
+const body=`<main class="hs-wall" data-fresh="${fresh}" data-night="${night}" data-priority="${Boolean(priority)}" data-wallpaper-period="${wallpaper.period}" data-wallpaper="${wallpaper.id || "fallback"}" data-wall-surface="${esc(cfg.surface_id)}" data-cursor-hidden="${kiosk}" data-state="${esc(model.day_state)}" data-mode="${esc(model.focus?.mode || "today")}" data-phase="${esc(model.phase || "morning")}" data-agenda="${primaryAgenda?"visible":"hidden"}" style="${decorationStyle(now,hass.config.time_zone,cfg.surface_id)};--wall-chrome:${kiosk?0:56}px${wallpaper.id?`;--wall-landscape:var(--wallpaper-${wallpaper.id})`:""}" aria-label="${esc(cfg.title)} household board">${alerts.length?`<aside class="wall-alerts">${icon("alert")}${esc(alerts.map(r=>r.title+" · "+r.detail).join(" · "))}</aside>`:""}<header class="wall-header"><div class="wall-clock"><time>${esc(date({hour:"numeric",minute:"2-digit",hour12:false}).replace(/^0/,""))}</time><p>${esc(date({weekday:"long",day:"numeric",month:"short"})).replace(",","")}</p>${nightReadiness}</div>${priorityPanel || weatherPanel}${priority?`<template class="wall-priority-fallback">${weatherPanel}</template>`:""}</header>${night?"":`<div class="wall-family${schoolPanel?" wall-family-school":""}" data-incomplete="${familyIncomplete}" data-count="${schoolPanel?school.children.length:cards.length}" aria-label="${esc(school?.label || "Household plans")}">${schoolPanel || family}</div><aside class="wall-agenda">${primaryAgenda}</aside>`}<footer class="wall-bottom" data-region="utility" data-content="${esc(model.utility?.kind || "household")}">${utilityPanel}</footer>${overlay}</main>`;
 if(window.customElements&&typeof HTMLElement!=="undefined"&&!window.customElements.get("home-starter-ambient-wall")) {
  // HA uses nested shadow roots. Scope the document-wide rule to this mounted wall
  // route in kiosk mode; remove every injected style/listener on navigation or detach.
@@ -193,31 +208,48 @@ if(window.customElements&&typeof HTMLElement!=="undefined"&&!window.customElemen
  class AmbientWall extends HTMLElement {
   connectedCallback(){
    this._cursorGuard ||= cursorGuard(this);this._cursorGuard.set(this.querySelector('.hs-wall'));
-   this._resize ||= new ResizeObserver(()=>this._fitAgenda());this._resize.observe(this);
+   this._expirePriority();
+    this._resize ||= new ResizeObserver(()=>this._fitAgenda());this._resize.observe(this);
    document.fonts?.ready.then(()=>{if(this.isConnected)this._fitAgenda();});
    this._fitAgenda();
   }
-  disconnectedCallback(){this._cursorGuard?.dispose();this._cursorGuard=null;this._resize?.disconnect();this._resize=null;cancelAnimationFrame(this._fitFrame);}
+  disconnectedCallback(){clearTimeout(this._priorityTimer);this._cursorGuard?.dispose();this._cursorGuard=null;this._resize?.disconnect();this._resize=null;cancelAnimationFrame(this._fitFrame);}
   _fitAgenda(){
    cancelAnimationFrame(this._fitFrame);
    this._fitFrame=requestAnimationFrame(()=>{
-    const panel=this.querySelector('.wall-timeline'),future=panel?.querySelector('.wall-upcoming');
-    if(!future)return;
-    const days=[...future.children];future.hidden=false;
-    for(const day of days){day.hidden=false;for(const row of day.querySelectorAll('li'))row.hidden=false;}
-    const bottom=panel.getBoundingClientRect().bottom-parseFloat(getComputedStyle(panel).paddingBottom);
-    let full=false,visible=0;
-    for(const day of days){
-     let count=0;
-     for(const row of day.querySelectorAll('li')){
-      if(full||row.getBoundingClientRect().bottom>bottom){row.hidden=true;full=true;}
-      else {count++;visible++;}
+         const panel=this.querySelector('.wall-timeline');
+     if(!panel)return;
+     const future=panel.querySelector('.wall-upcoming');
+     const days=[...(future?.children || [])],detailed=[...panel.querySelectorAll(':scope > ol > li')];
+     if(future)future.hidden=false;
+     for(const row of detailed)row.hidden=false;
+     for(const day of days){day.hidden=false;for(const row of day.querySelectorAll('li'))row.hidden=false;}
+     const bottom=panel.getBoundingClientRect().bottom-parseFloat(getComputedStyle(panel).paddingBottom);
+     let full=false,visible=0;
+     for(const row of detailed){if(full||row.getBoundingClientRect().bottom>bottom){row.hidden=true;full=true;}}
+     for(const day of days){
+      let count=0;
+      for(const row of day.querySelectorAll('li')){
+       if(full||row.getBoundingClientRect().bottom>bottom){row.hidden=true;full=true;}
+       else {count++;visible++;}
+      }
+      day.hidden=count===0;
      }
-     day.hidden=count===0;
-    }
-    future.hidden=visible===0;
+     if(future)future.hidden=visible===0;
    });
   }
+   _expirePriority(){
+    clearTimeout(this._priorityTimer);
+    const root=this.querySelector('.hs-wall'),panel=root?.querySelector('.wall-priority');
+    if(!panel)return;
+    const delay=Date.parse(panel.dataset.expires)-Date.now();
+    if(!Number.isFinite(delay))return;
+    this._priorityTimer=setTimeout(()=>{
+     const fallback=root.querySelector('.wall-priority-fallback');
+     if(fallback){panel.replaceWith(fallback.content.cloneNode(true));fallback.remove();}
+     root.dataset.priority="false";this._fitAgenda();
+    },Math.max(0,delay));
+   }
   set content(value) {
    if(value===this._content)return;
    this._content=value;
@@ -226,7 +258,7 @@ if(window.customElements&&typeof HTMLElement!=="undefined"&&!window.customElemen
    const next=parsed.content.querySelector(".hs-wall"),old=this.querySelector(".hs-wall");
    const keys=root=>[...(root?.querySelectorAll("[data-key]") || [])].map(e=>e.dataset.key).join("|");
    const changed=old&&next&&(keys(old)!==keys(next)||old.dataset.mode!==next.dataset.mode);
-   const update=()=>{if(generation===this._generation){this.innerHTML=value;this._cursorGuard?.set(this.querySelector(".hs-wall"));this._fitAgenda();}};
+   const update=()=>{if(generation===this._generation){this.innerHTML=value;this._cursorGuard?.set(this.querySelector(".hs-wall"));this._expirePriority();this._fitAgenda();}};
    this._transition?.skipTransition();
    if(changed&&old.dataset.fresh==="true"&&next.dataset.fresh==="true"&&document.startViewTransition&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     this._transition=document.startViewTransition(update);

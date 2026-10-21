@@ -41,7 +41,7 @@ join into a card spanning those slots. User-confirmed Recess/Lunch gaps use slim
 unlabelled fixed-height separators. Matching bell times stay aligned across children;
 different source schedules retain their own native cadence. Shared header and
 footer rows keep names/departures above the aligned timetable and extra confirmed
-requirements below. Night mode keeps its existing compact summaries.
+requirements below. Night mode omits people/planning cards and retains restrained clock/weather/status.
 
 ## Data and composition
 
@@ -61,7 +61,7 @@ quiet daytime, pre-activity, active movement, evening, overnight, weekend,
 abnormal schedule and exception. Urgent context overrides the clock baseline.
 The supplied weekday mock-up is the canonical visual composition: a large
 clock/date and weather hero, three circular-avatar person cards, right-hand
-timeline, lower-right Later/Week ahead panel, and a readable household/status
+timeline with a content-positioned future divider, and a readable household/status
 bar. Keep the photographic background visible through lighter tinted glass;
 do not replace the cards with floating text or a wide school table. Native
 permitted portraits are used where present, otherwise clean initial circles.
@@ -431,3 +431,38 @@ and display/audio/voice stayed active. Original helper/service files were backed
 up on the Pi. The refresh-rate pin is a mitigation, not proof that 100 Hz caused
 the underlying graphics failure. A full subsequent overnight interval has not
 yet been observed.
+
+### Full-width priority and dated collection follow-up
+
+The normal weather header now leads with the selected day's forecast maximum.
+Current temperature is secondary; preview uses that date's low. Daily forecast
+facts generate compact storm/hail/rain/wind/heat/cold badges with explicit units.
+Daily records never imply an afternoon forecast or an official severe warning.
+No official-warning feed is currently configured, so that live path is unavailable.
+Every schedule day uses its own dated forecast from the same model; unavailable
+forecast days show a quiet dash rather than extrapolated weather.
+
+One ranked action may occupy the entire top band, replacing weather and moving
+the schedule down beside the unchanged person cards. Confirmed departures appear
+15 minutes before Leave by, then retain a factual passed-time cue for ten minutes.
+This does not assert attendance, departure completion or that anyone is late.
+Timed preparation/start cues are lower priority. Browser expiry restores normal
+weather and schedule height independently of the next context poll. Both detailed
+and future rows are fitted as whole chronological entries to measured space.
+
+Confirmed Council collections now reconcile to the separately owned native
+Home Starter Bins calendar. Each actual collection date has one all-day event;
+there is no preceding reminder event. Journals bind writes to the created entry
+and native event UID; unknown calendars and externally edited events are preserved.
+REST readback uses start/end; HA's WebSocket writes use dtstart/dtend.
+The wall derives Bins out tonight after 18:00 and Bins today until noon, which is
+a relevance cutoff, not evidence that collection occurred. Existing selected bin
+screens are preserved, and the user-requested wall selection is explicitly saved.
+Detailed rows use the supplied illustrated bins; dense rows use matching outlines.
+The bottom utility slot accepts structured escaped content and defaults to the
+existing household/media/camera presentation.
+
+Live HA readback verified six unique all-day events and the Pi screenshot showed
+the real tomorrow timetable, forecast and bin action. Priority layout evidence is
+synthetic browser acceptance, not a claim that a departure alert occurred live.
+Private screenshots and timetable payloads remain outside Git.

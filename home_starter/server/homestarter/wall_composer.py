@@ -459,6 +459,7 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
             when = ("Tomorrow" if day == 1 else e["start"].strftime("%a %d %b")) + ("" if e["all_day"] else " · " + when)
         row = {
             "id": e["key"],
+            "wall_role": links.get(e["key"], {}).get("wall_role"),
             "title": e["title"],
             "when": when,
             "people": names,
@@ -482,6 +483,8 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
                 movements.append((leave, e["start"], row))
         else:
             future.append(row)
+    for row in view.get("bin_rows", []):
+        (rows if row["date"] == local.date().isoformat() else future).append(row)
     rows.sort(key=lambda r: r["starts_at"])
     future.sort(key=lambda r: r["starts_at"])
     rules = [] if abnormal else [r for r in view["briefing"] if r.get("when") == "This morning"]
@@ -510,26 +513,9 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
             continue
         label = item.get("name", "Household")
         if domain == "weather":
-            weather = {"condition": value.replace("_", " "), "temperature": attrs.get("temperature"), "unit": attrs.get("temperature_unit", "°C")}
-            forecast = next(
-                (
-                    r
-                    for r in attrs.get("forecast", [])
-                    if isinstance(r, dict) and moment(r.get("datetime")) and moment(r["datetime"]).astimezone(local.tzinfo).date().isoformat() == focus["date"]
-                ),
-                {},
-            )
-            high = forecast.get("temperature")
-            weather["high"] = high if type(high) in (int, float) and isfinite(high) else None
-            weather["precipitation_probability"] = forecast.get("precipitation_probability")
-            low = forecast.get("templow")
-            weather.update(
-                preview=focus["preview"],
-                focus_date=focus["date"],
-                focus_label=focus["label"],
-                low=low if type(low) in (int, float) and isfinite(low) else None,
-                forecast_condition=forecast.get("condition"),
-            )
+            from .wall_weather import compose as weather_compose
+
+            weather = weather_compose(value, attrs, focus, local.tzinfo)
             temp = attrs.get("temperature")
             celsius = (temp - 32) * 5 / 9 if isinstance(temp, (int, float)) and attrs.get("temperature_unit") == "°F" else temp
             if movement and value in ("rainy", "pouring", "lightning", "lightning-rainy", "snowy", "snowy-rainy"):
@@ -561,7 +547,7 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
         elif domain == "climate" and attrs.get("hvac_action") in ("heating", "cooling"):
             transient.append({"kind": "climate", "title": label, "detail": attrs["hvac_action"].capitalize()})
     bins = view.get("waste", {})
-    if bins.get("configured") and bins.get("attention") not in (None, "quiet") and bins.get("summary"):
+    if not view.get("bin_rows") and bins.get("configured") and bins.get("attention") not in (None, "quiet") and bins.get("summary"):
         exceptions.append({"title": bins["summary"], "detail": "Household collection", "kind": "bins"})
     baseline = state
     if exceptions:
@@ -649,6 +635,12 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
     panels["upcoming_days"] = list(days.values()) if not focus["night"] else []
     if focus["night"]:
         panels["week"] = []
+    from .wall_priority import select as select_priority
+
+    priority = select_priority([*rows, *future], school, local)
+    for panel in [panels["timeline"], *panels["upcoming_days"]]:
+        panel["weather"] = (weather or {}).get("days", {}).get(panel["date"])
+    panels["utility"] = {"kind": "household"}
     # Chronology can fill the available space through the admitted horizon;
     # distant events still need explicit preparation intent to demand attention.
     attention_future = [
@@ -681,6 +673,7 @@ def compose(view, events, settings, people, now, zone, signals=(), display_sessi
         "household_exception": exceptions[:2],
         "active_context": transient[:2],
         "weather": weather,
+        "priority": priority,
         "display_session": active_session,
         "issues": view.get("issues", [])[:2],
         "valid_until": valid_until.isoformat(),

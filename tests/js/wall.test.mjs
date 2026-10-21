@@ -34,7 +34,7 @@ test("forecast values are real optional data, never an inferred high",()=>{
  const current=scene({weather:{temperature:14,condition:"sunny"}});
  assert.match(current,/14°/);assert.match(current,/Forecast high unavailable/);assert.doesNotMatch(current,/→/);
  const forecast=scene({weather:{temperature:14,high:20,condition:"sunny"}});
- assert.match(forecast,/20°<\/span><small>High/);assert.match(forecast,/14°<\/strong><small>Now/);assert.doesNotMatch(forecast,/→/);
+ assert.match(forecast,/20°<\/strong><small>High/);assert.match(forecast,/14° now/);assert.doesNotMatch(forecast,/→/);
 });
 test("missing status is honest and unselected categories leave no empty containers",()=>{
  const body=scene();assert.match(body,/Home/);assert.doesNotMatch(body,/Climate|Security|Lights|Cameras|wall-family-card/);
@@ -54,8 +54,8 @@ test("active lights show restrained named outline icons with overflow and no sta
 
 test("preview weather uses two lines with inline range labels and no current-observation clutter",()=>{
  const body=scene({focus:{preview:true,mode:"tomorrow_preview"},weather:{preview:true,focus_date:"2026-10-19",temperature:14,low:10,high:20,condition:"rainy",forecast_condition:"sunny"}});
- assert.match(body,/Tomorrow · Sunny/);assert.match(body,/10°<\/span><small>Low/);assert.match(body,/20°<\/strong><small>High/);assert.doesNotMatch(body.match(/<section class="wall-weather"[\s\S]*?<\/section>/)[0],/Monday|Now 14°|→/);
- assert.match(scene({weather:{temperature:14,high:20,condition:"sunny",precipitation_probability:0}}),/<h2>Sunny<\/h2>/);
+ assert.match(body,/Tomorrow · 10° low · Sunny/);assert.match(body,/10° low/);assert.match(body,/20°<\/strong><small>High/);assert.doesNotMatch(body.match(/<section class="wall-weather"[\s\S]*?<\/section>/)[0],/Monday|Now 14°|→/);
+ assert.match(scene({weather:{temperature:14,high:20,condition:"sunny",precipitation_probability:0}}),/<h2>14° now · Sunny<\/h2>/);
  assert.doesNotMatch(scene({weather:{temperature:14,high:20,condition:"sunny",precipitation_probability:0}}),/chance of rain/);
  assert.match(scene({weather:{temperature:14,high:20,condition:"rainy",precipitation_probability:70}}),/wall-weather-impact">70% chance of rain/);
 });
@@ -66,9 +66,9 @@ test("night removes planning cards and chronology while retaining weather and ho
  assert.match(body,/data-night="true"/);assert.match(body,/wall-header/);assert.match(body,/wall-weather/);assert.match(body,/wall-household/);
  assert.doesNotMatch(body,/Casey|Confirmed hat requirement|Training|Science|wall-family|wall-agenda|wall-school-periods|Week ahead|wall-secondary/);
  const afterMidnight=scene({focus:{night:true,preview:false,label:"Today"},weather:{focus_date:"2026-10-19",high:23,low:11,temperature:15,forecast_condition:"partlycloudy"}});
- assert.match(afterMidnight,/Today · Partly cloudy/);assert.match(afterMidnight,/23°<\/strong><small>High/);assert.doesNotMatch(afterMidnight.match(/<section class="wall-weather"[\s\S]*?<\/section>/)[0],/Tomorrow|Monday|→/);
+ assert.match(afterMidnight,/Today · 11° low · Partly cloudy/);assert.match(afterMidnight,/23°<\/strong><small>High/);assert.doesNotMatch(afterMidnight.match(/<section class="wall-weather"[\s\S]*?<\/section>/)[0],/Tomorrow|Monday|→/);
  const missing=scene({focus:{preview:true},weather:{low:11}});
- assert.match(missing,/11°<\/span><small>Low/);assert.match(missing,/Forecast high unavailable/);assert.doesNotMatch(missing,/<strong>High<\/strong>|wall-temperature-primary/);
+ assert.match(missing,/11° low/);assert.match(missing,/Forecast high unavailable/);assert.doesNotMatch(missing,/<strong>High<\/strong>|wall-temperature-primary/);
 });
 test("expired calendar rows disappear independently",()=>{
  const body=scene({cards:[{kind:"person",title:"Casey",items:[{...event,title:"Finished",ends_at:new Date(0).toISOString()}]}],timeline:{label:"Today",items:[{...event,title:"Finished",ends_at:new Date(0).toISOString()}]}});
@@ -165,7 +165,7 @@ test("afternoon school preview is labelled tomorrow while the household timeline
  const body=scene({focus:{preview:false,label:"Today"},school,timeline:{label:"Today",items:[{...event,title:"Today's training"}]}});
  assert.match(body,/<small>Tomorrow<\/small>Leave 8:30/);
  assert.match(body,/wall-school-periods[\s\S]*Science/);
- assert.match(body,/<h2>Today<\/h2>[\s\S]*Today&#39;s training/);
+ assert.match(body,/<h2>Today[\s\S]*Today&#39;s training/);
 });
 
 test("lesson cards span native slots and keep slim breaks aligned across children",()=>{
@@ -198,4 +198,28 @@ test("morning readiness promotes confirmed departure and kit while retaining ord
  const unavailable=scene({school,issues:["Calendar needs verification"]});
  assert.match(unavailable,/data-incomplete="true"/);assert.match(unavailable,/Timetable temporarily unavailable/);
  assert.match(unavailable,/<aside class="wall-source-note"/);assert.doesNotMatch(unavailable,/School today|at school<\/p>|wall-camera-status|needs verification/);
+});
+
+test("priority replaces weather across the header and expires independently",()=>{
+ const priority={id:"fixture",title:"School run in 10 minutes",people:["Casey"],action:"Leave 08:30",level:"soon",expires_at:new Date(Date.now()+600000).toISOString()};
+ const body=scene({priority,timeline:{label:"Today",items:[event]}});
+ assert.match(body,/data-priority="true"/);
+ assert.match(body,/wall-priority/);
+ assert.match(body,/School run in 10 minutes/);
+ assert.match(body,/wall-priority-fallback/);
+ assert.doesNotMatch(scene({priority:{...priority,expires_at:new Date(0).toISOString()}}),/data-priority="true"|School run in 10 minutes/);
+});
+test("schedule days use their own dated forecast and bin identity",()=>{
+ const body=scene({timeline:{label:"Today",weather:{high:26,condition:"sunny"},items:[event]},upcoming_days:[{label:"Tomorrow",weather:{high:22,condition:"rainy"},items:[{...event,title:"Bins out tonight",bin_types:["general","recycling"]}]}]});
+ assert.match(body,/Forecast high 26 degrees/);
+ assert.match(body,/Forecast high 22 degrees/);
+ assert.match(body,/data-bin="general"/);
+ assert.match(body,/data-bin="recycling"/);
+ assert.match(scene({upcoming_days:[{label:"Next week",items:[event]}]}),/Forecast unavailable/);
+});
+test("utility slot permits structured replacement with escaped text",()=>{
+ const body=scene({utility:{kind:"message",title:"Reminder <text>",body:"Example"}});
+ assert.match(body,/data-region="utility" data-content="message"/);
+ assert.match(body,/Reminder &lt;text&gt;/);
+ assert.doesNotMatch(body,/wall-household/);
 });

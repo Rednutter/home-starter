@@ -34,9 +34,19 @@ across midnight; choose from each period's pool daily, never rotate within it.
 Extra discoveries come from a 42-item local generated pool, placed clear of copy
 and cards on the wall and interactive Media/person artwork. Select per screen
 and daypart; remain stable on reload and across midnight; never intercept taps.
-Weather uses equally sized labelled High/Low in preview and Now/High by day. No arrows.
-Weather stays two lines: balanced icon/inline temperature labels, then one brief
-description. Extra text is reserved for meaningful weather exceptions.
+Weather leads with the dated forecast High; current temperature is secondary
+in the description (preview uses the dated Low). No arrows. Keep two normal lines;
+only supported forecast exceptions add a badge/detail. Never invent timing or
+official warnings. Each agenda heading uses that date's shared forecast model.
+Priority actions occupy the full header, hide weather and move the agenda down
+beside unchanged people cards. Use confirmed Leave times, a 15-minute lead and
+10-minute factual passed-time grace; never assert someone stayed home or is late.
+One ranked action wins; expired priority restores weather/full agenda automatically.
+Bins use an owned native HA Local Calendar with actual all-day collection dates.
+Read back native UIDs, journal uncertain writes, preserve unrelated calendars and
+external edits. HA WebSocket writes use dtstart/dtend, REST reads start/end.
+Derive out-tonight/today labels from the collection date; useful morning ends at
+noon without claiming collection occurred. Keep the bottom utility slot replaceable.
 Pi output power is separate: off 22:00–06:00 Australia/Sydney using wlopm and the
 user screen-power timer. Keep Chromium/audio/voice running; verify off and wake.
 The monitor hotplugs on standby: retain labwc's auto-enable guard and explicit

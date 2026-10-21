@@ -25,6 +25,7 @@ def main():
             .read_text(encoding="utf-8")
             .replace("const now = new Date();", "const now = new Date(" + json.dumps(value["clock"]) + ");")
         )
+        source = source.replace("Date.now()", "new Date(" + json.dumps(value["clock"]) + ").getTime()")
         source = "\n".join((static / name).read_text(encoding="utf-8") for name in ("decorative.js", "wall-wallpaper.js")) + "\n" + source
         cfg = {"title": "Fictional wall fixture", "surface_id": "example_wall", "epoch": 0, "context": "sensor.fixture"}
         cfg["wallpapers"], wallpaper_styles = wallpapers()

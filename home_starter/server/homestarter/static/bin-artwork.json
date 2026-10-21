@@ -1,0 +1,19 @@
+{
+  "images": [
+    {
+      "file": "bin-general.webp",
+      "source": "User-supplied bin illustration, 21 October 2026",
+      "sha256": "8ec721bc5bd440ca1ecb4ee74e0950e5050eaeaae19673680e41623441029488"
+    },
+    {
+      "file": "bin-recycling.webp",
+      "source": "User-supplied bin illustration, 21 October 2026",
+      "sha256": "e071eaf28c69e341ac01816d02d771cf2b240926abf7f0366e4a6fd77c935773"
+    },
+    {
+      "file": "bin-organics.webp",
+      "source": "User-supplied bin illustration, 21 October 2026",
+      "sha256": "054ad2389ae4f5fc3369f3114eefb18a8a6db6f9006d95077c89f002bac6b347"
+    }
+  ]
+}

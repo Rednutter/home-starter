@@ -125,6 +125,9 @@ def forbidden_path(path: str) -> bool:
             "home_starter/server/homestarter/static/wall-morning.jpg",
             "home_starter/server/homestarter/static/decor-saucer.webp",
             "home_starter/server/homestarter/static/decor-owl.webp",
+            "home_starter/server/homestarter/static/bin-general.webp",
+            "home_starter/server/homestarter/static/bin-recycling.webp",
+            "home_starter/server/homestarter/static/bin-organics.webp",
             "home_starter/server/homestarter/static/decor-atlas.webp",
             *(
                 f"home_starter/server/homestarter/static/wallpapers/{period}-{name}.webp"

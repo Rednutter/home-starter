@@ -21,6 +21,9 @@ def wallpapers():
         image = base64.b64encode((static / "wallpapers" / row["file"]).read_bytes()).decode()
         images.append({"id": row["id"], "period": row["period"]})
         styles.append(f"--wallpaper-{row['id']}:url(data:image/webp;base64,{image});")
+    for kind in ("general", "recycling", "organics"):
+        image = base64.b64encode((static / ("bin-" + kind + ".webp")).read_bytes()).decode()
+        styles.append(f"--wall-bin-{kind}:url(data:image/webp;base64,{image});")
     return images, "".join(styles) + decoration_styles()
 
 

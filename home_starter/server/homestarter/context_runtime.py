@@ -81,8 +81,12 @@ async def inspect(core, store, surface=None, now=None, *, person_id=None, inputs
     try:
         provider = waste.load(store, house)["confirmed"]
         provider_confirmed = bool(provider and (not surface or surface["id"] in provider["screens"]))
+        from .bin_calendar import load as bin_calendar_load
+
+        owned_bins = (bin_calendar_load(store, house) or {}).get("entity")
     except (ValueError, OSError, KeyError, TypeError):
         provider_confirmed = False
+        owned_bins = None
     for key in ("calendars", "waste"):
         if key == "waste" and provider_confirmed:
             continue  # Retain legacy choices, but never duplicate provider context as an event.
@@ -99,6 +103,8 @@ async def inspect(core, store, surface=None, now=None, *, person_id=None, inputs
             issues.append(("Calendar" if key == "calendars" else "Collection source") + " needs verification")
             continue
         for source in choice["sources"]:
+            if provider_confirmed and source == owned_bins:
+                continue  # Owned native collection is projected once from verified UID readback.
             if key == "waste":
                 from .calendar_access import load as waste_calendar_choices
 
@@ -190,6 +196,13 @@ async def inspect(core, store, surface=None, now=None, *, person_id=None, inputs
         weather = next((s for s in signals if s["domain"] == "weather"), None)
         if weather and hasattr(core, "weather_forecast"):
             weather["attributes"] = {**weather.get("attributes", {}), "forecast": await core.weather_forecast(weather["entity_id"])}
+        from . import bin_calendar
+
+        if person_id is None and not surface.get("person_id") and provider_confirmed:
+            try:
+                result["bin_rows"] = await bin_calendar.wall_rows(core, store, house, zone, now)
+            except (CoreError, ValueError, OSError, KeyError, TypeError):
+                issues.append("Bin calendar needs attention")
         school_roles = result["person_roles"] if person_id is None and not surface.get("person_id") else {}
         result["wall"] = compose(
             {**result, "person_roles": school_roles, "school_sources": school_sources}, events, settings, people, now, zone, signals, display_session

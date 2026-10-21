@@ -11,6 +11,13 @@ ZONE = "Australia/Sydney"
 
 
 def scenario(name):
+    if name == "priority_school":
+        case = scenario("school_monday")
+        case["now"] = case["now"].replace(hour=8, minute=20)
+        case["settings"]["school_departures"] = dict.fromkeys(case["people"], "08:30")
+        case["name"] = name
+        case["model"] = compose(case["view"], case["events"], case["settings"], case["people"], case["now"], ZONE, case["signals"])
+        return case
     if name == "school_unavailable":
         case = scenario("school_monday")
         case["view"]["school_sources"] = []
@@ -210,6 +217,7 @@ def scenario(name):
 
 
 SCENARIOS = (
+    "priority_school",
     "school_sunday",
     "school_sunday_late",
     "school_monday_night",

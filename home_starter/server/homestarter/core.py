@@ -176,6 +176,29 @@ class CoreClient:
         except (aiohttp.ClientError, TimeoutError, ValueError, OSError):
             raise CoreError("unreachable", "Native Template helper result is uncertain; inspect helpers before retrying.") from None
 
+    async def local_calendar_flow(self, body: dict, flow_id: str | None = None) -> dict:
+        """Supported config flow endpoint, bounded to owned Local Calendar setup."""
+        import re
+
+        if flow_id is not None and not re.fullmatch(r"[a-zA-Z0-9_-]{1,100}", flow_id):
+            raise ValueError("Invalid native flow identity.")
+        if flow_id is None:
+            if body != {}:
+                raise ValueError("Native Local Calendar start required.")
+            body = {"handler": "local_calendar"}
+        elif body != {"calendar_name": "Home Starter Bins"}:
+            raise ValueError("Owned bin calendar name required.")
+        path = "/config/config_entries/flow" + ("/" + flow_id if flow_id else "")
+        try:
+            async with self._session.post(
+                self._api + path, json=body, headers={"Authorization": "Bearer " + self._token.reveal()}, timeout=REST_TIMEOUT
+            ) as response:
+                if response.status != 200:
+                    raise CoreError("api", "Native Local Calendar configuration failed.")
+                return await response.json()
+        except (aiohttp.ClientError, TimeoutError, ValueError, OSError):
+            raise CoreError("unreachable", "Native Local Calendar result is uncertain; inspect helpers before retrying.") from None
+
     def websocket(self) -> CoreWebSocket:
         return CoreWebSocket(self._session, self._ws_url, self._token)
 

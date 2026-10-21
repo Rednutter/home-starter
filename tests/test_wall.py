@@ -40,7 +40,7 @@ def test_reference_wall_uses_bounded_single_panel_and_no_operating_actions():
     assert "data:image/jpeg;base64" in root["extra_styles"]
     catalogue = json.loads(root["variables"]["wall_json"])["wallpapers"]
     assert len(catalogue) == 20
-    assert root["extra_styles"].count("data:image/webp;base64,") == 23
+    assert root["extra_styles"].count("data:image/webp;base64,") == 26
     assert "const wallWallpaper=" in root["custom_fields"]["wall"]
     assert len(json.dumps(generated["config"]).encode()) < 4 * 1024 * 1024
     assert "call-service" not in str(root) and '"action": "navigate"' not in str(root)
