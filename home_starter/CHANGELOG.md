@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.8.45
+
+- Populate Radio and Podcasts immediately with artwork-led native MA cards;
+  keep discovery separate from saved collections and personal listening.
+- Resolve verified Border and Australian stations by exact catalogue identity
+  when RadioBrowser browsing fails. Retain bounded profile/source-scoped cached
+  suggestions on temporary provider failure, with honest availability labels.
+- Present Ambient, audiobook and episode collections using the same card layout,
+  with honest artwork fallbacks and existing household playback controls.
+- Preserve personal podcast attribution, revoke old-profile artwork, and keep
+  lower collection navigation reachable above the player on short screens.
+- No subscriptions, sharing, native repairs, access changes or cutover are made.
+
 ## 0.8.44
 
 - Add household-wide transport with fresh session checks while keeping listening

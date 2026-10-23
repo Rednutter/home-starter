@@ -117,3 +117,7 @@ async def test_general_trending_and_personal_saved_identity_are_distinct():
     assert own["personalised"] and own["items"][0]["uri"] == "pod://podcast/two"
     unrelated = await service.find("podcast", "", ["pod"], saved={"recent": [{"kind": "podcast", "uri": "other://podcast/two"}]})
     assert not unrelated["personalised"]
+    from homestarter.metadata_projection import fingerprint
+
+    own_id = await service.find("podcast", "", ["pod"], saved={"recent": [{"kind": "podcast", "id": fingerprint("pod://podcast/two")[:24]}]})
+    assert own_id["personalised"] and own_id["items"][0]["uri"] == "pod://podcast/two"

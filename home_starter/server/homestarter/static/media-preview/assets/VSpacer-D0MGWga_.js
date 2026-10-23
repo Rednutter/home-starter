@@ -1,1 +1,0 @@
-import{n as e}from"./VAvatar-D5rSgiL-.js";var t=e(`v-spacer`,`div`,`VSpacer`);export{t};
