@@ -25,6 +25,7 @@ def parent(tmp_path):
         token=Secret("synthetic-secret"), household_lan=True, household_lan_surface="shared", household_lan_binding=digest([house["epoch"], surface])
     )
     listening = SimpleNamespace(
+        authorize=AsyncMock(),
         bootstrap=AsyncMock(return_value={"surfaces": [{"id": "shared", "name": "Example"}]}),
         view=AsyncMock(return_value={"person_id": None, "players": [], "books": []}),
         action=AsyncMock(),
