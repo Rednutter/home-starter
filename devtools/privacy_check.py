@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import shutil
@@ -14,6 +15,8 @@ from detect_secrets import SecretsCollection
 from detect_secrets.settings import default_settings
 
 RUNTIME = {
+    "playlist-visibility.json",
+    "playlist-visibility.tmp",
     "media-catalogue.json",
     "media-catalogue.tmp",
     "home-starter-radio.json",
@@ -55,6 +58,24 @@ RUNTIME = {
 }
 CONTACT = re.compile(r"[\w.+-]+@([\w.-]+\.[A-Za-z]{2,})")
 KEY = re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{30,}")
+
+MEDIA_BUNDLE = "home_starter/server/homestarter/static/media-preview/"
+# Exact reviewed public build artifacts, not a directory-wide privacy exception.
+# Every asset is bound to the previously tested CI manifest; changed/new content
+# requires a fresh build review. Household runtime files never enter this map.
+MEDIA_MANIFEST_SHA = "fb45e16ba93696612696e2063682665970b7154d652ed6560d6eff0609866c92"  # pragma: allowlist secret
+MEDIA_NOTICES = {
+    "UPSTREAM-LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",  # pragma: allowlist secret
+    "THIRD-PARTY-NOTICES.txt": "79564c427e669427badb683e786de60b11df462398fcefce2ebe3e92d9822810",  # pragma: allowlist secret
+    "dependency-inventory.json": "b2d8bce5948830160e5fb2807b88c532872f4f00e9ab52d7ee850498c505a137",  # pragma: allowlist secret
+}
+
+
+def reviewed_media(manifest: bytes) -> dict[str, str]:
+    if hashlib.sha256(manifest).hexdigest() != MEDIA_MANIFEST_SHA:
+        raise ValueError("Generated media manifest needs an exact-artifact privacy review.")
+    files = json.loads(manifest)["files"]
+    return {MEDIA_BUNDLE + name: value for name, value in {**files, **MEDIA_NOTICES, "manifest.json": MEDIA_MANIFEST_SHA}.items()}
 
 
 def inspect_text(path: str, text: str) -> list[str]:
@@ -165,10 +186,24 @@ def main() -> int:
         listing += ["--cached", "--others", "--exclude-standard"]
     paths = sorted(set(subprocess.check_output(listing).decode().split("\0")))  # noqa: S603 -- fixed Git command, no shell
     issues = []
+    reviewed = {}
+    manifest_path = MEDIA_BUNDLE + "manifest.json"
+    if manifest_path in paths:
+        manifest = subprocess.check_output([git, "show", ":" + manifest_path]) if args.staged else Path(manifest_path).read_bytes()  # noqa: S603
+        try:
+            reviewed = reviewed_media(manifest)
+            issues.extend(f"{name}: reviewed release artifact missing" for name in reviewed if name not in paths)
+        except (ValueError, KeyError):
+            issues.append("Generated media manifest needs an exact-artifact privacy review.")
     with default_settings():
         for path in filter(None, paths):
             if path == ".secrets.baseline":
                 continue  # Reviewed one-way hashes, not source values; inspect baseline changes manually.
+            if path.startswith(MEDIA_BUNDLE):
+                body = subprocess.check_output([git, "show", ":" + path]) if args.staged else Path(path).read_bytes()  # noqa: S603
+                if reviewed.get(path) != hashlib.sha256(body).hexdigest():
+                    issues.append(f"{path}: generated content differs from reviewed public artifact")
+                continue
             if forbidden_path(path):
                 issues.append(f"{path}: runtime/private artifact must not be tracked")
                 continue

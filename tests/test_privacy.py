@@ -11,7 +11,7 @@ import pytest
 from detect_secrets.settings import default_settings
 from homestarter.household import HouseholdStore
 from homestarter.privacy import PrivacyFilter, redact
-from privacy_check import forbidden_path, inspect_text
+from privacy_check import forbidden_path, inspect_text, reviewed_media
 
 
 def test_runtime_store_refuses_tracked_product_directories():
@@ -19,6 +19,29 @@ def test_runtime_store_refuses_tracked_product_directories():
     for path in (root, root / "home_starter", root / "tests", root / "home_starter/server/homestarter/runtime"):
         with pytest.raises(ValueError, match="source"):
             HouseholdStore(str(path))
+
+
+def test_generated_release_exception_requires_exact_reviewed_manifest():
+    root = Path("home_starter/server/homestarter/static/media-preview")
+    body = (root / "manifest.json").read_bytes()
+    reviewed = reviewed_media(body)
+    assert len(reviewed) == 485
+    assert str(root / "private-household.png").replace("\\", "/") not in reviewed
+    with pytest.raises(ValueError, match="privacy review"):
+        reviewed_media(body + b" ")
+    import hashlib
+
+    name = str(root / "index.html").replace("\\", "/")
+    assert hashlib.sha256((root / "index.html").read_bytes() + b"changed").hexdigest() != reviewed[name]
+
+
+def test_normal_docker_context_admits_only_exact_reviewed_media_files():
+    patterns = Path("home_starter/.dockerignore").read_text().splitlines()
+    prefix = "server/homestarter/static/media-preview/"
+    files = json.loads(Path("home_starter", prefix, "manifest.json").read_bytes())["files"]
+    assert all("!" + prefix + name in patterns for name in files)
+    assert not any("*" in p for p in patterns if prefix in p)
+    assert "python3 -m homestarter.release_assets" in Path("home_starter/Dockerfile").read_text()
 
 
 def test_ignored_runtime_paths_and_source_visibility():

@@ -1,2 +1,3 @@
 * text=auto eol=lf
 *.png binary
+home_starter/server/homestarter/static/media-preview/** -text -diff linguist-generated=true

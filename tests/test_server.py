@@ -105,14 +105,11 @@ async def test_index_without_ingress_uses_relative_base(app_client):
     assert '<base href="./">' in text
 
 
-async def test_media_shell_is_ingress_relative_but_anonymous_bootstrap_reveals_no_household(app_client):
+async def test_packaged_media_and_bootstrap_require_an_authorised_household_view(app_client):
     client, _ = await app_client()
     response = await client.get("/media", headers={"X-Ingress-Path": PREFIX})
-    assert response.status == 200
-    text = await response.text()
-    assert f'<base href="{PREFIX}/">' in text
-    assert "static/media-app.js" in text
-    assert "static/media.webmanifest" in text
+    assert response.status == 403
+    assert await response.text() == "Use a permitted household view."
     assert response.headers["Cache-Control"] == "no-store"
     denied = await client.get("/api/listening")
     assert denied.status == 403

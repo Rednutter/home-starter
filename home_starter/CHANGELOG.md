@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.43
+
+- Ship the pinned MA-backed household audio interface through the normal add-on
+  build, including compiled assets, external fonts and dependency notices.
+- Connect person-aware collections and artwork to the existing household playback,
+  queue and timer service. Preserve account enforcement and source/progress guards.
+- Retain honest unavailable grouping and native protection states; no native MA
+  repair, new access or household automation cutover is included.
+
 ## 0.8.42
 
 - Add an explicitly enabled household audio listener, separate from authenticated

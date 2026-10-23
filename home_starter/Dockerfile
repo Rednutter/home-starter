@@ -5,7 +5,7 @@
 ARG BUILD_FROM=ghcr.io/home-assistant/base-python:3.13-alpine3.23
 FROM ${BUILD_FROM}
 
-ARG BUILD_VERSION=0.8.42
+ARG BUILD_VERSION=0.8.43
 
 COPY server/requirements.txt /tmp/requirements.txt
 RUN pip3 install --no-cache-dir --disable-pip-version-check -r /tmp/requirements.txt \
@@ -13,6 +13,8 @@ RUN pip3 install --no-cache-dir --disable-pip-version-check -r /tmp/requirements
 
 COPY rootfs /
 COPY server/homestarter /opt/homestarter/homestarter
+
+RUN PYTHONPATH=/opt/homestarter python3 -m homestarter.release_assets
 
 RUN chmod a+x /etc/services.d/home-starter/run /etc/services.d/home-starter/finish
 

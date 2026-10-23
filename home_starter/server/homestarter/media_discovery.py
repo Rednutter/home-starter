@@ -1,8 +1,182 @@
-"""Provider catalogue discovery and short-lived repeat exclusion; no library access."""
+"""Read-only catalogue discovery with source isolation and evidenced ranking."""
 
+import asyncio
+import math
 import random
+import re
 import time
 from datetime import UTC, datetime
+from uuid import UUID
+
+
+def number(value):
+    try:
+        return float(value) if type(value) in {int, float} and math.isfinite(value) and value >= 0 else None
+    except OverflowError:
+        return None
+
+
+def evidence_for(row, *, region=None, curated=None, order=0):
+    """Only explicit fields or an identity-bound reviewed record establish facts."""
+    metadata = row.get("metadata") or {}
+    evidence = {"provider_order": order}
+    country = row.get("country_code") or row.get("countrycode")
+    if isinstance(country, str) and re.fullmatch(r"[A-Za-z]{2}", country):
+        evidence["country"] = country.upper()
+    languages = metadata.get("languages") or []
+    if isinstance(languages, str):
+        languages = [languages]
+    languages = [*languages, row.get("language"), row.get("languagecodes"), metadata.get("description_language")]
+    codes = {part.strip().lower().split("-")[0] for value in languages if isinstance(value, str) for part in value.split(",")}
+    if codes & {"en", "eng", "english"}:
+        evidence["language"] = "en"
+    elif codes:
+        evidence["language"] = "other"
+    score = number(row.get("clickcount"))
+    if score is not None:
+        evidence.update(popularity=score, popularity_basis="directory-clicks-24h")
+    elif (score := number(metadata.get("popularity"))) is not None:
+        evidence.update(popularity=score, popularity_basis="native-provider-score")
+    # A reviewed locality record must bind exact native URI AND region identity.
+    # A name/query/state substring never establishes locality.
+    record = (curated or {}).get(row.get("uri"))
+    if record and (region or {}).get("id") and record.get("region_id") == region["id"] and record.get("verified") is True:
+        evidence.update(local=True, locality_basis="reviewed-station-identity")
+    location = str(row.get("state") or "").casefold().strip()
+    terms = {str(t).casefold().strip() for t in (region or {}).get("search_terms", []) if isinstance(t, str) and len(t.strip()) >= 4}
+    if evidence.get("country") == "AU" and location and any(re.search(r"\b" + re.escape(term) + r"\b", location) for term in terms):
+        evidence.update(local=True, locality_basis="directory-station-region-field")
+    evidence["label"] = (
+        "Verified local station"
+        if evidence.get("local")
+        else "Australian station"
+        if evidence.get("country") == "AU"
+        else "English-language station"
+        if evidence.get("language") == "en"
+        else "Region and language unverified"
+    )
+    return evidence
+
+
+def radio_rank(row):
+    evidence = row.get("household_discovery", {})
+    tier = 0 if evidence.get("local") else 1 if evidence.get("country") == "AU" else 2 if evidence.get("language") == "en" else 3
+    return tier, -evidence.get("popularity", -1), str(row.get("name", "")).casefold(), str(row.get("uri", ""))
+
+
+class MediaDiscovery:
+    def __init__(self, command, providers, *, region=None, timeout=6, curated=None, directory_lookup=None):
+        self.command, self.providers = command, providers
+        self.region, self.timeout = region or {}, timeout
+        self.curated = curated or {}
+        self.directory_lookup = directory_lookup
+
+    async def find(self, category, query, allowed, *, child=False, saved=None):
+        if not allowed:
+            raise PermissionError("Source assignments are unavailable.")
+        if category not in {"radio", "podcast"} or not isinstance(query, str) or len(query) > 120:
+            raise ValueError("Choose a supported discovery search.")
+        domains = {"radiobrowser", "abc_radio_network", "tunein", "radioparadise"} if category == "radio" else {"itunes_podcasts"}
+        sources = [p for p in self.providers.values() if p["instance_id"] in allowed and p.get("domain") in domains and p.get("available")]
+
+        async def source(provider):
+            identity = provider["instance_id"]
+            try:
+                if query.strip():
+                    result = await asyncio.wait_for(
+                        self.command("music/search", search_query=query.strip(), providers=[identity], media_types=[category], limit=40), self.timeout
+                    )
+                    rows = result.get("radio" if category == "radio" else "podcasts", [])
+                    if category == "radio":
+                        rows = result.get("radios", rows)
+                elif provider["domain"] == "abc_radio_network":
+                    rows = await asyncio.wait_for(self.command("music/browse", path=identity + "://"), self.timeout)
+                elif category == "podcast" and provider["domain"] == "itunes_podcasts":
+                    # Verified installed 2.10.7 row: public trending, not a
+                    # personal recommendation feed or automatic subscription.
+                    rows = await asyncio.wait_for(self.command("music/recommendations/items", provider=identity, item_id="itunes-top-podcasts"), self.timeout)
+                elif category == "radio" and provider["domain"] == "radiobrowser":
+                    roots = await asyncio.wait_for(self.command("music/browse", path=identity + "://"), self.timeout)
+                    folder = next((r for r in roots if r.get("name") == "By popularity" and r.get("media_type") == "folder"), None)
+                    rows = await asyncio.wait_for(self.command("music/browse", path=folder["path"]), self.timeout) if folder else []
+                    if not any(r.get("media_type") == "radio" for r in rows):
+                        folder = next((r for r in rows if r.get("media_type") == "folder" and r.get("name") != ".."), None)
+                        rows = await asyncio.wait_for(self.command("music/browse", path=folder["path"]), self.timeout) if folder else []
+                else:
+                    return [], {"source": provider["domain"], "state": "search-needed"}
+                directory = {}
+                if provider["domain"] == "radiobrowser" and self.directory_lookup:
+                    ids = []
+                    for row in rows:
+                        try:
+                            ids.append(str(UUID(str(row.get("item_id")))))
+                        except ValueError:
+                            pass
+                    try:
+                        directory = await asyncio.wait_for(self.directory_lookup(ids[:100]), min(3, self.timeout))
+                    except Exception:
+                        # Optional public metadata enrichment must not take down
+                        # otherwise usable, source-filtered native results.
+                        directory = {}
+                values = []
+                for index, row in enumerate(rows):
+                    if row.get("media_type") != category:
+                        continue
+                    # Popularity alone never establishes child suitability.
+                    if category == "podcast" and child and (row.get("metadata") or {}).get("explicit") is not False:
+                        continue
+                    extra = directory.get(row.get("item_id"), {})
+                    evidence = evidence_for({**row, **extra}, region=self.region, curated=self.curated, order=index)
+                    if provider["domain"] == "abc_radio_network":
+                        evidence.update(country="AU", language="en", label="Australian station")
+                    if category == "podcast" and evidence.get("language") not in {None, "en"}:
+                        continue
+                    if category == "podcast":
+                        evidence["label"] = "English-language podcast" if evidence.get("language") == "en" else "Podcast language unverified"
+                        if not query.strip():
+                            evidence["recommendation_basis"] = "general-provider-trending"
+                    values.append({**row, "household_discovery": evidence})
+                return values, {"source": provider["domain"], "state": "ready", "count": len(values)}
+            except (TimeoutError, RuntimeError, ValueError, KeyError, TypeError):
+                return [], {"source": provider["domain"], "state": "unavailable"}
+
+        async def bounded(provider):
+            try:
+                return await asyncio.wait_for(source(provider), self.timeout)
+            except TimeoutError:
+                return [], {"source": provider["domain"], "state": "unavailable"}
+
+        results = await asyncio.gather(*(bounded(p) for p in sources))
+        rows = [r for values, _ in results for r in values]
+        if category == "radio":
+            rows.sort(key=radio_rank)
+        else:
+            # Exact saved identities can rank an existing show. No tastes are
+            # inferred from names, age, account allocation or household history.
+            recent = {r.get("uri") for key in ("favorites", "recent") for r in (saved or {}).get(key, []) if r.get("kind") == "podcast"}
+            for row in rows:
+                if row.get("uri") in recent:
+                    row["household_discovery"]["recommendation_basis"] = "your-saved-podcast"
+            if not query.strip():
+                rows.sort(
+                    key=lambda r: (
+                        r["household_discovery"].get("recommendation_basis") != "your-saved-podcast",
+                        r["household_discovery"].get("language") != "en",
+                        r["household_discovery"]["provider_order"],
+                    )
+                )
+        return {
+            "items": rows,
+            "sources": [state for _, state in results],
+            "region": self.region.get("name"),
+            "personalised": any(r["household_discovery"].get("recommendation_basis") == "your-saved-podcast" for r in rows),
+            "note": (
+                "Search existing catalogues. No subscriptions or favourites are added. "
+                "Language/locality is unverified where provider metadata is absent. "
+                "Personal recommendations need explicit interests or attributed listening evidence."
+            ),
+        }
+
 
 MODES = {"anything", "familiar", "era", "genre"}
 TOKENS = ("love", "night", "blue", "sun", "dance", "dream", "road", "home", "wild", "world", "time", "light", "rain", "river", "heart", "gold")

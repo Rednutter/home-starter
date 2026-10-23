@@ -37,6 +37,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+      - name: Verify pinned MA source
+        run: python devtools/prepare_media_preview_ci.py
+      - name: Install frozen frontend dependencies without lifecycle scripts
+        run: corepack pnpm@11.8.0 install --frozen-lockfile --ignore-scripts
+        working-directory: .runtime/ma-household-upstream
+      - name: Prepare isolated household entry
+        run: python devtools/ma_frontend_preview/prepare.py
+      - name: Compile household audio interface
+        run: node node_modules/vite/bin/vite.js build --config household-preview/vite.config.ts --mode household-release
+        working-directory: .runtime/ma-household-upstream
+      - name: Package exact candidate context
+        run: python devtools/package_media_preview.py .runtime/media-preview-ci
+      - name: Verify normal add-on ships the tested compiled assets
+        run: python devtools/verify_media_release.py
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - name: Build image (amd64 + arm64, not pushed)
@@ -45,3 +65,9 @@ jobs:
           context: ./home_starter
           platforms: linux/amd64,linux/arm64
           push: false
+      - uses: actions/upload-artifact@v4
+        with:
+          name: household-audio-build-evidence
+          path: |
+            .runtime/media-preview-ci/CANDIDATE.json
+            .runtime/media-preview-ci/home_starter/server/homestarter/static/media-preview/manifest.json

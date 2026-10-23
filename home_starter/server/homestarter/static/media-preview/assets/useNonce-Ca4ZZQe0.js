@@ -1,0 +1,1 @@
+import{g as e,vn as t}from"./runtime-core.esm-bundler-CDDBpkXG.js";import{t as n}from"./ConfigProvider-DxFdEn7E.js";function r(r){let i=n({nonce:t()});return e(()=>r?.value||i.nonce?.value)}export{r as t};

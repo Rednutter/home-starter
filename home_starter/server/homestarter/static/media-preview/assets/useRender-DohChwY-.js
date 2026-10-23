@@ -1,0 +1,1 @@
+import{c as e,o as t}from"./theme-CRuTwi7S.js";var n=e({class:[String,Array,Object],style:{type:[String,Array,Object],default:null}},`component`);function r(e){let n=t(`useRender`);n.render=e}export{n,r as t};

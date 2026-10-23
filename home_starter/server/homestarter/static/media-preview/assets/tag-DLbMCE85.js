@@ -1,0 +1,1 @@
+import{c as e}from"./theme-CRuTwi7S.js";var t=e({tag:{type:[String,Object,Function],default:`div`}},`tag`);export{t};

@@ -329,6 +329,10 @@ async def index(request: web.Request) -> web.Response:
 
 
 async def media_app(request: web.Request) -> web.Response:
+    from . import media_preview
+
+    if (media_preview.ASSET_ROOT / "manifest.json").is_file() and media_preview.PAGE_KEY in request.app:
+        return await request.app[media_preview.PAGE_KEY](request)
     page = _static("media.html").decode()
     page = page.replace("<!--BASE-->", f'<base href="{html.escape(ingress_base(request), quote=True)}">', 1)
     return web.Response(text=page, content_type="text/html", headers={"Cache-Control": "no-store"})
@@ -1380,6 +1384,9 @@ def create_app(settings: Settings, session: aiohttp.ClientSession | None = None)
     app.router.add_get("/", index)
     app.router.add_get("/media", media_app)
     app.router.add_get("/api/listening", api_listening_bootstrap)
+    from . import media_preview
+
+    media_preview.register(app, K_STATE, _user, ingress_base)
     app.router.add_get("/static/{name}", static)
     app.router.add_get("/api/health", health)
     app.router.add_get("/api/scan", api_scan)

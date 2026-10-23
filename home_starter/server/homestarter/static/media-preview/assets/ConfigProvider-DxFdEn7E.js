@@ -1,0 +1,1 @@
+import{y as e}from"./useForwardExpose-BlyraATw.js";var[t,n]=e(`ConfigProvider`);export{t};
