@@ -400,7 +400,7 @@ async def test_sendspin_idle_pause_keeps_only_explicit_unchanged_owned_evidence(
     assert data["profiles"]["person:one"]["books"][item]["position"] == 12
     assert (await runtime.view("admin", "panel", "one"))["session"]
     count = len(music.calls)
-    with pytest.raises(ValueError, match="another listening"):
+    with pytest.raises(ValueError, match="reviewed Music Assistant version"):
         await act(setup, "two", "play")
     assert len(music.calls) == count
     # Metadata-only feedback does not transfer ownership or update progress.
@@ -657,12 +657,12 @@ async def test_provider_resume_feedback_is_not_imported_into_listener_progress(s
     assert (await runtime.view("admin", "panel", "one"))["books"][0]["position"] == 1
 
 
-async def test_house_cannot_resume_personal_queue(setup):
+async def test_shared_resume_fails_closed_without_a_reviewed_backend(setup):
     item = await book(setup)
     await act(setup, "one", "play_item", item=item)
     await act(setup, "one", "pause")
     count = len(setup[1].calls)
-    with pytest.raises(ValueError, match="another listening"):
+    with pytest.raises(ValueError, match="reviewed Music Assistant version"):
         await act(setup, None, "play")
     assert len(setup[1].calls) == count
 

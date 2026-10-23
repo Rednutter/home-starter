@@ -3,7 +3,7 @@
 import secrets
 import time
 
-from . import catalogue, household_music, listening_books, radio_metadata
+from . import catalogue, household_music, listening_books, listening_groups, radio_metadata
 from .music_runtime import MusicRuntimeError, digest
 
 BUSY = {"playing", "paused", "buffering"}
@@ -59,10 +59,14 @@ class QueueSessions:
     async def inspect(self, endpoint, connection, data, player):
         runtime = self.listening.runtime
         pid = player["player_id"]
+        if listening_groups.pending(data, pid):
+            raise MusicRuntimeError("Speaker membership or a group move is awaiting verification. Check it before editing the queue.")
         lease = data["leases"].get(pid)
         if not lease or not lease.get("session"):
             return None
         await self.listening.sample(endpoint, connection, data, pid, lease)
+        if lease.get("group_unverified"):
+            raise MusicRuntimeError("Group membership changed. Check its speakers before editing the queue.")
         if data["leases"].get(pid) is not lease:
             return None
         queue = await runtime.command(endpoint, connection, "player_queues/get_active_queue", player_id=pid)
@@ -188,7 +192,8 @@ class QueueSessions:
         lease = checked["lease"]
         membership = {"player_id": player["player_id"], "session": lease.get("session")}
         if action == "queue_join":
-            # Participation grants no stop, replacement, timer or progress rights.
+            # Joining never transfers queue, timer or progress ownership. Shared
+            # transport uses its own fresh revision and permission checks.
             if lease["scope"] != scope:
                 profile["joined"] = membership
             return

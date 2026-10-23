@@ -93,10 +93,10 @@ def package(output):
                 and license_path.stat().st_size < 512000
             ):
                 notices.append(license_path.name + "\n" + license_path.read_text(encoding="utf-8", errors="replace"))
-    (destination / "THIRD-PARTY-NOTICES.txt").write_text("\n\n".join(notices), encoding="utf-8")
-    (destination / "dependency-inventory.json").write_text(json.dumps(inventory, indent=2), encoding="utf-8")
+    (destination / "THIRD-PARTY-NOTICES.txt").write_text("\n\n".join(notices), encoding="utf-8", newline="\n")
+    (destination / "dependency-inventory.json").write_text(json.dumps(inventory, indent=2), encoding="utf-8", newline="\n")
     manifest = {"version": 1, "upstream_commit": PIN, "upstream_version": "2.17.297.post1", "mode": "production-household", "files": files}
-    (destination / "manifest.json").write_text(json.dumps(manifest, sort_keys=True, indent=2))
+    (destination / "manifest.json").write_text(json.dumps(manifest, sort_keys=True, indent=2), encoding="utf-8", newline="\n")
     baseline = subprocess.check_output([git, "rev-parse", "HEAD"], cwd=ROOT).decode().strip()  # noqa: S603 -- fixed Git read
     preserved = {name: hashlib.sha256((output / "home_starter" / name).read_bytes()).hexdigest() for name in sorted(CONTROLS)}
     (output / "CANDIDATE.json").write_text(
@@ -105,12 +105,14 @@ def package(output):
                 "candidate": output.name,
                 "baseline_commit": baseline,
                 "preserved_controls": preserved,
-                "release_version": "0.8.43",
+                "release_version": "0.8.44",
                 "manifest_sha256": hashlib.sha256((destination / "manifest.json").read_bytes()).hexdigest(),
                 "asset_count": len(files),
             },
             indent=2,
-        )
+        ),
+        encoding="utf-8",
+        newline="\n",
     )
     return len(files)
 

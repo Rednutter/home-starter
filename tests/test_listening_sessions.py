@@ -111,7 +111,7 @@ async def test_join_and_append_keep_owner_controls_queue_and_progress(queued):
     assert data["leases"]["a"]["scope"] == "person:one"
     assert data["profiles"]["person:two"]["books"] == {}
     assert music.queues["a"] == before
-    with pytest.raises(ValueError, match="another listening session"):
+    with pytest.raises(ValueError, match="Refresh"):
         await action(queued, "stop")
     assert len(music.calls) == 1
     await action(queued, "queue_leave")

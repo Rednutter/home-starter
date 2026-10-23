@@ -13,9 +13,12 @@ from . import (
     household_music,
     household_services,
     listening_books,
+    listening_group_transfer,
+    listening_groups,
     listening_sessions,
     listening_stations,
     listening_transfer,
+    listening_transport,
     radio_metadata,
     readiness,
     screen_identity,
@@ -90,6 +93,8 @@ class ListeningRuntime:
         from .listening_sessions import QueueSessions
 
         self.sessions = QueueSessions(self)
+        self.groups = listening_groups.Groups(self)
+        self.group_transfers = listening_group_transfer.GroupTransfers(self)
         self.transfers = listening_transfer.Transfers(self)
 
     async def regional_radio(self, endpoint, connection, region):
@@ -218,10 +223,13 @@ class ListeningRuntime:
                     "single": player["single"],
                     "state": player["state"],
                     "features": player.get("features", []),
+                    "can_group_with": player.get("can_group_with", []),
+                    "group_members": player.get("group_members", []),
+                    "synced_to": player.get("synced_to"),
                     "own_room": area in own_rooms,
                 }
             )
-        return result, child
+        return listening_groups.decorate(self.load(house, self.runtime.connection()), result), child
 
     async def catalog_items(self, endpoint, connection, folder=None, query=None, providers=(), *, access=None, searched=None):
         from .listening_collections import KINDS, roots, selection
@@ -345,6 +353,10 @@ class ListeningRuntime:
                 return False
         player = await self.runtime.command(endpoint, connection, "players/get", player_id=player_id)
         queue = await self.runtime.command(endpoint, connection, "player_queues/get_active_queue", player_id=player_id)
+        if player_id in data.get("groups", {}) and not listening_groups.bound(data, player_id, player):
+            lease["group_unverified"] = True
+            return False
+        lease.pop("group_unverified", None)
         item = (queue or {}).get("current_item") or {}
         media = player.get("current_media") or {}
         if lease.get("transfer_staged"):
@@ -474,6 +486,9 @@ class ListeningRuntime:
         return True
 
     async def pause_owned(self, endpoint, connection, data, pid, lease):
+        if pid in data.get("groups", {}):
+            if not await self.groups.verified(endpoint, connection, data, pid):
+                raise ValueError("Group membership changed. Check its speakers before pausing.")
         if lease.get("transfer_staged"):
             await self.sample(endpoint, connection, data, pid, lease)
             if data["leases"].get(pid) is lease and lease.get("transfer_staged"):
@@ -566,10 +581,12 @@ class ListeningRuntime:
                 except MusicRuntimeError:
                     radio_issue = "Local radio discovery is unavailable. Your saved stations are still available."
             for player_id, lease in list(data["leases"].items()):
+                if listening_groups.pending(data, player_id):
+                    continue
                 if lease["scope"] == profile_key(person):
                     if any(p["player_id"] == player_id and p["available"] and p["single"] for p in players):
                         await self.sample(endpoint, connection, data, player_id, lease)
-                    else:
+                    elif player_id not in data.get("groups", {}):
                         data["leases"].pop(player_id, None)
             self.save(data)
             default = next((p["entity_id"] for p in players if p["entity_id"] == profile["destination"]), None)
@@ -604,6 +621,7 @@ class ListeningRuntime:
                     self.catalog[record["id"]] = record
                     channels.append({**public(record), "category": row["category"], "subcategory": row["subcategory"]})
             sessions = await self.sessions.view(endpoint, connection, data, house, players, profile_key(person))
+            transport = await listening_transport.view(self, endpoint, connection, data, house, players)
             if child:
                 for session in sessions:
                     session["can_takeover"] = False
@@ -653,6 +671,7 @@ class ListeningRuntime:
                 "profiles": [{"id": p["id"], "name": p["name"]} for p in house["people"] if not surface["person_id"] or surface["person_id"] == p["id"]],
                 "players": players,
                 "sessions": sessions,
+                "transport": transport,
                 "takeover": takeover,
                 "transfer": await self.transfers.model(
                     endpoint, data, profile, profile_key(person), players, source_pid=owned_session[0] if owned_session else None
@@ -660,6 +679,8 @@ class ListeningRuntime:
                 "stations": listening_stations.view(profile, providers, endpoint.get("version") if isinstance(endpoint, dict) else None, access),
                 "default_destination": default,
                 "browse": not child,
+                "grouping": self.groups.view(data, players, profile_key(person)),
+                "group_transfer": await self.group_transfers.model(endpoint, connection, data, profile_key(person), players),
                 "library": [public(r) for r in library],
                 "search": self.search_view,
                 "collection": self.collection_view if not child else None,
@@ -704,7 +725,21 @@ class ListeningRuntime:
             players, child = await self.players(house, surface, saved, person, snapshot)
             await self.transfers.reconcile(endpoint, connection, data, profile_key(person), players)
             action = body.get("action")
+            if action in listening_group_transfer.ACTIONS:
+                try:
+                    await self.group_transfers.action(endpoint, connection, data, house, players, person, body, user, surface_id)
+                finally:
+                    self.save(data)
+                return
+            if action in listening_groups.ACTIONS:
+                try:
+                    await self.groups.action(endpoint, connection, data, house, players, person, body, user=user, surface=surface_id, child=child)
+                finally:
+                    self.save(data)
+                return
             if action in {"transfer_prepare", "transfer_confirm", "transfer_cancel", "transfer_recheck"}:
+                if any(p.get("managed_group") and p["entity_id"] in {body.get("player"), body.get("target")} for p in players):
+                    raise ValueError("Ungroup this session before transferring it to another speaker.")
                 await self.transfers.action(endpoint, connection, data, profile, profile_key(person), players, snapshot.get("providers", []), body)
                 self.save(data)
                 return
@@ -741,6 +776,19 @@ class ListeningRuntime:
             if not player:
                 raise ValueError("Choose an available permitted single speaker.")
             pid, scope = player["player_id"], profile_key(person)
+            if listening_groups.pending(data, pid):
+                raise ValueError(listening_groups.UNKNOWN)
+            if pid in data.get("groups", {}) and action in {
+                "play_item",
+                "resume",
+                "play_playlist",
+                "play_radio",
+                "play_ambient",
+                "delay",
+                "surprise_me",
+                "something_different",
+            }:
+                raise ValueError("This group keeps its current session. Ungroup before replacing its media.")
             if listening_transfer.pending(data, pid):
                 raise ValueError(listening_transfer.UNKNOWN)
             if action == "destination":
@@ -748,6 +796,14 @@ class ListeningRuntime:
                 self.save(data)
                 return
             lease = data["leases"].get(pid)
+            if action in listening_transport.ACTIONS and (
+                body.get("session") is not None or pid in data.get("groups", {}) or lease and (lease["scope"] != scope or lease.get("transport_uncertain"))
+            ):
+                try:
+                    await listening_transport.action(self, endpoint, connection, data, house, player, body, user, surface_id, person)
+                finally:
+                    self.save(data)
+                return
             if action in {
                 "queue_join",
                 "queue_leave",
@@ -950,7 +1006,7 @@ class ListeningRuntime:
             raise PermissionError("This catalogue source is unavailable or no longer assigned. Search again.")
         return access
 
-    async def play(self, endpoint, connection, data, profile, scope, player, item, user, surface_id, *, discovery=None):
+    async def play(self, endpoint, connection, data, profile, scope, player, item, user, surface_id, *, discovery=None, before_start=None):
         pid = player["player_id"]
         sources = set(item.get("sources", [])) | household_music.item_sources(item)
         providers = (await self.runtime.snapshot()).get("providers", [])
@@ -985,6 +1041,8 @@ class ListeningRuntime:
             and lease["scope"] != scope
         ) and (not lease or lease["scope"] != scope):
             raise ValueError("This speaker is already in use. Join listening or choose another speaker; its queue was kept.")
+        if before_start:
+            await before_start()
         for old_pid, old in list(data["leases"].items()):
             if old["scope"] == scope:
                 await self.sample(endpoint, connection, data, old_pid, old)
@@ -995,6 +1053,8 @@ class ListeningRuntime:
         self.save(data)  # retain the final raw sample before any queue replacement
         previous_queue = await self.runtime.command(endpoint, connection, "player_queues/get_active_queue", player_id=pid)
         previous_item = ((previous_queue or {}).get("current_item") or {}).get("queue_item_id")
+        if before_start:
+            await before_start()
         if discovery is not None:
             result = await self.runtime.control(
                 endpoint,
@@ -1162,19 +1222,32 @@ class ListeningRuntime:
                     await self.transfers.reconcile(endpoint, connection, data, scope, permitted)
                 except (ValueError, PermissionError, MusicRuntimeError):
                     pass
+            eligible_groups = set()
             for pid, lease in list(data["leases"].items()):
+                if listening_groups.pending(data, pid):
+                    continue
                 person = lease["scope"][7:] if lease["scope"].startswith("person:") else None
                 try:
                     current_house, surface, saved, _ = await self.authorize(lease.get("user"), lease.get("surface"), person)
                     permitted, _ = await self.players(current_house, surface, saved, person, snapshot)
                     if not any(p["player_id"] == pid and p["available"] and p["single"] for p in permitted):
+                        if pid in data.get("groups", {}):
+                            continue
                         raise PermissionError("Speaker permission changed.")
                 except (ValueError, PermissionError):
                     data["leases"].pop(pid, None)
                     continue
                 await self.sample(endpoint, connection, data, pid, lease)
+                if pid in data.get("groups", {}) and not lease.get("group_unverified") and await self.groups.verified(endpoint, connection, data, pid):
+                    eligible_groups.add(pid)
             for scope, profile in data["profiles"].items():
                 timer = profile.get("sleep")
+                if timer and (
+                    listening_groups.pending(data, timer["player_id"])
+                    or timer["player_id"] in data.get("groups", {})
+                    and timer["player_id"] not in eligible_groups
+                ):
+                    continue
                 if timer and timer["at"] <= time.time() and not listening_transfer.pending(data, timer["player_id"]):
                     lease = data["leases"].get(timer["player_id"])
                     if lease and lease["scope"] == scope and lease.get("session") == timer.get("session") and timer.get("session"):
