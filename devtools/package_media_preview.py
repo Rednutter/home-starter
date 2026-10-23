@@ -51,6 +51,8 @@ def package(output):
         .split("\0")
     )
     for name in filter(None, paths):
+        if name.startswith("home_starter/server/homestarter/static/media-preview/"):
+            continue
         target = output / name
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(subprocess.check_output([git, "show", "HEAD:" + name], cwd=ROOT))  # noqa: S603 -- fixed Git blob read
@@ -103,7 +105,7 @@ def package(output):
                 "candidate": output.name,
                 "baseline_commit": baseline,
                 "preserved_controls": preserved,
-                "production_version_unchanged": "0.8.42",
+                "release_version": "0.8.43",
                 "manifest_sha256": hashlib.sha256((destination / "manifest.json").read_bytes()).hexdigest(),
                 "asset_count": len(files),
             },

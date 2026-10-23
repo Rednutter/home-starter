@@ -1,0 +1,1 @@
+var e=e=>e?e.ended?e.items:e.current_index??-1:-1,t=e=>!!e?.ended&&e.items>0;export{t as n,e as t};

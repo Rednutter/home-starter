@@ -1,0 +1,1 @@
+import{g as e,vn as t}from"./runtime-core.esm-bundler-CDDBpkXG.js";import{a as n}from"./useForwardExpose-BlyraATw.js";function r(){let r=t();return{primitiveElement:r,currentElement:e(()=>[`#text`,`#comment`].includes(r.value?.$el.nodeName)?r.value?.$el.nextElementSibling:n(r))}}export{r as t};

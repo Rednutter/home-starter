@@ -1,4 +1,4 @@
-# Household audio production candidate
+# Household audio 0.8.43 release
 
 Status: IN PROGRESS. The production interface is locally tested; no live
 deployment or physical playback acceptance is implied.
@@ -27,11 +27,16 @@ controlled by these tests.
 
 ## CI and release gate
 
-The existing CI builds amd64 and arm64 images without publishing or deploying
-them. It fetches the hash-verified upstream archive, installs frozen dependencies
-without lifecycle scripts, compiles the entry and packages an exact source
-context. The uploaded evidence records the source commit, manifest and preserved
-legacy control hashes. A successful JavaScript build is not Docker validation.
+The normal add-on source now contains the exact tested compiled assets and
+dependency notices. Its Docker ignore rules admit only those specific paths.
+An image-build verification step checks the manifest and every asset inside the
+image, preventing a successful build that silently serves the old interface.
+CI rebuilds the hash-pinned upstream and compares all compiled assets before
+building amd64 and arm64 images from the normal home_starter Docker context.
+It does not publish images or deploy. The ordinary Supervisor store builds the
+versioned main source after the scoped release merge authorised for deployment.
+Generated third-party privacy exceptions require the exact reviewed manifest
+and individual file hashes; no household runtime files receive an exception.
 
 Deployment requires terminal passing CI and a final readiness review. Before the
 authorised scoped Home Starter update, back up its current options/data, record
