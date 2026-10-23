@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import copy
+import time
 
 from .media_discovery import MediaDiscovery, radio_rank
 from .metadata_projection import ArtworkLedger, fingerprint, native_record, project, record_ids
@@ -22,6 +24,7 @@ class MetadataPreview:
         self.region = {}
         self.directory_lookup = None
         self.discovery_children = {}
+        self.discovery_cache = {}
 
     async def policy(self, profile):
         person = next((p for p in self.profiles if p["id"] == profile), None)
@@ -168,9 +171,32 @@ class MetadataPreview:
             # Reuse the existing listening permission projection, not names or
             # inferred age. Missing commissioning evidence stays restrictive.
             child = self.discovery_children.get(profile, True)
-            result = await MediaDiscovery(self.command, self.providers, region=self.region, directory_lookup=self.directory_lookup).find(
-                args.get("category"), args.get("query", ""), allowed, child=child, saved=self.saved[profile] if profile != "house" else {}
-            )
+            key = fingerprint([profile, policy, sorted(allowed), child, self.region, self.saved[profile], args])
+            cached = self.discovery_cache.get(key)
+            now = time.monotonic()
+            if cached and now - cached[0] < 300:
+                result = copy.deepcopy(cached[1])
+            else:
+                result = await MediaDiscovery(self.command, self.providers, region=self.region, directory_lookup=self.directory_lookup).find(
+                    args.get("category"), args.get("query", ""), allowed, child=child, saved=self.saved[profile] if profile != "house" else {}
+                )
+                failed = {s["source"] for s in result["sources"] if s["state"] == "unavailable"}
+                if cached and now - cached[0] < 86400 and failed:
+                    for row in cached[1]["items"]:
+                        if any(m.get("provider_domain") in failed and m.get("provider_instance") in allowed for m in row.get("provider_mappings", [])):
+                            result["items"].append(copy.deepcopy(row))
+                    result["note"] += (
+                        " Previously verified catalogue suggestions are shown for unavailable sources; playback availability is checked when selected."
+                    )
+                    for state in result["sources"]:
+                        if state["source"] in failed:
+                            state["state"] = "cached"
+                if result["items"] and not failed:
+                    # Raw native models only. Profile-bound image/selection tokens
+                    # are issued afresh below, never reused across browsers.
+                    self.discovery_cache[key] = now, copy.deepcopy(result)
+                    while len(self.discovery_cache) > 24:
+                        self.discovery_cache.pop(next(iter(self.discovery_cache)))
             fresh_allowed, fresh_policy = await self.policy(profile)
             if fresh_policy != policy or set(fresh_allowed) != set(allowed):
                 raise PermissionError("Source assignments changed during discovery.")

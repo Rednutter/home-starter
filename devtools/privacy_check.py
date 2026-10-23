@@ -63,7 +63,7 @@ MEDIA_BUNDLE = "home_starter/server/homestarter/static/media-preview/"
 # Exact reviewed public build artifacts, not a directory-wide privacy exception.
 # Every asset is bound to the previously tested CI manifest; changed/new content
 # requires a fresh build review. Household runtime files never enter this map.
-MEDIA_MANIFEST_SHA = "cbc160d7dec3c75ca5cb48b7d6fe9723f226a5be039b920df209de4eb5797749"  # pragma: allowlist secret
+MEDIA_MANIFEST_SHA = "fd26d680c1824eaf0f012e8e5860010a51ea41774f1c1be6d66352c838a2027f"  # pragma: allowlist secret
 MEDIA_NOTICES = {
     "UPSTREAM-LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",  # pragma: allowlist secret
     "THIRD-PARTY-NOTICES.txt": "79564c427e669427badb683e786de60b11df462398fcefce2ebe3e92d9822810",  # pragma: allowlist secret

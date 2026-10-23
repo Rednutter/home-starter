@@ -51,6 +51,15 @@ ARTWORK_HOSTS = {
     "theaudiodb.com",
     "lastfm.freetls.fastly.net",
     "coverartarchive.org",
+    # Native MA-issued image IDs only; these public broadcasters/podcast CDNs
+    # were read from actual catalogue/feed artwork, never supplied by a client.
+    "images.ctfassets.net",
+    "www.abc.net.au",
+    "live-production.wcms.abc-cdn.net.au",
+    "is1-ssl.mzstatic.com",
+    "www.omnycontent.com",
+    "files.flightcast.com",
+    "megaphone.imgix.net",
 }
 
 

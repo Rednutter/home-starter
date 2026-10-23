@@ -8,6 +8,9 @@ import time
 from datetime import UTC, datetime
 from uuid import UUID
 
+from .discovery_seeds import AUSTRALIAN_SEEDS, RADIO_SEEDS, reviewed_evidence
+from .metadata_projection import record_ids
+
 
 def number(value):
     try:
@@ -20,6 +23,7 @@ def evidence_for(row, *, region=None, curated=None, order=0):
     """Only explicit fields or an identity-bound reviewed record establish facts."""
     metadata = row.get("metadata") or {}
     evidence = {"provider_order": order}
+    evidence.update(reviewed_evidence(row, region or {}))
     country = row.get("country_code") or row.get("countrycode")
     if isinstance(country, str) and re.fullmatch(r"[A-Za-z]{2}", country):
         evidence["country"] = country.upper()
@@ -61,7 +65,7 @@ def evidence_for(row, *, region=None, curated=None, order=0):
 def radio_rank(row):
     evidence = row.get("household_discovery", {})
     tier = 0 if evidence.get("local") else 1 if evidence.get("country") == "AU" else 2 if evidence.get("language") == "en" else 3
-    return tier, -evidence.get("popularity", -1), str(row.get("name", "")).casefold(), str(row.get("uri", ""))
+    return tier, -evidence.get("popularity", -1), evidence.get("provider_order", 0), str(row.get("name", "")).casefold(), str(row.get("uri", ""))
 
 
 class MediaDiscovery:
@@ -70,6 +74,38 @@ class MediaDiscovery:
         self.region, self.timeout = region or {}, timeout
         self.curated = curated or {}
         self.directory_lookup = directory_lookup
+
+    async def radio_landing(self, identity):
+        """Browse plus exact-identity fallbacks in parallel, within one read budget."""
+        budget = min(3, self.timeout / 2)
+
+        async def popular():
+            roots = await self.command("music/browse", path=identity + "://")
+            folder = next((r for r in roots if r.get("name") == "By popularity" and r.get("media_type") == "folder"), None)
+            rows = await self.command("music/browse", path=folder["path"]) if folder else []
+            if not any(r.get("media_type") == "radio" for r in rows):
+                folder = next((r for r in rows if r.get("media_type") == "folder" and r.get("name") != ".."), None)
+                rows = await self.command("music/browse", path=folder["path"]) if folder else []
+            return rows
+
+        async def regional(seed):
+            response = await self.command("music/search", search_query=seed[0], providers=[identity], media_types=["radio"], limit=40)
+            return [r for r in response.get("radios", response.get("radio", [])) if str(r.get("item_id")) == seed[1]]
+
+        tasks = [popular(), *(regional(seed) for seed in (*RADIO_SEEDS, *AUSTRALIAN_SEEDS))]
+        results = await asyncio.gather(*(asyncio.wait_for(task, budget) for task in tasks), return_exceptions=True)
+        rows, seen = [], set()
+        for result in results:
+            if not isinstance(result, list):
+                continue
+            for row in result:
+                key = row.get("uri") or row.get("item_id")
+                if key and key not in seen:
+                    rows.append(row)
+                    seen.add(key)
+        if not rows and any(isinstance(r, Exception) for r in results):
+            raise RuntimeError("Radio directory is unavailable.")
+        return rows, any(isinstance(r, Exception) for r in results)
 
     async def find(self, category, query, allowed, *, child=False, saved=None):
         if not allowed:
@@ -82,6 +118,7 @@ class MediaDiscovery:
         async def source(provider):
             identity = provider["instance_id"]
             try:
+                partial = False
                 if query.strip():
                     result = await asyncio.wait_for(
                         self.command("music/search", search_query=query.strip(), providers=[identity], media_types=[category], limit=40), self.timeout
@@ -96,12 +133,7 @@ class MediaDiscovery:
                     # personal recommendation feed or automatic subscription.
                     rows = await asyncio.wait_for(self.command("music/recommendations/items", provider=identity, item_id="itunes-top-podcasts"), self.timeout)
                 elif category == "radio" and provider["domain"] == "radiobrowser":
-                    roots = await asyncio.wait_for(self.command("music/browse", path=identity + "://"), self.timeout)
-                    folder = next((r for r in roots if r.get("name") == "By popularity" and r.get("media_type") == "folder"), None)
-                    rows = await asyncio.wait_for(self.command("music/browse", path=folder["path"]), self.timeout) if folder else []
-                    if not any(r.get("media_type") == "radio" for r in rows):
-                        folder = next((r for r in rows if r.get("media_type") == "folder" and r.get("name") != ".."), None)
-                        rows = await asyncio.wait_for(self.command("music/browse", path=folder["path"]), self.timeout) if folder else []
+                    rows, partial = await self.radio_landing(identity)
                 else:
                     return [], {"source": provider["domain"], "state": "search-needed"}
                 directory = {}
@@ -136,7 +168,7 @@ class MediaDiscovery:
                         if not query.strip():
                             evidence["recommendation_basis"] = "general-provider-trending"
                     values.append({**row, "household_discovery": evidence})
-                return values, {"source": provider["domain"], "state": "ready", "count": len(values)}
+                return values, {"source": provider["domain"], "state": "partial" if partial else "ready", "count": len(values)}
             except (TimeoutError, RuntimeError, ValueError, KeyError, TypeError):
                 return [], {"source": provider["domain"], "state": "unavailable"}
 
@@ -154,8 +186,9 @@ class MediaDiscovery:
             # Exact saved identities can rank an existing show. No tastes are
             # inferred from names, age, account allocation or household history.
             recent = {r.get("uri") for key in ("favorites", "recent") for r in (saved or {}).get(key, []) if r.get("kind") == "podcast"}
+            saved_ids = {r.get("id") for key in ("favorites", "recent") for r in (saved or {}).get(key, []) if r.get("kind") == "podcast" and r.get("id")}
             for row in rows:
-                if row.get("uri") in recent:
+                if row.get("uri") in recent or record_ids(row) & saved_ids:
                     row["household_discovery"]["recommendation_basis"] = "your-saved-podcast"
             if not query.strip():
                 rows.sort(

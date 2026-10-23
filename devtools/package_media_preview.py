@@ -20,6 +20,7 @@ PREVIEW_FILES = {
     "server/homestarter/catalogue_preview.py",
     "server/homestarter/metadata_projection.py",
     "server/homestarter/media_discovery.py",
+    "server/homestarter/discovery_seeds.py",
     "server/homestarter/playlist_visibility.py",
 }
 CONTROLS = {
@@ -105,7 +106,7 @@ def package(output):
                 "candidate": output.name,
                 "baseline_commit": baseline,
                 "preserved_controls": preserved,
-                "release_version": "0.8.44",
+                "release_version": "0.8.45",
                 "manifest_sha256": hashlib.sha256((destination / "manifest.json").read_bytes()).hexdigest(),
                 "asset_count": len(files),
             },
