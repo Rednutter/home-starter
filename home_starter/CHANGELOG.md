@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.42
+
+- Add an explicitly enabled household audio listener, separate from authenticated
+  administration. Limit it to the reviewed home subnet, address and port, a pinned
+  shared display, short browser contexts and named household media actions.
+- Keep profile/source permissions, playback leases and saved progress in the
+  existing service. No HA/admin proxy, provider setup or new persistent credentials.
+
 ## 0.8.41
 
 - Keep media buttons usable during background refresh instead of greying the

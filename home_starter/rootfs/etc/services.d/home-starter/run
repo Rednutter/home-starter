@@ -5,4 +5,9 @@
 # printed or logged.
 # ==============================================================================
 bashio::log.info "Starting Home Starter..."
+if bashio::config.true 'household_lan'; then
+    export HOME_STARTER_HOUSEHOLD_LAN=true
+    export HOME_STARTER_LAN_SURFACE="$(bashio::config 'household_lan_surface')"
+    export HOME_STARTER_LAN_BINDING="$(bashio::config 'household_lan_binding')"
+fi
 exec python3 -m homestarter

@@ -315,7 +315,7 @@ def _json(data: Any, status: int = 200) -> web.Response:
 
 
 def _user(request: web.Request) -> str | None:
-    return request.headers.get("X-Remote-User-Id") or None
+    return request.get("household_lan_caller") or request.headers.get("X-Remote-User-Id") or None
 
 
 # ---- handlers --------------------------------------------------------------
@@ -1332,6 +1332,13 @@ def create_app(settings: Settings, session: aiohttp.ClientSession | None = None)
         sess = session or aiohttp.ClientSession()
         app[K_STATE] = State(settings, sess)
         app[K_OWN_SESSION] = own
+        if settings.household_lan:
+            from .household_lan import start_listener
+
+            try:
+                app["household_lan_runner"] = await start_listener(app)
+            except (ValueError, OSError):
+                _LOGGER.error("Household LAN listener unavailable; authenticated administration remains available.")
         app[K_STATE].listening_task = asyncio.create_task(app[K_STATE].monitor_listening())
         app[K_STATE].services_task = asyncio.create_task(app[K_STATE].monitor_services())
         app[K_STATE].activity_task = asyncio.create_task(app[K_STATE].monitor_activity())
@@ -1339,6 +1346,8 @@ def create_app(settings: Settings, session: aiohttp.ClientSession | None = None)
         app[K_STATE].waste_task = asyncio.create_task(app[K_STATE].monitor_waste())
 
     async def on_cleanup(app: web.Application) -> None:
+        if runner := app.get("household_lan_runner"):
+            await runner.cleanup()
         if task := app[K_STATE].services_task:
             task.cancel()
             with suppress(asyncio.CancelledError):

@@ -1,6 +1,6 @@
 # https://developers.home-assistant.io/docs/apps/configuration#app-configuration
 name: Home Starter
-version: "0.8.41"
+version: "0.8.42"
 slug: home_starter
 description: >-
   Get the house ready, review rooms and devices, set up music,
@@ -12,7 +12,21 @@ arch:
 # The image brings s6-overlay v3, which must be PID 1.
 init: false
 
-# Ingress UI only (default ingress port 8099, no host ports). The sidebar
+# Administration uses ingress only. The separate household listener is disabled
+# until specifically enabled and mapped to the approved home-LAN host port.
+ports:
+  8098/tcp: null
+ports_description:
+  8098/tcp: Restricted household audio (approved LAN port 13379 only)
+options:
+  household_lan: false
+  household_lan_surface: ""
+  household_lan_binding: ""
+schema:
+  household_lan: bool
+  household_lan_surface: str
+  household_lan_binding: str
+# The sidebar
 # panel is admin-only by default, which is right for installing apps.
 ingress: true
 panel_icon: mdi:rocket-launch-outline

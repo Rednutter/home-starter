@@ -58,6 +58,9 @@ class Settings:
     # Music Assistant's server answers GET /info without auth on this port.
     music_assistant_port: int = 8095
     data_dir: str = "/data"
+    household_lan: bool = False
+    household_lan_surface: str = ""
+    household_lan_binding: str = ""
 
     @property
     def allow_any_peer(self) -> bool:
@@ -78,4 +81,7 @@ class Settings:
             allowed_peers=_peers_from_env(env.get("HOME_STARTER_ALLOWED_PEERS")),
             music_assistant_port=int(env.get("HOME_STARTER_MA_PORT", "8095")),
             data_dir=env.get("HOME_STARTER_DATA_DIR", "/data"),
+            household_lan=env.get("HOME_STARTER_HOUSEHOLD_LAN") == "true",
+            household_lan_surface=env.get("HOME_STARTER_LAN_SURFACE", ""),
+            household_lan_binding=env.get("HOME_STARTER_LAN_BINDING", ""),
         )

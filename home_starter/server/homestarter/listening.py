@@ -77,6 +77,7 @@ class ListeningRuntime:
         self.lock = asyncio.Lock()
         self.catalog = {}
         self.mapping_cache = None
+        self.household_lan_caller = None
         self.regional_cache = None
         from .media_catalogue import MediaCatalogue
 
@@ -144,8 +145,13 @@ class ListeningRuntime:
             raise PermissionError("This screen is assigned to a specific listening profile.")
         if not user_id:
             raise PermissionError("Use the signed-in household display.")
-        admin = await self.core.is_admin(user_id)
-        if not admin:
+        lan = isinstance(user_id, dict) and user_id == self.household_lan_caller
+        if isinstance(user_id, dict) and not lan:
+            raise PermissionError("The shared household listener is no longer authorised.")
+        if lan and (surface.get("person_id") or user_id.get("surface") != surface_id or user_id.get("binding") != digest([house["epoch"], surface])):
+            raise PermissionError("The shared household display changed. Review LAN access in Home Assistant.")
+        admin = False if lan else await self.core.is_admin(user_id)
+        if not admin and not lan:
             record = screen_identity.load(self.store, house)["screens"].get(surface_id, {})
             accounts = await screen_identity.accounts(self.core, self.store)
             account = next((u for u in accounts if u["id"] == user_id and not u["issue"] and u["permission"] == "control"), None)
