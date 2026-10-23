@@ -19,6 +19,10 @@ ASSETS = {"media-app.js", "media-app.css", "media.webmanifest", "routes.js", "ic
 # Existing service checks still validate profile/source/player/queue ownership and
 # fresh revisions. No setup, account/provider configuration or arbitrary MA calls.
 ACTIONS = {
+    "group_prepare",
+    "group_confirm",
+    "group_cancel",
+    "group_recheck",
     "destination",
     "play_item",
     "resume",

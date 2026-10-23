@@ -46,6 +46,8 @@ READ_COMMANDS = {
     "homestarter/queue_context",
 }
 CONTROL_COMMANDS = {
+    "players/cmd/set_members",
+    "players/cmd/group_volume",
     "homestarter/transfer",
     "player_queues/move_item",
     "player_queues/delete_item",
@@ -390,13 +392,18 @@ class MusicRuntime:
                 "id": p["player_id"],
                 "name": p.get("name") or "Speaker",
                 "provider": p.get("provider"),
+                "can_group_with": [v for v in p.get("can_group_with", []) if isinstance(v, str)],
+                "group_members": [v for v in p.get("group_members", []) if isinstance(v, str)],
+                "synced_to": p.get("synced_to"),
                 "available": p.get("available") is True,
                 "single": p.get("type") == "player"
                 and not p.get("synced_to")
                 and not (set(p.get("group_members") or []) - {p["player_id"]})
                 and not (set(p.get("static_group_members") or []) - {p["player_id"]}),
                 "state": p.get("playback_state", p.get("state")),
-                "features": sorted(set(p.get("supported_features") or []) & {"pause", "next_previous", "seek", "volume_set", "volume_mute", "play_media"}),
+                "features": sorted(
+                    set(p.get("supported_features") or []) & {"pause", "next_previous", "seek", "volume_set", "volume_mute", "play_media", "set_members"}
+                ),
             }
             for p in players
             if isinstance(p, dict) and isinstance(p.get("player_id"), str)
