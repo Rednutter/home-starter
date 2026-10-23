@@ -82,7 +82,7 @@ def test_poisoned_or_unreviewed_native_image_reference_uses_empty_fallback(url):
 async def test_bridge_rejects_native_writes_and_profile_switch_during_artwork():
     import asyncio
 
-    from real_metadata_preview import MetadataPreview
+    from homestarter.catalogue_preview import MetadataPreview
 
     calls, began, finish = [], asyncio.Event(), asyncio.Event()
     filters = ["source-a"]
