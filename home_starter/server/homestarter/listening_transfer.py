@@ -20,7 +20,9 @@ CHANGED = "A speaker or queue changed. Review the move again."
 
 
 def pending(data, pid):
-    return any(pid in (r["source"], r["target"]) for r in data.get("handoffs", {}).values())
+    return any(pid in (r["source"], r["target"]) for r in data.get("handoffs", {}).values()) or any(
+        pid in r["involved"] and r["phase"] != "prepared" for r in data.get("group_handoffs", {}).values()
+    )
 
 
 def identities(rows):
@@ -124,14 +126,16 @@ class Transfers:
             and not value["rows"]
         )
 
-    async def check(self, endpoint, connection, data, scope, source, target, providers):
+    async def check(self, endpoint, connection, data, scope, source, target, providers, *, source_group=None, ignore_pending=False):
         sid, tid = source["player_id"], target["player_id"]
         lease = data["leases"].get(sid)
         if sid == tid or not lease or lease.get("scope") != scope or not lease.get("session"):
             raise PermissionError("Only this session's owner can move it to another speaker.")
-        if pending(data, sid) or pending(data, tid):
+        if not ignore_pending and (pending(data, sid) or pending(data, tid)):
             raise ValueError(UNKNOWN)
-        if issue := await self.capability() or self.issue(endpoint, lease, [source, target]):
+        if source_group and not await self.listening.groups.verified(endpoint, connection, data, sid):
+            raise ValueError("Source group membership changed. Review the move again.")
+        if issue := await self.capability() or self.issue(endpoint, lease, [{**source, "single": True} if source_group else source, target]):
             raise ValueError(issue)
         if tid in data["leases"]:
             raise ValueError("That speaker belongs to a listening session. Join it or choose an empty speaker.")
@@ -139,7 +143,10 @@ class Transfers:
         if data["leases"].get(sid) is not lease:
             raise ValueError(CHANGED)
         a, b = await self.read(endpoint, connection, sid), await self.read(endpoint, connection, tid)
-        if not self.single(a, sid) or not self.single(b, tid):
+        grouped_source = bool(
+            source_group and set(source_group["members"]) == {sid, *(a["player"].get("group_members") or [])} and not a["player"].get("synced_to")
+        )
+        if not (grouped_source or self.single(a, sid)) or not self.single(b, tid):
             raise ValueError("A speaker disconnected or joined a group. Choose two available single speakers.")
         if not self.empty(b, tid):
             raise ValueError("That speaker is playing or has a saved queue. Choose an empty speaker.")

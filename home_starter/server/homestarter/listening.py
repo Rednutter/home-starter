@@ -13,6 +13,7 @@ from . import (
     household_music,
     household_services,
     listening_books,
+    listening_group_transfer,
     listening_groups,
     listening_sessions,
     listening_stations,
@@ -93,6 +94,7 @@ class ListeningRuntime:
 
         self.sessions = QueueSessions(self)
         self.groups = listening_groups.Groups(self)
+        self.group_transfers = listening_group_transfer.GroupTransfers(self)
         self.transfers = listening_transfer.Transfers(self)
 
     async def regional_radio(self, endpoint, connection, region):
@@ -678,6 +680,7 @@ class ListeningRuntime:
                 "default_destination": default,
                 "browse": not child,
                 "grouping": self.groups.view(data, players, profile_key(person)),
+                "group_transfer": await self.group_transfers.model(endpoint, connection, data, profile_key(person), players),
                 "library": [public(r) for r in library],
                 "search": self.search_view,
                 "collection": self.collection_view if not child else None,
@@ -722,6 +725,12 @@ class ListeningRuntime:
             players, child = await self.players(house, surface, saved, person, snapshot)
             await self.transfers.reconcile(endpoint, connection, data, profile_key(person), players)
             action = body.get("action")
+            if action in listening_group_transfer.ACTIONS:
+                try:
+                    await self.group_transfers.action(endpoint, connection, data, house, players, person, body, user, surface_id)
+                finally:
+                    self.save(data)
+                return
             if action in listening_groups.ACTIONS:
                 try:
                     await self.groups.action(endpoint, connection, data, house, players, person, body, user=user, surface=surface_id, child=child)

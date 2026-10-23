@@ -3,7 +3,7 @@
 import secrets
 import time
 
-from . import catalogue, household_music, listening_books, radio_metadata
+from . import catalogue, household_music, listening_books, listening_groups, radio_metadata
 from .music_runtime import MusicRuntimeError, digest
 
 BUSY = {"playing", "paused", "buffering"}
@@ -59,6 +59,8 @@ class QueueSessions:
     async def inspect(self, endpoint, connection, data, player):
         runtime = self.listening.runtime
         pid = player["player_id"]
+        if listening_groups.pending(data, pid):
+            raise MusicRuntimeError("Speaker membership or a group move is awaiting verification. Check it before editing the queue.")
         lease = data["leases"].get(pid)
         if not lease or not lease.get("session"):
             return None

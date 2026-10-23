@@ -41,7 +41,7 @@ async def run(candidate, output_path=".runtime/packaged-preview-acceptance"):
         state.media_preview.open = open_fixture
         app = parent_for(state, surface)
         phase = {"state": "idle", "owner": None, "active": False, "revision": 0, "timer": 0}
-        phase.update(members=["example-player"], group_pending=None, desired=None, second_occupied=False)
+        phase.update(members=["example-player"], group_pending=None, desired=None, second_occupied=False, move_pending=None, move_done=False)
         commands = []
 
         async def view(caller, surface, person, folder=None, query=None):
@@ -72,6 +72,12 @@ async def run(candidate, output_path=".runtime/packaged-preview-acceptance"):
                 "epoch": state.household.load()["epoch"],
                 "person_id": person,
                 "players": [room, second],
+                "group_transfer": {
+                    "source": room["entity_id"] if len(phase["members"]) > 1 and not phase["move_done"] and person == phase["owner"] else None,
+                    "issue": None,
+                    "pending": phase["move_pending"],
+                    "targets": [{"entity_id": "media_player.third", "name": "Third room"}, {"entity_id": "media_player.fourth", "name": "Fourth room"}],
+                },
                 "profiles": [{"id": "one", "name": "Example One"}],
                 "default_destination": room["entity_id"],
                 "sessions": [
@@ -152,6 +158,16 @@ async def run(candidate, output_path=".runtime/packaged-preview-acceptance"):
                 phase["members"] = phase["desired"]
                 phase["group_pending"] = None
                 phase["second_occupied"] = False
+            if body["action"] == "group_transfer_prepare":
+                assert phase["active"] and len(phase["members"]) > 1
+                assert body["target"] == "media_player.third"
+                assert set(body["settings"]["members"]) == {"media_player.third", "media_player.fourth"}
+                phase["move_pending"] = {"phase": "prepared", "confirmation": "fixture-move-confirmation", "names": ["Third room", "Fourth room"]}
+            if body["action"] == "group_transfer_cancel":
+                phase["move_pending"] = None
+            if body["action"] == "group_transfer_confirm":
+                assert body["confirmation"] == "fixture-move-confirmation"
+                phase.update(move_pending=None, move_done=True)
             phase["revision"] += 1
 
         state.listening.view = AsyncMock(side_effect=view)
@@ -370,6 +386,26 @@ async def run(candidate, output_path=".runtime/packaged-preview-acceptance"):
             assert phase["active"] and phase["members"] == ["example-player", "second-player"]
             assert sum(c["action"] == "group_confirm" for c in commands) == confirms + 1
             assert sum(c["action"] == "play_item" for c in commands) == play_count
+            move = page.get_by_role("region", name="Move grouped listening")
+            await expect(move).to_be_visible()
+            await page.get_by_label("Move destination leader", exact=True).select_option("media_player.third")
+            await page.get_by_role("checkbox", name="Move to Fourth room", exact=True).check()
+            await page.get_by_role("button", name="Review group move", exact=True).click()
+            await expect(page.get_by_role("button", name="Confirm group move", exact=True)).to_be_visible()
+            for width, height in [(390, 844), (1024, 768), (1440, 1000)]:
+                await page.set_viewport_size({"width": width, "height": height})
+                confirmation = page.get_by_role("button", name="Confirm group move", exact=True)
+                await confirmation.scroll_into_view_if_needed()
+                assert (await confirmation.bounding_box())["height"] >= 44
+                assert await page.evaluate("document.documentElement.scrollWidth <= innerWidth+1")
+            await page.get_by_role("button", name="Cancel group move", exact=True).click()
+            assert not phase["move_done"]
+            await page.get_by_role("button", name="Review group move", exact=True).click()
+            await page.get_by_role("button", name="Confirm group move", exact=True).evaluate("e=>{e.click();e.click();}")
+            await expect(move).to_have_count(0)
+            assert phase["move_done"]
+            assert sum(c["action"] == "group_transfer_confirm" for c in commands) == 1
+            assert sum(c["action"] == "play_item" for c in commands) == play_count
             await page.get_by_role("button", name="Close speakers and queue", exact=True).click()
             await page.locator('.library-rail nav a[href="#/artists"]').click()
             geometry = []
@@ -392,6 +428,7 @@ async def run(candidate, output_path=".runtime/packaged-preview-acceptance"):
                 "viewports": geometry,
                 "group_review_viewports": group_geometry,
                 "idle_group_start_review_cancel_confirm": True,
+                "group_transfer_review_cancel_confirm": True,
                 "page_errors": errors,
                 "external_requests": len(external),
                 "mocked_household_actions": [c["action"] for c in commands],

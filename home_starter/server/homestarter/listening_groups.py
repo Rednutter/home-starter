@@ -17,7 +17,9 @@ def members(raw, pid):
 
 
 def pending(data, pid):
-    return any(pid in r["involved"] and r["phase"] != "prepared" for r in data.get("group_changes", {}).values())
+    return any(pid in r["involved"] and r["phase"] != "prepared" for r in data.get("group_changes", {}).values()) or any(
+        pid in r["involved"] and r["phase"] != "prepared" for r in data.get("group_handoffs", {}).values()
+    )
 
 
 def bound(data, pid, raw):
