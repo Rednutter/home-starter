@@ -118,7 +118,7 @@ def create_household_app(parent: web.Application) -> web.Application:
                     return web.json_response({"error": "This action is not available on the household listener."}, status=403)
         request["household_lan_caller"] = caller
         response = await handler(request)
-        if request.path in {"/", "/media"} and request.method in {"GET", "HEAD"}:
+        if request.path in {"/", "/media", "/audio", "/audio/"} and request.method in {"GET", "HEAD"}:
             if len(contexts) >= 2048:
                 raise web.HTTPServiceUnavailable(text="Too many browser sessions. Retry shortly.")
             token = secrets.token_urlsafe(32)
@@ -144,6 +144,9 @@ def create_household_app(parent: web.Application) -> web.Application:
     app.router.add_get("/media", server.media_app)
     app.router.add_get("/static/{name}", asset)
     app.router.add_get("/api/listening", server.api_listening_bootstrap)
+    from . import media_preview
+
+    media_preview.register(app, server.K_STATE, server._user, server.ingress_base)
     app.router.add_get("/api/listening/{surface}", listening)
     app.router.add_post("/api/listening/{surface}", listening)
     return app

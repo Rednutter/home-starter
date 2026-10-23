@@ -14,6 +14,8 @@ from detect_secrets import SecretsCollection
 from detect_secrets.settings import default_settings
 
 RUNTIME = {
+    "playlist-visibility.json",
+    "playlist-visibility.tmp",
     "media-catalogue.json",
     "media-catalogue.tmp",
     "home-starter-radio.json",
