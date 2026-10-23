@@ -98,8 +98,7 @@ async def test_all_connected_accounts_contribute_and_pages_preserve_every_item()
 async def test_failed_account_is_explicitly_incomplete_and_search_is_media_scoped():
     async def command(endpoint, connection, name, **args):
         if name == "music/search":
-            assert args["media_types"] == ["podcast"] and args["limit"] == 80
-            return {"podcasts": [item("show", kind="podcast")]}
+            pytest.fail("Saved collection filtering must not use unqualified provider/library search")
         if name.endswith("library_items"):
             return [item("saved", kind="podcast")]
         raise RuntimeError("Synthetic upstream failure")
@@ -107,8 +106,8 @@ async def test_failed_account_is_explicitly_incomplete_and_search_is_media_scope
     collections = Collections(type("Runtime", (), {"command": AsyncMock(side_effect=command)})())
     rows, incomplete, count = await collections.page("endpoint", CONNECTION, folder("podcasts")["path"], PROVIDERS)
     assert incomplete and count == 1
-    rows, incomplete, count = await collections.page("endpoint", CONNECTION, folder("podcasts")["path"], PROVIDERS, "fictional")
-    assert not incomplete and count == 1 and rows[0]["media_type"] == "podcast"
+    rows, incomplete, count = await collections.page("endpoint", CONNECTION, folder("podcasts")["path"], PROVIDERS, "Same title")
+    assert incomplete and count == 1 and rows[0]["media_type"] == "podcast"
 
 
 @pytest.mark.asyncio

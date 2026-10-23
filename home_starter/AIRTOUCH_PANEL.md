@@ -186,3 +186,25 @@ Delayed starts and sleep timers run server-side, survive page closure, and reche
 permissions and queue ownership. Another app replacing the queue ends ownership, so an
 old sleep timer cannot pause unrelated playback. Library browsing and search come from
 MA; no fictional people, speakers or library entries are created in the household.
+
+
+## Current commissioning direction
+
+The owner confirms the current display is good as it is. Preserve geometry, art,
+styles and navigation; finish destination pages and rationalise glance content.
+Local summary changes use the same expiring House context/capability projections
+as focused pages, with surface/epoch/person/revision checks. Missing zone/light
+reports are unknown, not off. Camera selection/reporting is not picture proof;
+stale Call/Camera projections stay unavailable. Technical media cues and expired
+calendar entries are not useful glance content. The shared Media service supplies
+owned titles and deliberate capability-gated finite transfer with honest unsupported
+states. All new work is undeployed pending native/physical commissioning.
+
+Local destination audit (23 October): verified-empty Today sources now say nothing
+upcoming; failed or partial sources carry a checking notice in the summary and
+destination. Room brightness/fan readings remain unavailable instead of becoming
+numeric defaults; stale climate values are omitted. Person listening follows the
+shared media-service availability rather than stale HA playback state. Malformed
+Call lists remain contained, unavailable camera Talk is blocked and repeated
+in-flight provider taps do not duplicate commands. Native climate cards, geometry,
+room/person identities and navigation are preserved. These are local tests only.

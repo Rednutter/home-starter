@@ -49,7 +49,7 @@ def merge(values, kind):
             continue
         mappings = value.get("provider_mappings") or []
         keys = {
-            (m.get("provider_domain") or m.get("provider_instance"), str(m["item_id"]))
+            (m.get("catalogue_namespace") or m.get("provider_domain") or m.get("provider_instance"), str(m["item_id"]))
             for m in mappings
             if isinstance(m, dict) and m.get("item_id") is not None
         }
@@ -104,8 +104,8 @@ class Collections:
             return await self.runtime.command(endpoint, connection, name, **args)
 
         if query:
-            raw = await command("music/search", search_query=query, media_types=[KINDS[kind][1]], limit=80)
-            return raw.get("radio" if kind == "radios" else kind, []), False
+            values, incomplete = await self.collect(endpoint, connection, kind, spotify, None)
+            return [v for v in values if isinstance(v, dict) and query.casefold() in str(v.get("name") or "").casefold()], incomplete
         values, incomplete = [], False
         try:
             # Native MA already merges provider mappings for many shared items.

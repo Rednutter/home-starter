@@ -21,6 +21,8 @@ from .settings import Secret
 from .supervisor import SupervisorError
 
 READ_COMMANDS = {
+    "homestarter/transfer_status",
+    "homestarter/transfer_snapshot",
     *("music/" + kind + "/library_items" for kind in ("playlists", "podcasts", "audiobooks", "albums", "artists", "tracks", "radios")),
     "music/podcasts/podcast_episodes",
     "player_queues/items",
@@ -40,6 +42,9 @@ READ_COMMANDS = {
     "homestarter/queue_context",
 }
 CONTROL_COMMANDS = {
+    "homestarter/transfer",
+    "player_queues/move_item",
+    "player_queues/delete_item",
     "player_queues/play_media",
     "player_queues/play",
     "player_queues/pause",
@@ -168,7 +173,7 @@ class MusicRuntime:
             raise MusicRuntimeError("Music Assistant did not respond. Check it and retry.") from None
         if not isinstance(info, dict) or not isinstance(info.get("server_id"), str) or not info["server_id"]:
             raise MusicRuntimeError("Music Assistant server identity could not be checked.")
-        return {"address": address, "server_id": info["server_id"], "app": installed["slug"]}
+        return {"address": address, "server_id": info["server_id"], "app": installed["slug"], "version": info.get("server_version")}
 
     async def command(self, endpoint, connection, command, **args):
         if command not in READ_COMMANDS:
@@ -369,6 +374,7 @@ class MusicRuntime:
                 "has_error": bool(p.get("last_error")),
                 "status": "disabled" if p.get("enabled") is False else "connected" if loaded.get(key, {}).get("available") is True else "unavailable",
                 "builtin": p.get("domain") == "builtin",
+                "features": sorted(set(loaded.get(key, {}).get("supported_features") or []) & {"search", "similar_tracks", "library_tracks"}),
             }
             for key, p in records.items()
         ]
@@ -386,6 +392,7 @@ class MusicRuntime:
                 and not (set(p.get("group_members") or []) - {p["player_id"]})
                 and not (set(p.get("static_group_members") or []) - {p["player_id"]}),
                 "state": p.get("playback_state", p.get("state")),
+                "features": sorted(set(p.get("supported_features") or []) & {"pause", "next_previous", "seek", "volume_set", "volume_mute", "play_media"}),
             }
             for p in players
             if isinstance(p, dict) and isinstance(p.get("player_id"), str)

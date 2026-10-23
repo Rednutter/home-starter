@@ -8,7 +8,7 @@ const stateLabel = s => !usable(s) ? "Unavailable" : ({on:"On",off:"Off",playing
 
 const features = s => Number.isInteger(attr(s).supported_features) ? attr(s).supported_features : 0;
 
-const action = (label,command,entity,extra="",disabled=false,ico=null) => `<button type="button" data-command="${command}" data-entity="${esc(entity)}" ${extra}${disabled || state.pending ? " disabled" : ""}>${ico ? icon(ico) : ""}<span>${esc(label)}</span></button>`;
+const action = (label,command,entity,extra="",disabled=false,ico=null) => `<button type="button" data-command="${command}" data-entity="${esc(entity)}" ${extra}${disabled || state.pending || musicBackend && musicState.loading ? " disabled" : ""}>${ico ? icon(ico) : ""}<span>${esc(label)}</span></button>`;
 
 const summary = items => {
   if(!items.length) return "No controls selected";
@@ -23,7 +23,8 @@ const summary = items => {
 
   if(live.some(([i,s])=>i.domain === "fan" && s?.state === "on")) lines.push("Fan on");
 
-  if(live.some(([i,s])=>i.domain === "cover" && usable(s) && s.state !== "closed")) lines.push("Blinds open");
+  if(live.some(([i,s])=>i.domain === "cover" && usable(s) && s.state === "open")) lines.push("Blinds open");
+  if(live.some(([i,s])=>i.domain === "cover" && usable(s) && ["opening","closing"].includes(s.state))) lines.push("Blinds moving");
 
   const climate=live.find(([i,s])=>i.domain === "climate" && usable(s));
 
@@ -49,15 +50,20 @@ const briefingHTML = (compact=false) => {
 
   const rows=briefing.slice(0,compact ? 2 : 7), first=rows[0];
 
+  if(!first && fresh && projection.state === "current") return compact ? '<p class="hs-secondary">No upcoming items in your selected sources.</p>' : empty("Nothing upcoming","No upcoming items in the selected sources.","today");
+  if(!first && fresh && projection.state === "attention") return compact ? '<p class="hs-secondary">Your Today sources need checking.</p>' : empty("Today sources need checking","Some selected information is unavailable. Try again later or review the connections in Home Starter.","today");
+
   if(!first && compact) return `<p class="hs-secondary">Your personal briefing is not ready yet.</p>`;
 
   if(!first) return empty(focus.owner ? "Your Today is not ready yet" : "No verified briefing to show",focus.owner ? "Link personal context in Home Starter. House briefing stays in House." : "Choose and verify household context in Home Starter.","today");
 
+  const notice=projection?.state === "attention" ? '<p class="hs-secondary">Some Today sources need checking.</p>':"";
+
   const row = r => `<article class="hs-briefing-row"><time>${esc(r.when)}</time><div><h3>${esc(r.title)}</h3>${r.detail ? `<p class="hs-secondary">${esc(r.detail)}</p>` : ""}</div></article>`;
 
-  if(compact) return `<p class="hs-secondary">${esc(first.when || "Next")} · ${esc(first.title)}${first.detail ? " · "+esc(first.detail) : ""}</p>`;
+  if(compact) return `${notice}<p class="hs-secondary">${esc(first.when || "Next")} · ${esc(first.title)}${first.detail ? " · "+esc(first.detail) : ""}</p>`;
 
-  return `<section class="hs-feature hs-feature-art hs-today-art"><h2 class="hs-important">${esc(first.title)}</h2><p class="hs-secondary">${esc(first.when || "Next")}</p>${first.detail ? `<p class="hs-secondary">${esc(first.detail)}</p>` : ""}</section>${rows.length>1 ? `<section class="hs-feature hs-briefing-list">${rows.slice(1).map(row).join("")}</section>` : ""}`;
+  return `${notice}<section class="hs-feature hs-feature-art hs-today-art"><h2 class="hs-important">${esc(first.title)}</h2><p class="hs-secondary">${esc(first.when || "Next")}</p>${first.detail ? `<p class="hs-secondary">${esc(first.detail)}</p>` : ""}</section>${rows.length>1 ? `<section class="hs-feature hs-briefing-list">${rows.slice(1).map(row).join("")}</section>` : ""}`;
 
 };
 
@@ -71,17 +77,17 @@ const controlCard = item => {
 
   buttons=action(s?.state === "on" ? "Turn off" : "Turn on","toggle",id,`aria-pressed="${s?.state === "on"}"`,!ready);
 
-  if(item.domain === "light" && a.supported_color_modes?.some(m=>!["onoff","unknown"].includes(m))) sliders=`<label>Brightness<input type="range" min="1" max="100" value="${num(a.brightness) ? Math.round(a.brightness/255*100) : 1}" data-command="brightness" data-entity="${esc(id)}"${!ready ? " disabled" : ""}></label>`;
+  if(item.domain === "light" && a.supported_color_modes?.some(m=>!["onoff","unknown"].includes(m))) sliders=!ready || !num(a.brightness) || a.brightness<0 || a.brightness>255 ? '<p class="hs-secondary">Brightness unavailable</p>' : `<label>Brightness<input type="range" min="1" max="100" value="${num(a.brightness) ? Math.round(a.brightness/255*100) : 1}" data-command="brightness" data-entity="${esc(id)}"${!ready ? " disabled" : ""}></label>`;
 
-  if(item.domain === "fan" && f&1) sliders=`<label>Fan speed<input type="range" min="0" max="100" value="${num(a.percentage) ? a.percentage : 0}" data-command="fan-speed" data-entity="${esc(id)}"${!ready ? " disabled" : ""}></label>`;
+  if(item.domain === "fan" && f&1) sliders=!ready || !num(a.percentage) || a.percentage<0 || a.percentage>100 ? '<p class="hs-secondary">Fan speed unavailable</p>' : `<label>Fan speed<input type="range" min="0" max="100" value="${num(a.percentage) ? a.percentage : 0}" data-command="fan-speed" data-entity="${esc(id)}"${!ready ? " disabled" : ""}></label>`;
 
  } else if(item.domain === "climate") {
 
   info=ready ? (s.state === "off" ? "Off" : {cooling:"Cooling",heating:"Heating",idle:"Idle",fan:"Fan only"}[a.hvac_action] || stateLabel(s)) : "Unavailable";
 
-  if(num(a.current_temperature)) info+=` · Currently ${a.current_temperature}°`;
+  if(ready && num(a.current_temperature)) info+=` · Currently ${a.current_temperature}°`;
 
-  if(f&1 && num(a.temperature)) buttons=action("Decrease target","temperature-down",id,"",!ready,"mdi:minus")+`<span class="hs-important">${esc(a.temperature)}°</span>`+action("Increase target","temperature-up",id,"",!ready,"mdi:plus");
+  if(ready && f&1 && num(a.temperature)) buttons=action("Decrease target","temperature-down",id,"",!ready,"mdi:minus")+`<span class="hs-important">${esc(a.temperature)}°</span>`+action("Increase target","temperature-up",id,"",!ready,"mdi:plus");
 
   if(Array.isArray(a.hvac_modes)) buttons+=a.hvac_modes.map(m=>action(({off:"Off",cool:"Cool",heat:"Heat",auto:"Auto",fan_only:"Fan",dry:"Dry"}[m] || m),"climate-mode",id,`data-value="${esc(m)}" aria-pressed="${s?.state === m}"`,!ready)).join("");
 
@@ -152,15 +158,39 @@ const callHTML = () => {
 
  }
 
- return call.destinations?.length ? `<section class="hs-feature"><h2>Who would you like to call?</h2><div class="hs-feature-grid">${call.destinations.slice(0,16).map(d=>adapterButton("call","start",d.name,d.id)).join("")}</div></section>` : empty("No callable destinations","Review this view’s calling destinations in Home Starter.","call");
+ const destinations=Array.isArray(call.destinations) ? call.destinations.filter(d=>d && typeof d.id==="string" && typeof d.name==="string"):[];
+ return destinations.length ? `<section class="hs-feature"><h2>Who would you like to call?</h2><div class="hs-feature-grid">${destinations.slice(0,16).map(d=>adapterButton("call","start",d.name,d.id)).join("")}</div></section>` : empty("No callable destinations","Review this view's calling destinations in Home Starter.","call");
 
 };
+
+// Image work belongs to this camera card, never the navigation or media request.
+const cameraImageHTML = (entity,url,name) => {
+ if(!url){clearTimeout(state.cameraTimer);state.cameraImage=null;return '<p class="hs-secondary">Camera image unavailable</p>';}
+ if(state.cameraImage?.url!==url || state.cameraImage?.entity!==entity){
+  clearTimeout(state.cameraTimer);state.cameraImage={entity,url,status:"loading",revision:state.cameraRevision=(state.cameraRevision || 0)+1};
+  const imageState=state.cameraImage;
+  state.cameraTimer=setTimeout(()=>{
+   if(this._hsPage===state && state.cameraImage===imageState && imageState.status==="loading"){
+    imageState.status="failed";this.requestUpdate();
+   }
+  },8000);
+  state.cameraTimer.unref?.();
+ }
+ const image=state.cameraImage;
+ if(image.status==="failed")return '<p class="hs-secondary" role="status">Camera image unavailable. Other controls are ready.</p><button type="button" data-camera-retry="'+esc(entity)+'">Retry camera</button>';
+ return `<div class="hs-camera-frame">${image.status==="loading" ? '<p class="hs-secondary" role="status">Loading camera image. You can keep using the panel.</p>':""}<img class="hs-camera-image" data-camera-image="${esc(entity)}" data-camera-revision="${image.revision}" src="${esc(url)}" alt="${esc(name)} camera image" width="640" height="360" loading="lazy" decoding="async"></div>`;
+};
+const cameraEvents={capture:true,handleEvent:event=>{
+ const image=state.cameraImage,target=event.target;
+ if(this._hsPage!==state || !image || image.status!=="loading" || target?.dataset?.cameraImage!==image.entity || target.dataset.cameraRevision!==String(image.revision) || target.getAttribute("src")!==image.url)return;
+ clearTimeout(state.cameraTimer);image.status=event.type==="load" ? "ready":"failed";this.requestUpdate();
+}};
 
 const cameraHTML = () => {
 
  const value=adapter("camera"),cameras=focus.bindings?.camera?.cameras || [];
 
- if(!value || !cameras.length) return empty(focus.bindings?.camera ? "Camera connection unavailable" : "No cameras commissioned","Choose and verify a camera in Home Starter. Door and gate actions need their own confirmed association.","camera");
+ if(!value || !cameras.length){clearTimeout(state.cameraTimer);state.cameraImage=null;return empty(focus.bindings?.camera ? "Camera connection unavailable" : "No cameras commissioned","Choose and verify a camera in Home Starter. Door and gate actions need their own confirmed association.","camera");}
 
  const event=value.event && !state.dismissed?.includes(value.event.id) ? value.event : null;
 
@@ -170,7 +200,7 @@ const cameraHTML = () => {
 
  const entry=(focus.bindings.camera.entry || []).find(e=>e.camera_entity_id === selected.entity_id && e.allowed_users?.includes(hass.user?.id));
 
- return `<section class="hs-feature"><h2>${esc(event?.label || selected.name)}</h2>${image ? `<img class="hs-camera-image" src="${esc(image)}" alt="${esc(selected.name)} camera image">` : '<p class="hs-secondary">Camera image unavailable</p>'}<div class="hs-control-actions">${adapterButton("camera","talk","Talk",selected.entity_id)}${entry && event && supportedAction("camera",entry.action) ? adapterButton("camera",entry.action,"Open",entry.id) : ""}${event ? '<button data-dismiss="'+esc(event.id)+'">Dismiss</button>' : ""}</div></section>${!event ? `<section class="hs-feature"><h2>Cameras</h2><div class="hs-feature-grid">${cameras.map(c=>`<button data-camera="${esc(c.entity_id)}" aria-pressed="${c.entity_id === selected.entity_id}">${esc(c.name)}</button>`).join("")}</div></section>` : ""}`;
+ return `<section class="hs-feature"><h2>${esc(event?.label || selected.name)}</h2>${cameraImageHTML(selected.entity_id,image,selected.name)}<div class="hs-control-actions">${usable(s) ? adapterButton("camera","talk","Talk",selected.entity_id):""}${entry && event && supportedAction("camera",entry.action) ? adapterButton("camera",entry.action,"Open",entry.id) : ""}${event ? '<button data-dismiss="'+esc(event.id)+'">Dismiss</button>' : ""}</div></section>${!event ? `<section class="hs-feature"><h2>Cameras</h2><div class="hs-feature-grid">${cameras.map(c=>`<button data-camera="${esc(c.entity_id)}" aria-pressed="${c.entity_id === selected.entity_id}">${esc(c.name)}</button>`).join("")}</div></section>` : ""}`;
 
 };
 
@@ -183,13 +213,13 @@ const mediaHTML = () => {
 
  if(!state.destination) return empty("Where would you like to listen?","Choose a permitted speaker for this listening view.","media")+`<section class="hs-feature"><div class="hs-feature-grid">${players.map(p=>action(p.name,"destination",p.entity_id,"",(!usable(get(p.entity_id)) || musicBackend && (!p.available || !p.single)),"mdi:speaker")).join("")}</div></section>`;
 
- const player=players.find(p=>p.entity_id === state.destination) || players[0],s=get(player.entity_id),a=attr(s),ready=usable(s) && (!musicBackend || player.available && player.single),f=features(s);
+ const player=players.find(p=>p.entity_id === state.destination) || players[0],s=get(player.entity_id),a=attr(s),ready=usable(s) && (!musicBackend || player.available && player.single && !player.transfer_pending),f=features(s);
 
  const picture=typeof a.entity_picture === "string" && /^\/api\/media_player_proxy\//.test(a.entity_picture) ? a.entity_picture : null;
 
- const title=a.media_title || (s?.state === "playing" ? "Playing" : "Choose something to listen to");
+ const title=(musicBackend && music?.session?.player_id && music.session.player_id===player.player_id ? music.session.title:null) || a.media_title || (s?.state === "playing" ? "Playing" : "Choose something to listen to");
 
- const transport=(f&16 ? action("Previous","previous",player.entity_id,"",(!ready || musicBackend && music?.session?.player_id !== player.player_id),"mdi:skip-previous") : "")+(s?.state === "playing" && f&1 ? action("Pause","pause",player.entity_id,"",(!ready || musicBackend && music?.session?.player_id !== player.player_id),"mdi:pause") : s?.state !== "playing" && f&16384 ? action("Play","play",player.entity_id,"",(!ready || musicBackend && music?.session?.player_id !== player.player_id),"mdi:play") : "")+(f&32 ? action("Next","next",player.entity_id,"",(!ready || musicBackend && music?.session?.player_id !== player.player_id),"mdi:skip-next") : "");
+ const transport=(f&16 ? action("Previous","previous",player.entity_id,"",(!ready || musicBackend && music?.session?.player_id !== player.player_id),"mdi:skip-previous") : "")+(s?.state === "playing" && f&1 ? action("Pause","pause",player.entity_id,"",(!ready || musicBackend && music?.session?.player_id !== player.player_id),"mdi:pause") : s?.state !== "playing" && f&16384 ? action("Play","play",player.entity_id,"",(!ready || musicBackend && music?.session?.player_id !== player.player_id),"mdi:play") : "")+(f&32 ? action("Next","next",player.entity_id,"",(!ready || musicBackend && music?.session?.player_id !== player.player_id),"mdi:skip-next") : "")+(musicBackend && music?.session?.player_id && music.session.player_id===player.player_id ? action("Stop","stop",player.entity_id,"",!ready,"mdi:stop"):"");
 
  return `${focus.owner ? '<p class="hs-quiet">Your listening view · destinations are shared.</p>' : ""}<section class="hs-feature"><div class="hs-media-layout">${picture ? `<img class="hs-artwork" src="${esc(picture)}" alt="Current media artwork">` : `<div class="hs-artwork-fallback">${icon("mdi:music")}</div>`}<div><p class="hs-secondary">${esc(stateLabel(s))} · ${esc(player.name)}</p><h2>${esc(title)}</h2>${a.media_artist || a.media_album_name ? `<p class="hs-secondary">${esc(a.media_artist || a.media_album_name)}</p>` : ""}<div class="hs-control-actions">${transport}</div></div></div></section><section class="hs-feature"><h2>Where to listen</h2><div class="hs-feature-grid">${players.map(p=>action(p.name,"destination",p.entity_id,`aria-pressed="${p.entity_id === state.destination}"`,(!usable(get(p.entity_id)) || musicBackend && (!p.available || !p.single)),"mdi:speaker")).join("")}</div>${!musicBackend && f&524288 && hass.services?.media_player?.join ? `<div class="hs-control-actions">${players.filter(p=>p.entity_id !== player.entity_id && usable(get(p.entity_id)) && features(get(p.entity_id))&524288).map(p=>action("Group with "+p.name,"group",player.entity_id,`data-value="${esc(p.entity_id)}"`)).join("")}${a.group_members?.length>1 && hass.services?.media_player?.unjoin ? action("Separate speaker","ungroup",player.entity_id) : ""}</div>` : ""}${f&4 ? `<label>Speaker volume<input type="range" min="0" max="100" value="${num(a.volume_level) ? Math.round(a.volume_level*100) : 0}" data-command="volume" data-entity="${esc(player.entity_id)}"${!ready ? " disabled" : ""}></label><p class="hs-quiet">Speaker’s own scale · household volume calibration is not set up.</p>` : ""}</section>${musicBackend || focus.owner ? listeningHTML() : ""}`;
 
@@ -213,10 +243,11 @@ else if(focus.kind === "room" || focus.kind === "context") body=controls.length 
 
 else if(focus.kind === "person") {
 
- const own=(focus.rooms || []).filter(r=>focus.default_rooms.includes(r.id));
+ const own=(focus.rooms || []).filter(r=>(focus.default_rooms || []).includes(r.id));
 
  const destination=players.find(p=>p.entity_id === (music?.default_destination || focus.default_destination));
- body=`<div class="hs-person-grid"><section><h2 class="hs-section-title">Your room</h2>${rooms(own)}</section><section><h2 class="hs-section-title">Your listening</h2><div class="hs-feature hs-feature-art hs-media-art hs-person-summary"><h3>${esc(destination?.name || (players.length ? "Choose where to listen" : "No speaker selected"))}</h3><p class="hs-secondary">${esc(destination ? stateLabel(get(destination.entity_id)) : players.length ? "Choose a permitted destination." : "Choose a default room in Home Starter.")}</p><div class="hs-inline-links">${link("Open your Media",focus.destinations.media,"mdi:music")}</div></div></section></div><section class="hs-feature hs-person-today"><div><h2>Your Today</h2>${briefingHTML(true)}</div><div class="hs-inline-links">${link("Your Today",focus.destinations.today,"mdi:calendar-blank-outline")}${link("Shared controls",focus.destinations.rooms,"mdi:home-outline")}${link("Call",focus.destinations.call,"mdi:phone-outline")}</div></section>${focus.supervision?.length ? `<section class="hs-feature"><h2>Family views</h2><p class="hs-quiet">Shared household views; opening a person does not sign in as them.</p><div class="hs-inline-links">${focus.supervision.map(p=>link(p.name,p.path,"mdi:account-circle-outline")).join("")}</div></section>` : ""}`;
+ const destinationStatus=musicBackend ? !music ? (musicState.loading ? "Checking your speaker…":"Listening unavailable") : !destination?.available ? "Speaker unavailable" : ({playing:"Playing",paused:"Paused",idle:"Ready",buffering:"Starting"}[destination.state] || "Status unavailable") : destination ? stateLabel(get(destination.entity_id)):"";
+ body=`<div class="hs-person-grid"><section><h2 class="hs-section-title">Your room</h2>${rooms(own)}</section><section><h2 class="hs-section-title">Your listening</h2><div class="hs-feature hs-feature-art hs-media-art hs-person-summary"><h3>${esc(destination?.name || (players.length ? "Choose where to listen" : "No speaker selected"))}</h3><p class="hs-secondary">${esc(destination ? destinationStatus : players.length ? "Choose a permitted destination." : "Choose a default room in Home Starter.")}</p><div class="hs-inline-links">${link("Open your Media",focus.destinations.media,"mdi:music")}</div></div></section></div><section class="hs-feature hs-person-today"><div><h2>Your Today</h2>${briefingHTML(true)}</div><div class="hs-inline-links">${link("Your Today",focus.destinations.today,"mdi:calendar-blank-outline")}${link("Shared controls",focus.destinations.rooms,"mdi:home-outline")}${link("Call",focus.destinations.call,"mdi:phone-outline")}</div></section>${focus.supervision?.length ? `<section class="hs-feature"><h2>Family views</h2><p class="hs-quiet">Shared household views; opening a person does not sign in as them.</p><div class="hs-inline-links">${focus.supervision.map(p=>link(p.name,p.path,"mdi:account-circle-outline")).join("")}</div></section>` : ""}`;
 
 } else if(focus.kind === "settings") body=`<section class="hs-feature"><h2>Display settings</h2><p class="hs-secondary">Profile, appearance and app settings stay in Home Assistant.</p><div class="hs-inline-links">${link("Profile / app settings","/profile","mdi:cog-outline")}${link("Panel mode",common.base+"/home","mdi:fullscreen")}${link("Exit panel","/lovelace/0?disable_km","mdi:exit-to-app")}</div></section>`;
 
@@ -228,7 +259,7 @@ const command = async event => {
 
  const kind=el.dataset.command,id=el.dataset.entity,item=controls.find(i=>i.entity_id === id),player=players.find(i=>i.entity_id === id),s=get(id),a=attr(s),f=features(s);
 
- if(musicBackend && player && ["destination","play","pause","next","previous","volume"].includes(kind)) {
+ if(musicBackend && player && ["destination","play","pause","stop","next","previous","volume"].includes(kind)) {
   if(kind === "destination") {state.destination=id;await musicAction("destination");}
   else await musicAction(kind,{player:id,...(kind === "volume" ? {value:+el.value}:{})});
   return;
@@ -244,9 +275,9 @@ const command = async event => {
 
  if(kind === "toggle" && item && ["light","switch","input_boolean","fan"].includes(domain) && item.interaction !== "status") service=[domain,s.state === "on" ? "turn_off" : "turn_on"];
 
- if(kind === "brightness" && domain === "light" && a.supported_color_modes?.some(m=>!["onoff","unknown"].includes(m)) && num(+el.value) && +el.value>=1 && +el.value<=100) {service=["light","turn_on"];data.brightness_pct=+el.value;}
+ if(kind === "brightness" && domain === "light" && num(a.brightness) && a.brightness>=0 && a.brightness<=255 && a.supported_color_modes?.some(m=>!["onoff","unknown"].includes(m)) && num(+el.value) && +el.value>=1 && +el.value<=100) {service=["light","turn_on"];data.brightness_pct=+el.value;}
 
- if(kind === "fan-speed" && domain === "fan" && f&1 && +el.value>=0 && +el.value<=100) {service=["fan","set_percentage"];data.percentage=+el.value;}
+ if(kind === "fan-speed" && domain === "fan" && num(a.percentage) && a.percentage>=0 && a.percentage<=100 && f&1 && +el.value>=0 && +el.value<=100) {service=["fan","set_percentage"];data.percentage=+el.value;}
 
  if(["temperature-down","temperature-up"].includes(kind) && domain === "climate" && f&1 && num(a.temperature)) {service=["climate","set_temperature"];const delta=(num(a.target_temp_step) ? a.target_temp_step : 1)*(kind === "temperature-up" ? 1 : -1);data.temperature=Math.round(Math.max(a.min_temp ?? 7,Math.min(a.max_temp ?? 35,a.temperature+delta))*10)/10;}
 
@@ -282,9 +313,9 @@ const providerCommand = async event => {
 
  let allowed=[];
 
- if(feature === "call") allowed=name === "start" ? (source.destinations || []).map(d=>d.id) : [source.id];
+ if(feature === "call") allowed=name === "start" ? (Array.isArray(source.destinations) ? source.destinations:[]).filter(d=>d && typeof d.id==="string" && typeof d.name==="string").map(d=>d.id) : [source.id];
 
- if(feature === "camera") allowed=name === "talk" ? (focus.bindings.camera.cameras || []).map(c=>c.entity_id) : (focus.bindings.camera.entry || []).filter(e=>e.allowed_users?.includes(hass.user?.id) && e.action === name && e.camera_entity_id === source.event?.camera_entity_id).map(e=>e.id);
+ if(feature === "camera") allowed=name === "talk" ? (focus.bindings.camera.cameras || []).filter(c=>usable(get(c.entity_id))).map(c=>c.entity_id) : (focus.bindings.camera.entry || []).filter(e=>e.allowed_users?.includes(hass.user?.id) && e.action === name && e.camera_entity_id === source.event?.camera_entity_id).map(e=>e.id);
 
  if(feature === "listening") {
 
@@ -320,6 +351,8 @@ const click = event => {
  if(event.target.closest?.("[data-music]")) {if(!["SELECT","INPUT"].includes(event.target.tagName))musicEvent(event);return;}
 
 
+ const retry=event.target.closest?.('[data-camera-retry]');
+ if(retry && state.cameraImage?.entity===retry.dataset.cameraRetry){clearTimeout(state.cameraTimer);state.cameraImage=null;this.requestUpdate();return;}
  const camera=event.target.closest?.('[data-camera]'),dismiss=event.target.closest?.('[data-dismiss]');
 
  if(camera && focus.bindings?.camera?.cameras.some(c=>c.entity_id === camera.dataset.camera)) {state.camera=camera.dataset.camera;this.requestUpdate();return;}
@@ -333,7 +366,7 @@ const click = event => {
 let pageMarkup=`<div style="${decorationStyle(new Date(),hass.config.time_zone,common.surface_id+':'+(focus.owner || 'house'))}">`+(state.error ? `<p class="hs-feedback" role="alert">${esc(state.error)}</p>` : "")+body+"</div>";
 if(musicBackend && music && musicState.editing && state.bodyMarkup !== undefined) pageMarkup=state.bodyMarkup;
 else state.bodyMarkup=pageMarkup;
-const pageTemplate=html`<div class="hs-page-content" @click=${click} @change=${change} @submit=${musicSearch} @input=${musicInput} @mousedown=${stop} @touchstart=${stop} @touchend=${stop} .innerHTML=${pageMarkup}></div>`;
+const pageTemplate=html`<div class="hs-page-content" @click=${click} @change=${change} @submit=${musicSearch} @input=${musicInput} @mousedown=${stop} @touchstart=${stop} @touchend=${stop} @load=${cameraEvents} @error=${cameraEvents} .innerHTML=${pageMarkup}></div>`;
 
 // button-card recompiles JS templates; retain Lit's template identity across timer ticks.
 if(pageTemplate.strings) {

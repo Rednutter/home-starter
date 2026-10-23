@@ -6,6 +6,7 @@ import secrets
 NAMES = ("Grant", "Renae", "Edie", "Maddie", "Flynn", "House")
 IDENTITIES = ("Grant", "Renae", "House", "House #2")
 OVERFLOW = ("House", "House #2", "Grant")
+PROGRESS_DOMAINS = {"audiobookshelf", "audible", "storytel"}
 
 
 def normalized(value):
@@ -32,7 +33,7 @@ def source_access(name, providers):
     personal = name in {"Grant", "Renae"}
     names = [name] if personal else ["House", "House #2"]
     allowed = {identities[n]["id"] for n in names if n in identities}
-    allowed.update(p["id"] for p in providers if p.get("domain") != "spotify" and p.get("enabled", True))
+    allowed.update(p["id"] for p in providers if p.get("domain") not in {"spotify", *PROGRESS_DOMAINS} and p.get("enabled", True))
     # MA treats [] as unrestricted, and prunes fabricated IDs on restart.
     # Never represent deny-all using either of those shortcuts.
     if not allowed:
@@ -43,7 +44,7 @@ def source_access(name, providers):
 def collection_access(providers):
     """Native catalogue access after explicit sharing consent, never allocation."""
     allowed = {p["id"] for p in providers_by_identity(providers).values() if connected(p)}
-    allowed.update(p["id"] for p in providers if p.get("domain") != "spotify" and p.get("enabled", True))
+    allowed.update(p["id"] for p in providers if p.get("domain") not in {"spotify", *PROGRESS_DOMAINS} and p.get("enabled", True))
     if not allowed:
         raise ValueError("Connect a household source before sharing native collections.")
     return sorted(allowed)
@@ -63,6 +64,10 @@ async def reconcile(command, providers, names=NAMES, *, share_collections=False)
             user = matches[0]
             if user.get("enabled") is False:
                 raise ValueError("A household Music Assistant user is disabled. Review it in Music Assistant.")
+            # Spotify sharing consent cannot grant or remove a person's progress
+            # source. Preserve only explicit, existing native assignments.
+            progress = {p["id"] for p in providers if p.get("domain") in PROGRESS_DOMAINS}
+            access = sorted(set(access) | (set(user.get("provider_filter") or []) & progress))
             if sorted(user.get("provider_filter") or []) != access:
                 await command("auth/user/update", user_id=user["user_id"], provider_filter=access)
         else:

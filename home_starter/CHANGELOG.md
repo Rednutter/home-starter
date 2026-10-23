@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.8.40
+
+- Add the dedicated authenticated Household Audio web interface at `/media`, with
+  profiles, search, source choices, protected queues and capability-aware controls.
+  Open it from Home Starter without changing household default dashboards.
+- Preserve separate listening progress, isolate slow providers and report unavailable
+  account enforcement or uncommissioned sources honestly. No MA adapter is installed
+  by this app update; Spotify protection and native transfer remain separately gated.
+- Prepare improved AirTouch destination templates and a separate local view-only
+  preview generator. Existing published dashboards are not republished by the update.
+
 ## Unreleased
 
 - Keep wall bin timeline entries to their illustrated icons and heading; omit

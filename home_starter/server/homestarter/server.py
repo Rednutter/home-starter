@@ -57,6 +57,9 @@ _LOGGER = logging.getLogger(__name__)
 
 INGRESS_PATH_RE = re.compile(r"^/api/hassio_ingress/[A-Za-z0-9_\-]{1,128}$")
 STATIC_FILES = {
+    "media-app.js": "text/javascript",
+    "media-app.css": "text/css",
+    "media.webmanifest": "application/manifest+json",
     "app.js": "text/javascript",
     "routes.js": "text/javascript",
     "house.js": "text/javascript",
@@ -323,6 +326,21 @@ async def index(request: web.Request) -> web.Response:
     base = html.escape(ingress_base(request), quote=True)
     page = page.replace("<!--BASE-->", f'<base href="{base}">', 1)
     return web.Response(text=page, content_type="text/html", headers={"Cache-Control": "no-cache"})
+
+
+async def media_app(request: web.Request) -> web.Response:
+    page = _static("media.html").decode()
+    page = page.replace("<!--BASE-->", f'<base href="{html.escape(ingress_base(request), quote=True)}">', 1)
+    return web.Response(text=page, content_type="text/html", headers={"Cache-Control": "no-store"})
+
+
+async def api_listening_bootstrap(request):
+    try:
+        return _json(await request.app[K_STATE].listening.bootstrap(_user(request)))
+    except PermissionError:
+        return _json({"error": "Open Media through your signed-in Home Assistant account."}, 403)
+    except (CoreError, SupervisorError, OSError, ValueError, KeyError, TypeError):
+        return _json({"error": "Your household display access could not be verified. Try again."}, 503)
 
 
 async def static(request: web.Request) -> web.Response:
@@ -1351,6 +1369,8 @@ def create_app(settings: Settings, session: aiohttp.ClientSession | None = None)
     app.on_startup.append(on_startup)
     app.on_cleanup.append(on_cleanup)
     app.router.add_get("/", index)
+    app.router.add_get("/media", media_app)
+    app.router.add_get("/api/listening", api_listening_bootstrap)
     app.router.add_get("/static/{name}", static)
     app.router.add_get("/api/health", health)
     app.router.add_get("/api/scan", api_scan)

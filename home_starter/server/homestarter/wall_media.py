@@ -1,5 +1,7 @@
 """Public display metadata from active MA queues, never stream URLs or credentials."""
 
+from .radio_metadata import queue_title
+
 
 def now_playing(players, queues):
     if not isinstance(players, list) or not isinstance(queues, list):
@@ -33,7 +35,7 @@ def now_playing(players, queues):
         radio = media.get("media_type", current.get("media_type")) == "radio"
         # Radio transport metadata may be an advertising marker. Prefer the
         # station's catalogue identity; never display raw streamdetails.
-        title = (media.get("name") or item.get("name")) if radio else (current.get("title") or media.get("name") or item.get("name"))
+        title = queue_title(item) if radio else (current.get("title") or media.get("name") or item.get("name"))
         artist = "" if radio else current.get("artist", "")
         room = owner.get("name") or queue.get("display_name") or "Music"
         result.append({"title": str(title or "Playing media")[:180], "artist": str(artist or "")[:180], "room": str(room)[:120]})

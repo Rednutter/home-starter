@@ -52,8 +52,9 @@ class Music:
             self.raw[p].update(elapsed_time=args["position"], elapsed_time_last_updated=time.time())
             self.queues[p].update(elapsed_time=args["position"], elapsed_time_last_updated=time.time())
         if command in {"player_queues/pause", "player_queues/stop"}:
-            self.raw[p]["playback_state"] = "paused"
-            self.queues[p].update(state="paused", elapsed_time=self.raw[p]["elapsed_time"], elapsed_time_last_updated=time.time())
+            state = "paused" if command == "player_queues/pause" else "idle"
+            self.raw[p]["playback_state"] = state
+            self.queues[p].update(state=state, elapsed_time=self.raw[p]["elapsed_time"], elapsed_time_last_updated=time.time())
 
 
 @pytest.fixture
@@ -86,6 +87,71 @@ async def book(setup):
     return view["library"][0]["id"]
 
 
+async def test_native_books_propagate_person_and_resume_same_title_independently(setup, monkeypatch):
+    from test_listening_books import setup as book_setup
+
+    runtime, music, house, _ = setup
+    _, config, providers, users = book_setup()
+    providers.append({"id": "fixture_house", "domain": "spotify", "name": "House", "available": True})
+    monkeypatch.setattr(listening.household_services, "load", lambda *_: config)
+    original_command, original_control = music.command, music.control
+    native_positions = {"user_one": 123, "user_two": 907}
+    native = {
+        "uri": "library://audiobook/same-book",
+        "media_type": "audiobook",
+        "name": "Same synthetic book",
+        "provider_mappings": [{"provider_domain": "audiobookshelf", "provider_instance": "books_" + p, "item_id": "same-book"} for p in ("one", "two")],
+    }
+    native["provider_mappings"].append({"provider_domain": "spotify", "provider_instance": "fixture_house", "item_id": "same-book"})
+    snapshot = await music.snapshot()
+    snapshot["providers"] = providers
+    monkeypatch.setattr(music, "snapshot", AsyncMock(return_value=snapshot))
+
+    async def command(endpoint, connection, name, **args):
+        if name == "auth/users":
+            return deepcopy(users)
+        if name == "music/item_by_uri":
+            return deepcopy(native)
+        return await original_command(endpoint, connection, name, **args)
+
+    async def control(endpoint, connection, name, **args):
+        if name == "player_queues/play_media":
+            assert args["user"]["required"] is True
+            assert args["start_from_beginning"] is False
+            person = args["user"]["user_id"].removeprefix("user_")
+            assert args["media"] == "books_" + person + "://audiobook/same-book"
+            music.book = {**native, "uri": args["media"]}
+            await original_control(endpoint, connection, name, **args)
+            pid = args["queue_id"]
+            position = native_positions[args["user"]["user_id"]]
+            music.raw[pid].update(elapsed_time=position, elapsed_time_last_updated=time.time())
+            music.queues[pid].update(elapsed_time=position, elapsed_time_last_updated=time.time())
+            return
+        await original_control(endpoint, connection, name, **args)
+
+    monkeypatch.setattr(music, "command", command)
+    monkeypatch.setattr(music, "control", control)
+    endpoint = {"version": "2.10.7"}
+    item = media_record(native)
+    data = runtime.load(house, music.conn)
+    for person, pid in (("one", "a"), ("two", "b")):
+        profile = runtime.profile(data, person)
+        profile["books"][item["id"]] = {**item, "position": 9999}  # stale UI history must not overwrite native progress
+        await runtime.play(endpoint, music.conn, data, profile, "person:" + person, {"player_id": pid}, item, "admin", "panel")
+        music.raw[pid]["elapsed_time_last_updated"] = time.time()
+        assert await runtime.sample(endpoint, music.conn, data, pid, data["leases"][pid])
+        assert profile["books"][item["id"]]["position"] == native_positions["user_" + person]
+    assert not any(name == "player_queues/seek" for name, _ in music.calls)
+    before = deepcopy(data["profiles"])
+    users[0]["provider_filter"] = []  # native source deletion / reconnect must not become unrestricted fallback
+    assert not await runtime.sample(endpoint, music.conn, data, "a", data["leases"]["a"])
+    assert "a" not in data["leases"] and data["profiles"] == before
+    music.calls.clear()
+    with pytest.raises(MusicRuntimeError, match="administrator review"):
+        await runtime.play(endpoint, music.conn, data, runtime.profile(data, "one"), "person:one", {"player_id": "a"}, item, "admin", "panel")
+    assert not music.calls  # no pause or queue replacement before isolation checks
+
+
 async def test_spotify_never_uses_unprotected_playback_or_pauses_when_guard_missing(setup, monkeypatch):
     runtime, music, house, _ = setup
     item = media_record({"uri": "fixture_spotify://track/example", "media_type": "track", "name": "Synthetic track"})
@@ -94,6 +160,76 @@ async def test_spotify_never_uses_unprotected_playback_or_pauses_when_guard_miss
     data = runtime.load(house, music.conn)
     with pytest.raises(MusicRuntimeError, match="Protection unavailable"):
         await runtime.play("fixture", music.conn, data, runtime.profile(data, "one"), "person:one", {"player_id": "a"}, item, "admin", "panel")
+    assert not music.calls
+
+
+async def test_discovery_view_hides_unprotected_controls_and_recovers_without_transport(setup, monkeypatch):
+    runtime, music, _, _ = setup
+    snapshot = await music.snapshot()
+    snapshot["providers"] = [{"id": "fixture_spotify", "domain": "spotify", "name": "House", "available": True}]
+    monkeypatch.setattr(music, "snapshot", AsyncMock(return_value=snapshot))
+    guard = AsyncMock(side_effect=MusicRuntimeError("Private upstream error"))
+    monkeypatch.setattr(music, "account_guard", guard, raising=False)
+    view = await runtime.view("admin", "panel")
+    assert view["discovery"] is False
+    assert "temporarily unavailable" in view["discovery_issue"]
+    assert "Private upstream error" not in str(view)
+    assert view["browse"] and view["library"]
+    assert not music.calls
+    guard.side_effect = None
+    guard.return_value = {"isolated": True}
+    recovered = await runtime.view("admin", "panel")
+    assert recovered["discovery"] is True
+    assert recovered["discovery_issue"] is None
+    assert not music.calls
+
+
+async def test_pending_personal_account_never_advertises_shared_discovery(setup, monkeypatch):
+    runtime, music, house, _ = setup
+    house["people"][0]["name"] = "Renae"
+    runtime.store.save(house)
+    snapshot = await music.snapshot()
+    snapshot["providers"] = [{"id": "fixture_spotify", "domain": "spotify", "name": "House", "available": True}]
+    monkeypatch.setattr(music, "snapshot", AsyncMock(return_value=snapshot))
+    guard = AsyncMock(return_value={"isolated": True})
+    monkeypatch.setattr(music, "account_guard", guard, raising=False)
+    view = await runtime.view("admin", "panel", "one")
+    assert view["discovery"] is False
+    assert view["discovery_issue"] == "Your music account is not connected yet."
+    guard.assert_not_awaited()
+    assert view["browse"]
+    assert not music.calls
+
+
+def test_audiobook_status_requires_person_binding_and_does_not_claim_provider_sync():
+    config = {"libraries": [{"provider_id": "example-books", "people": ["one"]}]}
+    providers = [{"id": "example-books", "domain": "audiobookshelf", "available": True}]
+    assert listening.audiobook_status(config, providers, None)["state"] == "choose_listener"
+    assert listening.audiobook_status(config, providers, "two")["state"] == "not_connected"
+    assert listening.audiobook_status(config, [], "one")["state"] == "unavailable"
+    assert listening.audiobook_status(config, providers, "one")["state"] == "needs_verification"
+    providers[0]["enabled"] = False
+    assert listening.audiobook_status(config, providers, "one")["state"] == "unavailable"
+
+
+async def test_missing_audiobook_source_is_honest_and_does_not_start_audio(setup):
+    runtime, music, _, _ = setup
+    house = await runtime.view("admin", "panel")
+    assert house["audiobooks"]["state"] == "choose_listener"
+    personal = await runtime.view("admin", "panel", "one")
+    assert personal["audiobooks"]["state"] == "not_connected"
+    assert personal["audiobooks"]["message"] == "Your audiobook library is not connected yet."
+    assert not music.calls
+
+
+async def test_media_app_bootstrap_requires_existing_display_authorization(setup):
+    runtime, music, _, _ = setup
+    with pytest.raises(PermissionError):
+        await runtime.bootstrap(None)
+    boot = await runtime.bootstrap("admin")
+    assert boot == {"surfaces": [{"id": "panel", "name": "Example panel", "person_id": None}]}
+    view = await runtime.view("admin", "panel")
+    assert view["profiles"] == [{"id": "one", "name": "Example one"}, {"id": "two", "name": "Example two"}]
     assert not music.calls
 
 
@@ -189,6 +325,9 @@ async def test_listener_progress_survives_restart_and_does_not_follow_speaker(se
     music.raw["a"]["elapsed_time_last_updated"] = time.time()
     await runtime.view("admin", "panel", "one")
     await act(setup, "one", "pause")
+    with pytest.raises(ValueError, match="already in use"):
+        await act(setup, "two", "play_item", item=item)
+    await act(setup, "one", "stop")  # owner explicitly releases the paused session
     await act(setup, "two", "play_item", item=item)
     assert music.calls[-1][0] == "player_queues/play_media" and music.calls[-1][1]["start_from_beginning"] is True
     assert runtime.load(house, music.conn)["profiles"]["person:one"]["books"][item]["position"] == 615
@@ -372,7 +511,7 @@ async def test_reused_native_episode_queue_is_explicitly_reset_for_a_different_l
 
     monkeypatch.setattr(music, "control", control)
     await act(setup, "one", "play_item", item=item)
-    await act(setup, "one", "pause")
+    await act(setup, "one", "stop")
     await act(setup, "two", "play_item", item=item)
     assert music.calls[-1] == ("player_queues/seek", {"queue_id": "a", "position": 0})
 
@@ -429,7 +568,8 @@ async def test_podcast_show_opens_native_episodes_and_does_not_become_progress_i
         return show if name == "music/item_by_uri" else [episode] if name == "music/podcasts/podcast_episodes" else {"podcasts": [show]}
 
     monkeypatch.setattr(music, "command", command)
-    rows = await runtime.catalog_items({}, {}, query="Example")
+    rows = [media_record(show)]
+    runtime.catalog[rows[0]["id"]] = rows[0]
     assert rows[0]["folder"] and rows[0]["kind"] == "podcast"
     with pytest.raises(ValueError, match="Choose an item"):
         await runtime.item(rows[0]["id"], {"favorites": [], "recent": [], "books": {}})

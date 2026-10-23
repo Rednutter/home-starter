@@ -235,6 +235,16 @@ def apply_pages(generated, house, items, areas, policy):
         root = view["cards"][0]
         root["variables"] = {"focus_json": json.dumps(root["variables"]["focus"])}
     config["views"] = [views["home"], *routes.values()]
+    # Glance summaries consume only the same expiring House projections as their pages.
+    # Keep metadata in a JSON string so camera labels remain inert button-card data.
+    overview["variables"]["panel"]["summary_json"] = json.dumps(
+        {
+            "surface_id": generated["surface"]["id"],
+            "epoch": house["epoch"],
+            "context_entity": context.entity_id(generated["surface"]["id"]),
+            "bindings": capability_bindings(policy, generated["surface"], None),
+        }
+    )
     generated["focused_pages"] = True
     generated["context_people"] = [p["id"] for p in house["people"]]
     generated["warnings"].append(

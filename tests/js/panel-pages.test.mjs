@@ -3,16 +3,16 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 const shell=readFileSync('home_starter/server/homestarter/static/panel-shell.js','utf8');
 const content=readFileSync('home_starter/server/homestarter/static/decorative.js','utf8')+'\n'+readFileSync('home_starter/server/homestarter/static/panel-pages.js','utf8');
-const render=new Function('hass','variables','html','window','helpers',shell+'\n'+readFileSync('home_starter/server/homestarter/static/panel-music.js','utf8')+'\n'+content);
+const render=new Function('hass','variables','html','window','helpers','fetch','AbortSignal','document','setTimeout','clearTimeout',shell+'\n'+readFileSync('home_starter/server/homestarter/static/panel-music.js','utf8')+'\n'+content);
 const base='/example-panel';
 const player={entity_id:'media_player.example',name:'Example room speaker',domain:'media_player',interaction:'both',attributes:{}};
-function scene(kind='today',changes={},states={},host=null,services={},backend={}) {
+function scene(kind='today',changes={},states={},host=null,services={},backend={},environment={}) {
  const calls=[],nav=[];
  host ||= {style:{setProperty(){}},requestUpdate(){}};
  const focus={kind,path:kind,title:'Example page',back:base+'/home',owner:null,controls:[],players:[],rooms:[],listener:{id:null,scope:'house'},bindings:{},context_entity:'sensor.example_context',...changes};
- const hass={states,services,user:{id:'fixture-user',name:'Fixture display',is_admin:false},config:{time_zone:'Australia/Sydney'},locale:{language:'en'},callService:async(...args)=>calls.push(args)};
+ const hass={states,services,user:{id:'fixture-user',name:'Fixture display',is_admin:false},config:{time_zone:'Australia/Sydney'},locale:{language:'en'},callService:async(...args)=>calls.push(args),...(environment.hass || {})};
  const common={base,surface_id:'example_panel',epoch:0,kiosk_user_name:'Fixture display',weather:null,people:[{name:'House',path:base+'/home',icon:'mdi:home-outline'}],...backend};
- const output=render.call(host,hass,{focus_json:JSON.stringify(focus),common_json:JSON.stringify(common)},(strings,...values)=>({strings,markup:values.findLast(v=>typeof v==='string'),functions:values.filter(v=>typeof v==='function')}),{location:{search:''}},{runAction:a=>nav.push(a)});
+ const output=render.call(host,hass,{focus_json:JSON.stringify(focus),common_json:JSON.stringify(common)},(strings,...values)=>({strings,markup:values.findLast(v=>typeof v==='string'),functions:values.filter(v=>typeof v==='function'),listeners:values.filter(v=>typeof v?.handleEvent==='function')}),{location:{search:''}},{runAction:a=>nav.push(a)},environment.fetch || globalThis.fetch,environment.AbortSignal || globalThis.AbortSignal,environment.document || {},environment.setTimeout || globalThis.setTimeout,environment.clearTimeout || globalThis.clearTimeout);
  return {...output,calls,nav,host,hass,focus};
 }
 function event(dataset,value,tagName='BUTTON') {const el={dataset,value,tagName};return {target:{...el,closest:q=>q.includes('data-adapter') ? dataset.adapter ? el:null : q.includes('data-command') ? dataset.command ? el:null : null},stopPropagation(){},preventDefault(){}};}
@@ -23,7 +23,7 @@ function binding(feature,owner,actions={}) {return {entity_id:'sensor.example_'+
 const livePlayer={state:'playing',attributes:{supported_features:16437,media_title:'Example track',media_artist:'Example artist',volume_level:.25}};
 
 test('household media presents discovery and free ambient without provider IDs or stream URLs',()=>{
- const view={epoch:0,person_id:null,players:[{...player,available:true,single:true}],default_destination:player.entity_id,browse:true,library:[],favorites:[],recent:[],books:[],session:{title:'Example music'},discovery:true,channels:[{id:'opaque-selection',title:'Rain',kind:'radio',category:'ambient'}]};
+ const view={epoch:0,person_id:null,players:[{...player,available:true,single:true}],default_destination:player.entity_id,browse:true,library:[],favorites:[],recent:[],books:[],session:{title:'Example music'},keep_it_going:true,discovery:true,channels:[{id:'opaque-selection',title:'Rain',kind:'radio',category:'ambient'}]};
  const host={style:{setProperty(){}},requestUpdate(){},_hsPage:{path:'media',destination:player.entity_id,music:{view,at:Date.now(),loading:false,query:'',delay:0}}};
  const output=scene('media',{players:[player]}, {[player.entity_id]:livePlayer},host,{}, {music_backend:'fixture_addon'});
  assert.match(output.markup,/Surprise Me/);assert.match(output.markup,/Keep It Going/);assert.match(output.markup,/Something different/);
@@ -38,6 +38,69 @@ test('focused setup states stay truthful and belong to the shared shell',()=>{
  for(const [kind,text] of [['today','No verified briefing'],['call','Calling not set up'],['camera','No cameras commissioned'],['media','No speaker selected']]) assert.ok(scene(kind).markup.includes(text));
  assert.match(scene('call').markup,/hs-feature-art hs-call-art/);
  assert.doesNotMatch(scene('call').markup,/<button|dial pad|Kitchen|Front gate/);
+});
+
+test('Keep It Going is unavailable unless the service confirms pinned source capability',()=>{
+ const view={epoch:0,person_id:null,players:[{...player,available:true,single:true}],default_destination:player.entity_id,browse:true,library:[],favorites:[],recent:[],books:[],session:{title:'Example music'},discovery:true,keep_it_going:false};
+ const host={style:{setProperty(){}},requestUpdate(){},_hsPage:{path:'media',destination:player.entity_id,music:{view,at:Date.now(),loading:false,query:'',delay:0}}};
+ const output=scene('media',{players:[player]}, {},host,{}, {music_backend:'fixture_addon'});
+ assert.match(output.markup,/data-music="surprise_me"/);
+ assert.doesNotMatch(output.markup,/data-music="keep_it_going"/);
+});
+
+test('unavailable discovery keeps browsing and free audio without offering blocked music actions',()=>{
+ const view={epoch:0,person_id:null,players:[{...player,available:true,single:true}],default_destination:player.entity_id,browse:true,library:[{id:'folder',title:'Podcasts',kind:'folder',folder:true}],favorites:[],recent:[],books:[],session:{title:'Example music'},discovery:false,discovery_issue:'Music discovery is temporarily unavailable. <script>bad</script>',channels:[{id:'ambient',title:'Rain',kind:'sound_effect',category:'ambient'}]};
+ const host={style:{setProperty(){}},requestUpdate(){},_hsPage:{path:'media',destination:player.entity_id,music:{view,at:Date.now(),loading:false,query:'',delay:0}}};
+ const output=scene('media',{players:[player]}, {[player.entity_id]:livePlayer},host,{}, {music_backend:'fixture_addon'});
+ assert.match(output.markup,/Music discovery is temporarily unavailable/);
+ assert.match(output.markup,/&lt;script&gt;bad&lt;\/script&gt;/);
+ assert.doesNotMatch(output.markup,/data-music="surprise_me"|data-music="keep_it_going"|data-music="something_different"|<script>/);
+ assert.match(output.markup,/>Rain</);assert.match(output.markup,/>Podcasts</);
+});
+
+test('House audiobook choices route to the chosen person without playing or exposing setup internals',()=>{
+ const view={epoch:0,person_id:null,players:[{...player,available:true,single:true}],default_destination:player.entity_id,browse:true,library:[],favorites:[],recent:[],books:[],audiobooks:{state:'choose_listener',message:'Choose who is listening.'}};
+ const host={style:{setProperty(){}},requestUpdate(){},_hsPage:{path:'media',destination:player.entity_id,music:{view,at:Date.now(),loading:false,query:'',delay:0}}};
+ const output=scene('media',{players:[player]}, {},host,{}, {music_backend:'fixture_addon',people:[{name:'House',path:base+'/home',icon:'mdi:home-outline'},{name:'Example <listener>',path:base+'/person-6f6e65',icon:'mdi:account'}]});
+ assert.match(output.markup,/href="\/example-panel\/person-6f6e65-music"/);
+ assert.match(output.markup,/Example &lt;listener&gt;’s books/);
+ assert.doesNotMatch(output.markup,/home-music|provider_id|password|API key/);
+ assert.equal(output.calls.length,0);
+ view.audiobooks={state:'not_connected',message:'Your audiobook library is not connected yet.'};
+ view.person_id='one';
+ assert.match(scene('media',{owner:'one',players:[player]}, {},host,{}, {music_backend:'fixture_addon'}).markup,/Your audiobook library is not connected yet/);
+});
+
+test('Media participation keeps a foreign paused queue owned and exposes only supported additions',()=>{
+ const view={epoch:0,person_id:null,players:[{...player,player_id:'fixture',state:'paused',available:true,single:true}],default_destination:player.entity_id,browse:true,library:[{id:'song',title:'Example local music',kind:'track',folder:false,queueable:true}],favorites:[],recent:[],books:[],sessions:[{player_id:'fixture',owner:'Example <script>owner</script>',owned:false,joined:false,can_join:true,can_add:false,revision:'opaque-revision'}]};
+ const host={style:{setProperty(){}},requestUpdate(){},_hsPage:{path:'media',destination:player.entity_id,music:{view,at:Date.now(),loading:false,query:'',delay:0}}};
+ let markup=scene('media',{players:[player]}, {},host,{}, {music_backend:'fixture_addon'}).markup;
+ assert.match(markup,/Example &lt;script&gt;owner&lt;\/script&gt; owns this queue/);
+ assert.match(markup,/data-music="queue_join"/);
+ assert.match(markup,/data-music="start" data-item="song" disabled/);
+ assert.doesNotMatch(markup,/<script>|data-music="queue_add"/);
+ Object.assign(view.sessions[0],{joined:true,can_join:false,can_add:true});
+ markup=scene('media',{players:[player]}, {},host,{}, {music_backend:'fixture_addon'}).markup;
+ assert.match(markup,/data-music="queue_leave"/);assert.match(markup,/data-music="queue_add"/);
+ assert.match(markup,/Controls and progress stay with the owner/);
+});
+
+test('Media queue edits and takeover confirmation follow checked service capabilities',()=>{
+ const target={player_id:'fixture',owner:'Other <script>profile</script>',owned:false,joined:true,can_join:false,can_add:true,can_next:true,can_edit:false,can_takeover:true,revision:'fixture-revision',queue:[{title:'Current song',current:true,entry:'opaque-current',remove:false,up:false,down:false},{title:'Upcoming song',current:false,entry:'opaque-upcoming',remove:true,up:false,down:false}]};
+ const view={epoch:0,person_id:null,players:[{...player,player_id:'fixture',state:'paused',available:true,single:true}],default_destination:player.entity_id,browse:true,library:[{id:'song',title:'Local song',kind:'track',queueable:true}],favorites:[],recent:[],books:[],sessions:[target]};
+ const host={style:{setProperty(){}},requestUpdate(){},_hsPage:{path:'media',destination:player.entity_id,music:{view,at:Date.now(),loading:false,query:'',delay:0}}};
+ const show=()=>scene('media',{players:[player]}, {},host,{}, {music_backend:'fixture_addon'}).markup;
+ let markup=show();
+ assert.match(markup,/data-music="queue_next"/);assert.match(markup,/data-music="queue_takeover_prepare"/);
+ assert.doesNotMatch(markup,/data-music="queue_takeover"|data-music="queue_remove"|<script>/);
+ view.takeover={player_id:'fixture',revision:'fixture-revision',confirmation:'fixture-intent'};
+ markup=show();
+ assert.match(markup,/Confirm queue takeover/);assert.match(markup,/data-music="queue_takeover"/);
+ assert.match(markup,/Other &lt;script&gt;profile&lt;\/script&gt;/);assert.doesNotMatch(markup,/fixture-intent/);
+ view.takeover=null;Object.assign(target,{owned:true,can_edit:true,can_takeover:false});
+ markup=show();
+ assert.match(markup,/data-music="queue_remove" data-entry="opaque-current" disabled/);
+ assert.match(markup,/data-music="queue_remove" data-entry="opaque-upcoming"/);
 });
 test('Today accepts only fresh owned context and renders a briefing, not a calendar grid',()=>{
  const state={state:'current',attributes:{home_starter_context:{surface:'example_panel',epoch:0},checked_at:new Date().toISOString(),valid_until:new Date(Date.now()+60000).toISOString(),briefing:[{when:'Leave 08:30',title:'Example school requirement',detail:'Example kit'},{when:'Tomorrow',title:'Example activity',detail:''}]}};
@@ -166,4 +229,249 @@ test('combined collections show paging, honest partial state and no account plum
  assert.match(output.markup,/<h2>Playlists<\/h2>/);assert.match(output.markup,/85 items across your connected sources/);
  assert.match(output.markup,/Some sources are temporarily unavailable/);assert.match(output.markup,/More playlists/);
  assert.doesNotMatch(output.markup,/spotify--|provider_filter|client_secret/);
+});
+
+
+test('stalled ingress setup times out only Media and clears loading without transport or retry',async()=>{
+ const abort=new AbortController(),requests=[];
+ const environment={AbortSignal:{timeout:milliseconds=>{assert.equal(milliseconds,12000);return abort.signal;}},hass:{callWS:()=>new Promise(()=>{})},fetch:async(...args)=>{requests.push(args);assert.fail('No listening transport before ingress');}};
+ const output=scene('media',{}, {},null,{}, {music_backend:'fixture_addon'},environment);
+ assert.match(output.markup,/Reading your listening choices/);
+ assert.equal(output.host._hsPage.music.loading,true);
+ abort.abort();await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(output.host._hsPage.music.loading,false);
+ assert.equal(output.host._hsPage.music.view,null);
+ assert.equal(output.host._hsPage.pending,false);
+ assert.equal(requests.length,0);
+ const retry=scene('media',{}, {},output.host,{}, {music_backend:'fixture_addon'},environment);
+ assert.match(retry.markup,/Listening is unavailable/);
+ assert.match(retry.markup,/data-music="refresh">Retry/);
+ const climate=scene('room',{controls:[{entity_id:'climate.fixture',name:'Example climate',domain:'climate'}]}, {'climate.fixture':{state:'off',attributes:{supported_features:1,temperature:22,hvac_modes:['off','cool']}}},output.host,{}, {music_backend:'fixture_addon'},environment);
+ assert.match(climate.markup,/Increase target/);assert.doesNotMatch(climate.markup,/data-command="temperature-up"[^>]* disabled/);
+ assert.equal(requests.length,0);
+});
+
+test('malformed or wrong-profile listening data becomes an isolated unavailable state',async()=>{
+ for(const value of [{epoch:0,person_id:null,players:{}},{epoch:0,person_id:null,players:[null],library:[],favorites:[],recent:[],books:[]},{epoch:0,person_id:null,players:[],library:[],favorites:[],recent:[],books:[],sessions:{}},{epoch:0,person_id:'different',players:[],library:[],favorites:[],recent:[],books:[]}]){
+  const host={style:{setProperty(){}},requestUpdate(){},_hsMusicEntry:'/api/hassio_ingress/fixture'};
+  const environment={fetch:async()=>({ok:true,status:200,json:async()=>value})};
+  scene('media',{}, {},host,{}, {music_backend:'fixture_addon'},environment);
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(host._hsPage.music.view,null);assert.equal(host._hsPage.music.loading,false);
+  assert.match(scene('media',{}, {},host,{}, {music_backend:'fixture_addon'},environment).markup,/Listening is unavailable/);
+ }
+});
+
+test('a slow camera expires locally, supports explicit retry and ignores stale image events',()=>{
+ const timers=[],environment={setTimeout:(callback,delay)=>{timers.push({callback,delay});return {unref(){}};},clearTimeout(){}};
+ const camera={entity_id:'camera.example',name:'Example camera'},bindings={camera:{...binding('camera',null),cameras:[camera]}};
+ const states={'camera.example':{state:'idle',attributes:{entity_picture:'/api/camera_proxy/camera.example?token=fixture'}},'sensor.example_camera':projection('camera',null,{})};
+ const output=scene('camera',{bindings},states,null,{}, {},environment);
+ assert.match(output.markup,/Loading camera image/);assert.match(output.markup,/loading="lazy" decoding="async"/);
+ assert.equal(output.host._hsPage.pending,false);assert.equal(timers[0].delay,8000);
+ const old={...output.host._hsPage.cameraImage};
+ timers[0].callback();assert.equal(output.host._hsPage.cameraImage.status,'failed');
+ const failed=scene('camera',{bindings},states,output.host,{}, {},environment);
+ assert.match(failed.markup,/Camera image unavailable/);assert.doesNotMatch(failed.markup,/<img/);
+ const node={dataset:{cameraRetry:camera.entity_id}};
+ failed.functions[0]({target:{closest:q=>q.includes('data-camera-retry') ? node:null}});
+ const retried=scene('camera',{bindings},states,output.host,{}, {},environment);
+ const current=output.host._hsPage.cameraImage;
+ const imageEvent=revision=>({type:'load',target:{dataset:{cameraImage:camera.entity_id,cameraRevision:String(revision)},getAttribute:()=>current.url}});
+ retried.listeners[0].handleEvent(imageEvent(old.revision));assert.equal(current.status,'loading');
+ retried.listeners[0].handleEvent(imageEvent(current.revision));assert.equal(current.status,'ready');
+ assert.equal(output.calls.length,0);
+ // Navigating away is synchronous; the obsolete camera timer cannot change the new page.
+ const call=scene('call',{},states,output.host,{}, {},environment);
+ assert.match(call.markup,/Calling not set up/);assert.doesNotMatch(call.markup,/<button/);
+ timers.at(-1).callback();assert.equal(output.host._hsPage.path,'call');
+ const media=scene('media',{players:[player]}, {[player.entity_id]:livePlayer},output.host,{}, {},environment);
+ assert.match(media.markup,/Example room speaker/);assert.equal(output.calls.length,0);
+});
+
+test('lost camera projection clears pending image state rather than preserving a private stale image',()=>{
+ const camera={entity_id:'camera.example',name:'Example camera'},bindings={camera:{...binding('camera',null),cameras:[camera]}};
+ const states={'camera.example':{state:'idle',attributes:{entity_picture:'/api/camera_proxy/camera.example?token=fixture'}},'sensor.example_camera':projection('camera',null,{})};
+ const output=scene('camera',{bindings},states);
+ assert.equal(output.listeners[0].capture,true);
+ const image=output.host._hsPage.cameraImage;
+ output.listeners[0].handleEvent({type:'error',target:{dataset:{cameraImage:camera.entity_id,cameraRevision:String(image.revision)},getAttribute:()=>image.url}});
+ assert.equal(image.status,'failed');assert.equal(output.host._hsPage.pending,false);
+ delete states['sensor.example_camera'];
+ const failed=scene('camera',{bindings},states,output.host);
+ assert.match(failed.markup,/Camera connection unavailable/);assert.doesNotMatch(failed.markup,/<img/);assert.equal(output.host._hsPage.cameraImage,null);
+});
+
+
+test('an uncertain timed-out playback response is not automatically submitted again',async()=>{
+ const controller=new AbortController(),requests=[];
+ const view={epoch:0,person_id:null,players:[{...player,player_id:'fixture',available:true,single:true}],default_destination:player.entity_id,browse:true,library:[{id:'selection',title:'Example audio',kind:'track'}],favorites:[],recent:[],books:[]};
+ const host={style:{setProperty(){}},requestUpdate(){},_hsMusicEntry:'/api/hassio_ingress/fixture',_hsPage:{path:'media',destination:player.entity_id,pending:false,music:{view,at:Date.now(),loading:false}}};
+ const environment={AbortSignal:{timeout:ms=>{assert.equal(ms,150000);return controller.signal;}},fetch:async(url,options)=>{requests.push(options);return {ok:true,status:200,json:()=>new Promise(()=>{})};}};
+ const output=scene('media',{players:[player]}, {},host,{}, {music_backend:'fixture_addon'},environment);
+ const node={dataset:{music:'start',item:'selection'},tagName:'BUTTON'};
+ output.functions[0]({target:{...node,closest:q=>q.includes('data-music') ? node:null},stopPropagation(){},preventDefault(){}});
+ await new Promise(resolve=>setImmediate(resolve));assert.equal(requests.length,1);assert.equal(requests[0].method,'POST');
+ controller.abort();await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(host._hsPage.pending,false);assert.equal(host._hsPage.music.loading,false);assert.equal(host._hsPage.music.view,null);
+ assert.match(host._hsPage.error,/speaker before retrying/);
+ scene('media',{players:[player]}, {},host,{}, {music_backend:'fixture_addon'},environment);
+ assert.equal(requests.length,1);
+});
+
+
+test('Media transfer offers review, confirmation and recheck without direct player commands',()=>{
+ const view={epoch:0,person_id:null,players:[{...player,player_id:'fixture',available:true,single:true}],default_destination:player.entity_id,browse:true,library:[],favorites:[],recent:[],books:[],session:{player_id:'fixture',title:'Example queue'},transfer:{source_entity:player.entity_id,targets:[{entity_id:'media_player.other',name:'Example other room'}]}};
+ const host={style:{setProperty(){}},requestUpdate(){},_hsPage:{path:'media',destination:player.entity_id,music:{view,at:Date.now(),loading:false}}};
+ let output=scene('media',{players:[player]}, {[player.entity_id]:livePlayer},host,{}, {music_backend:'fixture_addon'});
+ assert.match(output.markup,/Move to Example other room/);assert.match(output.markup,/data-music="transfer_prepare"/);
+ assert.doesNotMatch(output.markup,/Confirm move|data-command="transfer/);
+ view.transfer.plan={source_entity:player.entity_id,target_name:'Example <room>',confirmation:'opaque-confirmation'};
+ output=scene('media',{players:[player]}, {[player.entity_id]:livePlayer},host,{}, {music_backend:'fixture_addon'});
+ assert.match(output.markup,/Confirm playback move/);assert.match(output.markup,/Example &lt;room&gt;/);assert.match(output.markup,/data-music="transfer_confirm"/);
+ view.transfer.pending=true;view.transfer.notice='Move needs checking';view.players[0].transfer_pending=true;
+ output=scene('media',{players:[player]}, {[player.entity_id]:livePlayer},host,{}, {music_backend:'fixture_addon'});
+ assert.match(output.markup,/Check move/);assert.doesNotMatch(output.markup,/data-music="transfer_confirm"/);
+ assert.match(output.markup,/data-command="pause"[^>]* disabled/);assert.equal(output.calls.length,0);
+ view.transfer={source_entity:player.entity_id,issue:'Moving audio is not available yet.',targets:[]};
+ output=scene('media',{players:[player]}, {[player.entity_id]:livePlayer},host,{}, {music_backend:'fixture_addon'});
+ assert.match(output.markup,/not available yet/);assert.doesNotMatch(output.markup,/data-music="transfer_prepare"/);
+});
+
+
+test('owned AirTouch Media uses the same service title rather than a stale HA cue',()=>{
+ const view={epoch:0,person_id:null,players:[{...player,player_id:'fixture',available:true,single:true}],default_destination:player.entity_id,browse:true,library:[],favorites:[],recent:[],books:[],session:{player_id:'fixture',title:'Example Radio'}};
+ const host={style:{setProperty(){}},requestUpdate(){},_hsPage:{path:'media',destination:player.entity_id,music:{view,at:Date.now(),loading:false}}};
+ const markup=scene('media',{players:[player]}, {[player.entity_id]:{state:'playing',attributes:{media_title:'Asset Stop 00:00 2026-10-19T05:20:00Z'}}},host,{}, {music_backend:'fixture_addon'}).markup;
+ assert.match(markup,/Example Radio/);assert.doesNotMatch(markup,/Asset Stop/);
+});
+
+
+test('ordinary owned Stop uses the shared service once and never falls through to HA',async()=>{
+ const requests=[];let finish;
+ const view={epoch:0,person_id:null,players:[{...player,player_id:'fixture',available:true,single:true}],default_destination:player.entity_id,browse:true,library:[],favorites:[],recent:[],books:[],session:{player_id:'fixture',title:'Example audio'}};
+ const host={style:{setProperty(){}},requestUpdate(){},_hsMusicEntry:'/api/hassio_ingress/fixture',_hsPage:{path:'media',destination:player.entity_id,music:{view,at:Date.now(),loading:false}}};
+ const environment={fetch:async(url,options)=>{requests.push(JSON.parse(options.body));await new Promise(resolve=>{finish=resolve});return {ok:true,status:200,json:async()=>view};}};
+ const output=scene('media',{}, {[player.entity_id]:livePlayer},host,{}, {music_backend:'fixture_addon'},environment);
+ assert.match(output.markup,/data-command="stop"/);
+ await Promise.resolve();
+ const first=output.functions[0](event({command:'stop',entity:player.entity_id}));
+ output.functions[0](event({command:'stop',entity:player.entity_id}));
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(requests.length,1);assert.equal(requests[0].action,'stop');assert.equal(output.calls.length,0);
+ finish();await first;await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(host._hsPage.pending,false);
+ view.session=null;
+ assert.doesNotMatch(scene('media',{}, {[player.entity_id]:livePlayer},host,{}, {music_backend:'fixture_addon'},environment).markup,/data-command="stop"/);
+});
+
+test('late older media reads and responses after page close cannot replace current choices',async()=>{
+ const releases=[];
+ const view={epoch:0,person_id:null,players:[],browse:true,library:[],favorites:[],recent:[],books:[]};
+ const host={style:{setProperty(){}},requestUpdate(){},_hsMusicEntry:'/api/hassio_ingress/fixture'};
+ const environment={fetch:async()=>({ok:true,status:200,json:()=>new Promise(resolve=>releases.push(resolve))})};
+ const first=scene('media',{}, {},host,{}, {music_backend:'fixture_addon'},environment);
+ await new Promise(resolve=>setImmediate(resolve));
+ host._hsPage.music.loading=false;host._hsPage.music.at=0;
+ scene('media',{}, {},host,{}, {music_backend:'fixture_addon'},environment);
+ await new Promise(resolve=>setImmediate(resolve));
+ releases[1]({...view,library:[{id:'new',title:'New result',kind:'track'}]});
+ await new Promise(resolve=>setImmediate(resolve));
+ releases[0]({...view,library:[{id:'old',title:'Old result',kind:'track'}]});
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(host._hsPage.music.view.library[0].id,'new');
+ host._hsPage.music.at=0;scene('media',{}, {},host,{}, {music_backend:'fixture_addon'},environment);
+ await new Promise(resolve=>setImmediate(resolve));
+ scene('call',{}, {},host);
+ releases[2](view);await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(host._hsPage.path,'call');assert.equal(first.calls.length,0);
+});
+
+
+test('browse Back and empty/unavailable search remain metadata-only and precede shelves',async()=>{
+ const requests=[];
+ const view={epoch:0,person_id:null,players:[],browse:true,library:[{id:'folder',title:'Example playlists',kind:'folder',folder:true}],favorites:[],recent:[],books:[],channels:[{id:'rain',title:'Rain',kind:'sound_effect',category:'ambient'}],discovery:false,discovery_issue:'Music discovery is temporarily unavailable.'};
+ const host={style:{setProperty(){}},requestUpdate(){},_hsMusicEntry:'/api/hassio_ingress/fixture',_hsPage:{path:'media',music:{view,at:Date.now(),loading:false,folder:null,query:'',delay:0}}};
+ const environment={fetch:async(url,options)=>{assert.equal(options.method,'GET');requests.push(url);return {ok:true,status:200,json:async()=>({...view,library:[]})};}};
+ const tap=(output,action,item)=>output.functions[0]({target:{tagName:'BUTTON',closest:q=>q.includes('data-music') ? {dataset:{music:action,item}}:null},stopPropagation(){},preventDefault(){}});
+ let output=scene('media',{}, {},host,{}, {music_backend:'fixture_addon'},environment);
+ assert.ok(output.markup.indexOf('data-music-search')<output.markup.indexOf('>Ambient<'));
+ tap(output,'folder','folder');await new Promise(resolve=>setImmediate(resolve));
+ assert.match(requests[0],/folder=folder/);
+ output=scene('media',{}, {},host,{}, {music_backend:'fixture_addon'},environment);
+ assert.match(output.markup,/Back to choices/);assert.match(output.markup,/No matches here/);
+ tap(output,'back');await new Promise(resolve=>setImmediate(resolve));
+ assert.doesNotMatch(requests.at(-1),/folder=/);assert.equal(host._hsPage.music.back.length,0);
+ host._hsPage.music.query='missing';host._hsPage.music.view.search={coverage:'Connected audio only',issue:'One source is unavailable',incomplete:true};
+ output=scene('media',{}, {},host,{}, {music_backend:'fixture_addon'},environment);
+ assert.match(output.markup,/Search results|Clear search/);assert.match(output.markup,/One source is unavailable/);assert.match(output.markup,/>Rain</);
+ tap(output,'clear-search');await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(host._hsPage.music.query,'');assert.equal(output.calls.length,0);
+});
+
+test('Today separates verified empty sources from failed sources without inventing events',()=>{
+ const context={state:'current',attributes:{home_starter_context:{surface:'example_panel',epoch:0},checked_at:new Date().toISOString(),valid_until:new Date(Date.now()+60000).toISOString(),briefing:[]}};
+ assert.match(scene('today',{}, {'sensor.example_context':context}).markup,/Nothing upcoming/);
+ assert.doesNotMatch(scene('today',{}, {'sensor.example_context':context}).markup,/Choose and verify/);
+ context.state='attention';
+ assert.match(scene('today',{}, {'sensor.example_context':context}).markup,/Today sources need checking/);
+ context.attributes.valid_until='2000-01-01T00:00:00Z';
+ assert.doesNotMatch(scene('today',{}, {'sensor.example_context':context}).markup,/Nothing upcoming/);
+});
+
+test('unknown room readings do not become zero sliders or current climate temperatures',()=>{
+ const controls=[{entity_id:'light.fixture',domain:'light',name:'Light'},{entity_id:'fan.fixture',domain:'fan',name:'Fan'},{entity_id:'climate.fixture',domain:'climate',name:'Climate'}];
+ const states={'light.fixture':{state:'on',attributes:{supported_color_modes:['brightness']}},'fan.fixture':{state:'on',attributes:{supported_features:1}},'climate.fixture':{state:'unavailable',attributes:{current_temperature:29,temperature:22,supported_features:1}}};
+ const output=scene('room',{controls},states);
+ assert.match(output.markup,/Brightness unavailable/);assert.match(output.markup,/Fan speed unavailable/);
+ assert.doesNotMatch(output.markup,/type="range"|Currently 29|22°/);
+ states['light.fixture'].attributes.brightness=128;states['fan.fixture'].attributes.percentage=0;
+ const known=scene('room',{controls},states).markup;
+ assert.match(known,/value="50"/);assert.match(known,/value="0"/);
+});
+
+test('malformed calling destinations stay unavailable and cannot invoke a service',async()=>{
+ const output=scene('call',{bindings:{call:binding('call',null,{start:{domain:'fixture',service:'call'}})}},{sensor:{},sensor_example:{} ,'sensor.example_call':projection('call',null,{state:'idle',destinations:'invalid'})},null,{fixture:{call:{}}});
+ assert.match(output.markup,/No callable destinations/);
+ await output.functions[0](event({adapter:'call',providerAction:'start',value:'invalid'}));
+ assert.equal(output.calls.length,0);
+});
+
+test('person summary uses shared-service availability instead of a stale playing HA entity',()=>{
+ const view={epoch:0,person_id:'one',players:[{...player,available:false,state:'playing'}],default_destination:player.entity_id,library:[],favorites:[],recent:[],books:[]};
+ const host={style:{setProperty(){}},requestUpdate(){},_hsPage:{path:'person',music:{view,at:Date.now(),loading:false}}};
+ const output=scene('person',{owner:'one',destinations:{media:base+'/music',today:base+'/today',rooms:base+'/rooms',call:base+'/call'}},{[player.entity_id]:livePlayer},host,{}, {music_backend:'fixture_addon'});
+ assert.match(output.markup,/Speaker unavailable/);assert.doesNotMatch(output.markup,/>Playing</);
+});
+
+test('unavailable camera talk and concurrent provider taps issue no duplicate action',async()=>{
+ const actions={talk:{domain:'fixture',service:'talk'}};
+ const focus={bindings:{camera:{...binding('camera',null,actions),cameras:[{entity_id:'camera.fixture',name:'Example camera'}]}}};
+ const states={'sensor.example_camera':projection('camera',null,{}),'camera.fixture':{state:'unavailable',attributes:{}}};
+ let output=scene('camera',focus,states,null,{fixture:{talk:{}}});
+ assert.doesNotMatch(output.markup,/data-provider-action="talk"/);
+ await output.functions[0](event({adapter:'camera',providerAction:'talk',value:'camera.fixture'}));
+ assert.equal(output.calls.length,0);
+ states['camera.fixture'].state='idle';
+ let release,count=0;
+ output=scene('camera',focus,states,null,{fixture:{talk:{}}},{},{hass:{callService:()=>{count++;return new Promise(resolve=>release=resolve);}}});
+ const first=output.functions[0](event({adapter:'camera',providerAction:'talk',value:'camera.fixture'}));
+ await output.functions[0](event({adapter:'camera',providerAction:'talk',value:'camera.fixture'}));
+ assert.equal(count,1);release();await first;
+ assert.equal(output.host._hsPage.pending,false);
+});
+
+test('partial Today keeps verified items visible with a source-health notice',()=>{
+ const context={state:'attention',attributes:{home_starter_context:{surface:'example_panel',epoch:0},checked_at:new Date().toISOString(),valid_until:new Date(Date.now()+60000).toISOString(),briefing:[{when:'Tomorrow',title:'Example verified event'}]}};
+ const output=scene('today',{}, {'sensor.example_context':context});
+ assert.match(output.markup,/Example verified event/);assert.match(output.markup,/Some Today sources need checking/);
+});
+
+test('a stale slider event cannot set a missing room reading',async()=>{
+ const controls=[{entity_id:'fan.fixture',domain:'fan',name:'Fan'},{entity_id:'light.fixture',domain:'light',name:'Light'}];
+ const states={'fan.fixture':{state:'on',attributes:{supported_features:1}},'light.fixture':{state:'on',attributes:{supported_color_modes:['brightness']}}};
+ const output=scene('room',{controls},states);
+ await output.functions[1](event({command:'fan-speed',entity:'fan.fixture'},50,'INPUT'));
+ await output.functions[1](event({command:'brightness',entity:'light.fixture'},50,'INPUT'));
+ assert.equal(output.calls.length,0);
 });

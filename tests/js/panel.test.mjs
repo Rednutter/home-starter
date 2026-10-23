@@ -63,7 +63,7 @@ test("enabled zones remain distinct from HVAC operation and inactive accent",()=
   assert.match(cooling,/zones enabled/);
   assert.doesNotMatch(scene({"climate.example":{state:"cool",attributes:{hvac_action:"idle"}}}),/hs-operating/);
   delete states[zones[0]];
-  assert.match(scene(states,{zones}),/5 of 6 zones enabled · some unavailable/);
+  assert.match(scene(states,{zones}),/5 enabled.*5 of 6 zones reporting/);
 });
 test("household navigation uses saved people and separates display utilities",()=>{
   const output=scene({}, {kiosk_user_name:"Fixture panel",people:[
@@ -104,4 +104,47 @@ test("bin attention requires selected service and unexpired projection",()=>{
   state.attributes.valid_until="2000-01-01T00:00:00Z";
   const stale=scene({"sensor.home_starter_bin_source":state},{bins:true});
   assert.doesNotMatch(stale,/Green · Recycling/);assert.match(stale,/Bin schedule needs checking/);
+});
+
+
+test("unreported zones and lights never become fabricated off counts",()=>{
+ const value=scene({}, {zones:['climate.zone_one','climate.zone_two'],lights:['light.one','light.two']});
+ assert.match(value,/Zone status unavailable/);assert.doesNotMatch(value,/0 of 2 zones enabled/);
+ assert.match(value,/Lighting status unavailable/);assert.doesNotMatch(value,/0 of 2 lights on/);
+});
+
+test("expired calendar entries and technical radio cues do not become glance content",()=>{
+ const value=scene({'calendar.example':{state:'off',attributes:{message:'Expired fixture event',start_time:'2000-01-01T08:00:00Z',end_time:'2000-01-01T09:00:00Z'}},'media_player.example':{state:'playing',attributes:{friendly_name:'Example room',media_title:'Asset Stop 00:00 2026-10-19T05:20:00Z',media_channel:'Example Radio'}}},{calendars:['calendar.example'],media:['media_player.example']});
+ assert.doesNotMatch(value,/Expired fixture|Asset Stop/);assert.match(value,/Example Radio/);assert.match(value,/No verified commitments/);
+ const real=scene({'media_player.example':{state:'playing',attributes:{friendly_name:'Example room',media_title:"Don't Stop Me Now"}}},{media:['media_player.example']});
+ assert.match(real,/Don&#39;t Stop Me Now/);
+});
+
+test("House glance summaries require the same fresh owned projections as their pages",()=>{
+ const checked_at=new Date().toISOString(),valid_until=new Date(Date.now()+60000).toISOString();
+ const meta={surface_id:'fixture',epoch:1,context_entity:'sensor.context',bindings:{camera:{entity_id:'sensor.camera',revision:'v1',cameras:[{entity_id:'camera.example'}]},call:{entity_id:'sensor.call',revision:'v1'}}};
+ const states={'sensor.context':{state:'current',attributes:{checked_at,valid_until,home_starter_context:{surface:'fixture',epoch:1,person_id:null},briefing:[{title:'Example next commitment',when:'Starts 10:00'}]}},'sensor.camera':{state:'current',attributes:{checked_at,valid_until,home_starter_capability:{surface:'fixture',epoch:1,person_id:null,feature:'camera',revision:'v1'},value:{}}},'camera.example':{state:'idle',attributes:{}}};
+ let value=scene(states,{summary_json:JSON.stringify(meta)});
+ assert.match(value,/Example next commitment/);assert.match(value,/Starts 10:00/);assert.match(value,/1 camera selected/);assert.match(value,/1 reporting/);assert.match(value,/Calling unavailable/);assert.doesNotMatch(value,/<img|data-command=/);
+ states['sensor.context'].attributes.home_starter_context.person_id='someone-else';
+ states['sensor.camera'].attributes.valid_until='2000-01-01T00:00:00Z';
+ value=scene(states,{summary_json:JSON.stringify(meta)});
+ assert.doesNotMatch(value,/Example next commitment|1 camera selected/);assert.match(value,/Camera status unavailable/);
+});
+
+
+test("a damaged glance summary leaves the complete House navigation and climate visible",()=>{
+ const value=scene({}, {summary_json:'not-json',targets:{climate:'/example-panel/climate',today:'/example-panel/today',rooms:'/example-panel/rooms',music:'/example-panel/music',cameras:'/example-panel/cameras',call:'/example-panel/call'}});
+ for(const name of ['Climate','Today','Home','Media','Cameras','Call','House'])assert.ok(value.includes(name));
+ assert.match(value,/Connection unavailable/);assert.match(value,/Not commissioned/);
+ const dated=scene({'media_player.example':{state:'playing',attributes:{media_title:'2026-10-23 08:00 Morning News'}}},{media:['media_player.example']});
+ assert.match(dated,/2026-10-23 08:00 Morning News/);
+});
+
+test('Today overview agrees with verified empty and unavailable context destinations',()=>{
+ const context={state:'current',attributes:{home_starter_context:{surface:'example_panel',epoch:0},checked_at:new Date().toISOString(),valid_until:new Date(Date.now()+60000).toISOString(),briefing:[]}};
+ const config={summary_json:JSON.stringify({surface_id:'example_panel',epoch:0,context_entity:'sensor.example'})};
+ assert.match(scene({'sensor.example':context},config),/Nothing upcoming in selected sources/);
+ context.state='attention';
+ assert.match(scene({'sensor.example':context},config),/Today sources need checking/);
 });
