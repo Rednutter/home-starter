@@ -1,6 +1,6 @@
 import { apiUrl } from "./routes.js";
 
-const state={surface:null,surfaces:[],person:null,view:null,player:null,folder:null,query:"",delay:0,busy:false,pendingText:"",mutating:false,generation:0,controller:null,error:"",remember:false,stationDraft:null,stationScope:"session"};
+const state={surface:null,surfaces:[],person:null,view:null,player:null,folder:null,query:"",delay:0,busy:false,refreshing:false,refreshError:false,pendingText:"",mutating:false,generation:0,controller:null,error:"",remember:false,stationDraft:null,stationScope:"session"};
 const $=id=>document.getElementById(id);
 const add=(node,...children)=>node.append(...children.filter(child=>child!=null && child!==false));
 function h(tag,attrs={},...children){
@@ -23,6 +23,7 @@ function rememberProfile(){
  try{if(state.remember)localStorage.setItem(preferenceKey(),state.person || "house");else localStorage.removeItem(preferenceKey());}catch{ /* Optional local preference; never credentials. */ }
 }
 function selectProfile(person){
+ if(state.mutating)return;
  state.person=person;state.stationDraft=null;state.stationScope="session";state.player=null;state.folder=null;state.query="";state.view=null;rememberProfile();void load();
 }
 function listeningURL(){
@@ -46,27 +47,37 @@ function restoreControl(saved){
  const matches=[...document.getElementById(saved.root)?.querySelectorAll(saved.tag) || []].filter(n=>[n.tagName,n.getAttribute("aria-label") || n.getAttribute("name") || n.textContent].join("|")===saved.key);
  const node=matches[saved.index];if(node && !node.disabled)node.focus({preventScroll:true});
 }
-async function load(body=null){
- if(!state.surface || body && state.busy)return;
+async function load(body=null,{background=false}={}){
+ if(!state.surface || state.mutating || body && state.busy)return;
+ background=background && !!state.view;
  const focus=focusedControl();
  const generation=++state.generation;
- state.controller?.abort();state.controller=new AbortController();
- state.busy=true;state.mutating=!!body;state.pendingText=body ? ({play_item:"Starting your selection.",resume:"Resuming your audio.",queue_add:"Adding to the queue.",queue_next:"Adding your next choice.",destination:"Saving your speaker choice."}[body.action] || "Updating playback."):state.query ? "Searching your audio. Some sources may take a few seconds.":"Loading your listening choices.";state.error="";render();
+ state.controller?.abort();const controller=new AbortController();state.controller=controller;
+ let timedOut=false;const deadline=body ? null:setTimeout(()=>{timedOut=true;controller.abort();},12000);
+ state.busy=!background;state.refreshing=background;state.mutating=!!body;state.pendingText=body ? ({play_item:"Starting your selection.",resume:"Resuming your audio.",queue_add:"Adding to the queue.",queue_next:"Adding your next choice.",destination:"Saving your speaker choice."}[body.action] || "Updating playback."):state.query ? "Searching your audio. Some sources may take a few seconds.":"Loading your listening choices.";if(!background){state.error="";state.refreshError=false;render();}
  try{
-  const response=await fetch(listeningURL(),{method:body ? "POST":"GET",credentials:"same-origin",cache:"no-store",signal:state.controller.signal,...(body ? {headers:{"Content-Type":"application/json"},body:JSON.stringify({...body,epoch:state.view?.epoch})}:{})});
+  const response=await fetch(listeningURL(),{method:body ? "POST":"GET",credentials:"same-origin",cache:"no-store",signal:controller.signal,...(body ? {headers:{"Content-Type":"application/json"},body:JSON.stringify({...body,epoch:state.view?.epoch})}:{})});
   const value=await response.json();
   if(generation!==state.generation)return;
   if(!response.ok){if(response.status===401 || response.status===403){state.view=null;state.stationDraft=null;state.surfaces=[];state.surface=null;state.person=null;$("access").replaceChildren();}throw Error(typeof value.error==="string" ? value.error:"Listening is temporarily unavailable.");}
   if(value.person_id!==state.person)throw Error("The listening profile changed. Select your profile again.");
   state.view=value;
+  if(background && state.refreshError){state.error="";state.refreshError=false;}
   if(["transfer_confirm","transfer_recheck"].includes(body?.action) && !value.transfer?.pending && value.default_destination)state.player=value.default_destination;
   const allowed=value.players || [];
   if(!allowed.some(p=>p.entity_id===state.player))state.player=value.default_destination || null;
- }catch(error){if(generation===state.generation && error.name!=="AbortError")state.error=error.message || "Could not reach your listening choices. Retry when connected.";}
- finally{if(generation===state.generation){state.busy=false;state.mutating=false;render();restoreControl(focus);}}
+ }catch(error){if(generation===state.generation && (timedOut || error.name!=="AbortError")){
+  state.error=timedOut ? "Refresh took too long. Showing the last confirmed state; retry when connected.":error.message || "Could not reach your listening choices. Retry when connected.";state.refreshError=background;
+ }}
+ finally{clearTimeout(deadline);if(generation===state.generation){state.busy=false;state.refreshing=false;state.mutating=false;
+  // Background reads never lock controls or replace an input being edited.
+  if(!background || !state.view || !["INPUT","SELECT","TEXTAREA","SUMMARY"].includes(document.activeElement?.tagName)){
+   const currentFocus=background ? focusedControl():focus;render();restoreControl(currentFocus);
+  }else renderStatus();
+ }}
 }
 function act(action,extra={},player=state.player){return load({action,player,...extra});}
-function openFolder(id){state.folder=id;state.query="";void load();}
+function openFolder(id){if(state.mutating)return;state.folder=id;state.query="";void load();}
 function collection(rows){
  const selected=state.view?.players?.find(p=>p.entity_id===state.player);
  const target=state.view?.sessions?.find(s=>s.player_id===selected?.player_id);
@@ -79,10 +90,13 @@ function collection(rows){
  }));
 }
 function shelf(title,rows){return rows?.length ? h("section",{class:"shelf"},h("h2",{},title),collection(rows)):null;}
-function render(){
+function renderStatus(){
  $("notice").replaceChildren(...[state.error || (state.busy ? state.pendingText:""),state.error ? button("Retry",()=>state.surface ? load():bootstrap()):null].filter(child=>child!=null));
  const accessSelect=$("access").querySelector("select");if(accessSelect)accessSelect.disabled=state.mutating;
  document.querySelector(".workspace").setAttribute("aria-busy",String(state.busy));
+ }
+function render(){
+ renderStatus();
  const view=state.view;
  $("profile").replaceChildren();$("search").replaceChildren();$("library").replaceChildren();$("playing").replaceChildren();$("rooms").replaceChildren();
  if(!view){$("library").append(note(state.surface ? "Your listening choices will appear after access is verified.":"Open Media through your signed-in Home Assistant account and configured household screen."));return;}
@@ -94,7 +108,7 @@ function render(){
  const library=$("library");
  if(view.browse){
   const search=h("input",{type:"search",name:"query",maxlength:100,value:state.query,placeholder:"Songs, radio, podcasts, books…","aria-label":"Search household audio"});
-  add($("search"),h("form",{class:"search",onsubmit:e=>{e.preventDefault();state.query=search.value.trim();state.folder=view.collection?.root || null;void load();}},h("label",{},search),h("button",{type:"submit",disabled:state.busy},"Search")),button("All collections",()=>{state.folder=null;state.query="";void load();}));
+  add($("search"),h("form",{class:"search",onsubmit:e=>{e.preventDefault();if(state.mutating)return;state.query=search.value.trim();state.folder=view.collection?.root || null;void load();}},h("label",{},search),h("button",{type:"submit",disabled:state.busy},"Search")),button("All collections",()=>{state.folder=null;state.query="";void load();}));
  }
  if(view.discovery)add(library,h("section",{class:"shelf"},h("h2",{},"Find your next favourite"),note("Explore the catalogue, then keep the music going."),h("div",{class:"actions"},button("Surprise Me",()=>act("surprise_me",{settings:{mode:"anything"}}),!state.player),view.session && view.keep_it_going ? button("Keep It Going",()=>act("keep_it_going"),!state.player):null,view.session ? button("Something different",()=>act("something_different",{settings:{mode:"anything"}}),!state.player):null)));
  else if(view.discovery_issue)add(library,panel("Music",note(view.discovery_issue)));
@@ -152,7 +166,7 @@ function renderPlaying(view){
  const player=view.players.find(p=>p.entity_id===state.player);
  const owned=view.session && view.players.find(p=>p.player_id===view.session.player_id);
  const target=view.sessions?.find(s=>s.player_id===player?.player_id);
- const roomSelect=h("select",{"aria-label":"Choose a speaker",disabled:state.busy,onchange:e=>{state.player=e.target.value || null;if(state.player)void act("destination");else render();}},h("option",{value:""},"Choose a speaker"),view.players.map(p=>h("option",{value:p.entity_id,selected:p.entity_id===state.player,disabled:!p.available || !p.single},p.name+(!p.available ? " · unavailable":!p.single ? " · group not verified":""))));
+ const roomSelect=h("select",{"aria-label":"Choose a speaker",disabled:state.busy,onchange:e=>{if(state.mutating)return;state.player=e.target.value || null;if(state.player)void act("destination");else render();}},h("option",{value:""},"Choose a speaker"),view.players.map(p=>h("option",{value:p.entity_id,selected:p.entity_id===state.player,disabled:!p.available || !p.single},p.name+(!p.available ? " · unavailable":!p.single ? " · group not verified":""))));
  const controls=owned ? h("div",{class:"actions"},[ ["Play","play"],["Pause","pause"],["Stop","stop"],["Previous","previous"],["Next","next"] ].filter(([,action])=>action === "pause" ? owned.features?.includes("pause") : ["previous","next"].includes(action) ? owned.features?.includes("next_previous") : true).map(([label,action])=>button(label,()=>act(action,{},owned.entity_id),!owned.available || owned.transfer_pending))):null;
  const sleep=owned ? h("label",{},"Sleep timer",h("select",{"aria-label":"Sleep timer",disabled:state.busy || owned.transfer_pending,onchange:e=>void act("sleep",{value:+e.target.value},owned.entity_id)},[["","Choose timer"],[0,"Off"],[900,"15 minutes"],[1800,"30 minutes"],[3600,"1 hour"]].map(([value,label])=>h("option",{value,selected:value===""},label)))):null;
  const volume=owned?.features?.includes("volume_set") ? h("form",{class:"volume",onsubmit:e=>{e.preventDefault();const input=e.target.elements.volume;if(input.value!=="")void act("volume",{value:Number(input.value)},owned.entity_id);}},h("label",{},"Set speaker volume (%) ",h("input",{type:"number",name:"volume",min:0,max:100,required:true,"aria-label":"Speaker volume percent"})),h("button",{type:"submit",disabled:state.busy || owned.transfer_pending},"Apply"),note("Speaker’s own scale; household calibration is pending.")):null;
@@ -173,11 +187,11 @@ async function bootstrap(){
   if(!state.surfaces.length)throw Error("No permitted household media screen is connected to this account yet.");
   const requested=new URL(location.href).searchParams.get("surface");
   const initial=state.surfaces.find(s=>s.id===requested) || state.surfaces[0];state.surface=initial.id;state.person=initial.person_id;
-  const select=h("select",{"aria-label":"Household screen",onchange:e=>{state.surface=e.target.value;state.stationDraft=null;state.stationScope="session";state.person=state.surfaces.find(s=>s.id===state.surface)?.person_id || null;state.view=null;state.player=null;state.folder=null;state.query="";void load();}},state.surfaces.map(s=>h("option",{value:s.id,selected:s.id===state.surface},s.name)));
+  const select=h("select",{"aria-label":"Household screen",onchange:e=>{if(state.mutating)return;state.surface=e.target.value;state.stationDraft=null;state.stationScope="session";state.person=state.surfaces.find(s=>s.id===state.surface)?.person_id || null;state.view=null;state.player=null;state.folder=null;state.query="";void load();}},state.surfaces.map(s=>h("option",{value:s.id,selected:s.id===state.surface},s.name)));
   add($("access"),select);
   await load();
   try{const preferred=localStorage.getItem(preferenceKey());if(preferred && state.view && (preferred==="house" && !state.view.bound_profile || state.view.profiles?.some(p=>p.id===preferred))){state.remember=true;if(preferred!==(state.person || "house"))selectProfile(preferred==="house" ? null:preferred);else render();}}catch{ /* Optional local preference. */ }
  }catch(error){state.error=error.message;render();}
 }
 void bootstrap();
-setInterval(()=>{if(state.surface && !state.busy && !document.hidden && !["INPUT","SELECT","TEXTAREA","SUMMARY"].includes(document.activeElement?.tagName))void load();},7000);
+setInterval(()=>{if(state.surface && !state.busy && !state.refreshing && !document.hidden && !["INPUT","SELECT","TEXTAREA","SUMMARY"].includes(document.activeElement?.tagName))void load(null,{background:true});},7000);

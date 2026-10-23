@@ -1,5 +1,13 @@
 # Household music and AirTouch completion board
 
+Current live web deployment: Home Starter **0.8.40** on HA Green, verified 23 October
+2026 from release `d868b7bf3fb5975189a3149bbdcb59a82b6b2c41`. Open the existing
+Home Starter HA ingress page, then **Open Household Audio**. The authenticated
+web interface renders; playback/family acceptance is still outstanding. Earlier
+blanket deployment-hold notes below are historical: this service update/restart
+was explicitly approved. MA repair, climate maintenance, ABS, preview publication
+and household cutover remain separately gated.
+
 Latest design direction: preserve the current AirTouch layout and visual approach;
 finish card destination pages and rationalise information. Older geometry
 reconciliation notes below are historical and superseded, not an open redesign.
@@ -465,3 +473,52 @@ BLOCKED: preview publication requires the specific pending approval. No live
 dashboard, service, permission or other household change was made. Generation,
 review, separate publication and rollback steps: [AIRTOUCH_PREVIEW.md](AIRTOUCH_PREVIEW.md).
 All maintenance/install/control/cutover holds remain unchanged.
+
+## WORKING — authenticated media web interface deployed
+
+HA Green's existing `6726420e_home_starter` add-on is started at 0.8.40. Real
+`/media` rendering, profile heading, search and Now playing were verified through
+existing authenticated ingress with zero browser errors and no control requests.
+Unauthenticated access returns 401. Served JS/CSS/manifest match release Git blobs.
+This is working interface/read access, not audible playback or family usability.
+
+All four managed dashboard configurations and the registry match their pre-update readbacks; saved
+household configuration is unchanged. The initial guard stopped before any update
+because four runtime `/items/*/state` values changed. A tested comparison excludes
+only those live states and still guards every configuration/identity/ownership
+field. No default-dashboard, Google routine, credentials or network writes occurred.
+
+CI passed for release commits 25ad0c4 and d868b7b, including 989 Python/102 JS tests,
+app lint and amd64/arm64 builds. Scoped rollback backup `5edf25a5` contains 0.8.39;
+its private 68,198,400-byte downloaded archive SHA256 is
+`f026ee07208c7865196c58376dbd226028b04664c78b1486d3b27a05cd667771`.
+The backup held six listener profiles and no active timers, leases or handoffs;
+no Supervisor jobs were active before the update. The completed update job was
+`2f7c303e43024e7b873487e505db819d`. Restore only Home Starter from that backup if
+rollback is needed; preserve the current defaults/dashboards and inspect new work
+before replacing app data. No rollback was required or executed.
+
+## WORKING — corrected native web entry
+
+Use `http://192.168.68.119:8123/app/6726420e_home_starter`, then **Open Household
+Audio**. The earlier delivered `/hassio/ingress/...` link was obsolete and returns
+404 on HA 2026.10.2. Native `get_panels` registers `app`, not `hassio`. The existing
+version-aware navigation helper already selects `/app/`; the incorrect link was
+in the delivery report, not the deployed button. Its relative `media` href and
+server-injected base preserve the authenticated ingress prefix.
+
+Actual native HA browser entry and button click-through now pass: outer HTTP200,
+media profile/search visible, zero page errors or mutation requests. Authentication
+was held only in an ephemeral browser context and discarded. Existing 25 navigation
+tests pass. No further production update/restart or settings change was required.
+
+## IN PROGRESS — reported web refresh greying repair
+
+Reproduced in the real authenticated interface: the seven-second poll set global
+busy, disabling All collections at 7.19s, 14.21s and 21.19s for roughly 0.6–1.3s.
+The 0.8.41 repair separates silent background reads from foreground/action locking,
+bounds GETs, preserves last confirmed state on refresh failure, discards old reads
+and protects in-flight mutations/repeated taps. Server ownership/source enforcement
+is unchanged and still checked against fresh native state. Local browser race,
+timeout/failure, profile/room, source rejection and auth-loss tests pass; production
+verification follows the approved scoped add-on update. No playback is tested.

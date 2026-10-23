@@ -5,6 +5,10 @@ notes remain historical evidence. No acceptance test below is WORKING. Synthetic
 passes establish local contracts only. No deploy/restart/install/control/cutover
 approval has been inferred from this audit.
 
+The web-service deployment was explicitly approved and completed at 0.8.40.
+This supersedes the earlier deployment hold for that service only. Playback,
+physical-device and household cutover acceptance remain outstanding.
+
 ## Evidence
 
 - **L1:** Authorised native HA/MA reads: MA 2.10.7 started; native reads work, but
@@ -49,6 +53,17 @@ approval has been inferred from this audit.
   were blocked and none attempted. Native controls become read-only summaries.
   No preview was published; this does not prove live rendering or control.
 
+- **L8:** Home Starter 0.8.40 (`d868b7b`) deployed on HA Green through its existing
+  ingress. Real authenticated `/media` browser rendering passes with no page errors;
+  JS/CSS/manifest equal release blobs; unauthenticated request gets 401. Saved
+  household and all four dashboard configs/registry remain unchanged. No controls
+  were exercised. Scoped rollback backup `5edf25a5` verified/downloaded.
+
+- **L9:** Actual authenticated native HA `/app/6726420e_home_starter` entry and
+  **Open Household Audio** click-through pass. The previously delivered legacy
+  `/hassio/ingress/...` URL returned404. Button/base preserve ingress, media profile
+  and search render, zero page errors/mutation requests. No production code changed.
+
 ## External prerequisites
 
 - **P1:** Existing HAOS console operator returns three source hashes (separate ignored
@@ -57,8 +72,9 @@ approval has been inferred from this audit.
 - **P2:** Explicit approval/window to restore reviewed MA enforcement and restart MA
   only. New radio candidate and new station/queue security adapter need separate
   compatibility review and deployment approval; the original staged bundle is immutable.
-- **P3:** Approval to deploy the coherent app slice to the existing authenticated
-  service for isolated real-device tests. No new port/default family entry point.
+- **P3:** Existing authenticated web service updated under explicit approval. Next:
+  real phone/AirTouch use and remaining playback commissioning. No new port or
+  default family entry point was introduced; this is not household cutover.
 - **P4:** Backed-up AirTouch config correction/Core maintenance approval, identity and
   zones checked before an exact existing-entry host edit. Preserve entity IDs;
   HVAC control tests require household-impact checks and an operator/observer.

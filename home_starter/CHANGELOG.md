@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.41
+
+- Keep media buttons usable during background refresh instead of greying the
+  whole interface every poll. Bound reads, retain confirmed state on source
+  failure and discard superseded responses without interrupting mutations.
+- Preserve current server ownership/source checks, repeated-action locking,
+  edited inputs and profile/room selection through refresh races.
+
 ## 0.8.40
 
 - Add the dedicated authenticated Household Audio web interface at `/media`, with
