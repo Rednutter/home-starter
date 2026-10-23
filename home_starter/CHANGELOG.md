@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.8.44
+
+- Add household-wide transport with fresh session checks while keeping listening
+  owners, source/account context, queue state and personal progress separate.
+- Add reviewed native speaker grouping and idle multi-speaker starts through one
+  managed leader, with explicit occupied-room intent and durable reconciliation.
+- Add bounded finite-queue group moves to empty compatible rooms. Unsupported
+  account/progress sources, paused moves and uncertain phases remain unavailable.
+- Package the updated pinned MA-based UI and notices. No native transfer bridge,
+  account repair, access expansion or household cutover is installed by this update.
+
 ## 0.8.43
 
 - Ship the pinned MA-backed household audio interface through the normal add-on

@@ -1,5 +1,7 @@
 # Household Audio release and activation checklist
 
+Candidate 0.8.44 contains the two scoped feature commits and regenerated UI.
+It is prepared for review/CI only; published 0.8.43 and live services stay unchanged.
 These are separate layers. Local tests are not physical-house acceptance.
 
 | Layer | Exact source / state | Next gate |
