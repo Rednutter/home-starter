@@ -5,6 +5,12 @@ The new native candidate is not the immutable previously approved repair. No
 upgrade, start/restart, migration, SSH setup or system/Docker repair is performed
 by these tools.
 
+**Activation blocker identified in official Supervisor 2026.10.3 source:** normal
+stop removes the container and normal start recreates it. The Docker-only offline
+copy procedure below is not a working Supervisor activation procedure. Do not
+upgrade MA or execute native installation based on that CI result. Keep the
+apply gate closed until an approved method survives Supervisor's lifecycle.
+
 ## Existing console route and prerequisites
 
 The operator needs a monitor and USB keyboard on HA Green, retaining Ethernet, power
@@ -71,10 +77,35 @@ No Supervisor version is currently in `SUPERVISOR_REVIEWS`. `--apply` therefore
 refuses before its first target write, even after preparation passes. A stopped
 container alone cannot establish that an update will preserve that stopped state.
 
+Official tag `2026.10.3`, commit `ca2273e2a7ae061a7377658fb704a0b919330fb8`,
+uses `supervisor/apps/` (not the older `addons/` source paths). Review establishes:
+
+- `apps/app.py:update` restarts only an app that was STARTED/STARTUP before update.
+- `apps/app.py:stop` calls `instance.stop()`; `docker/app.py:stop` defaults
+  `remove_container=True` and delegates that operation to the Docker interface.
+- `apps/app.py:start` calls `instance.run()`. `docker/interface.py:_run` first
+  stops/removes an old container, then creates and runs a new one from the image.
+
+Sources: [app lifecycle](https://github.com/home-assistant/supervisor/blob/ca2273e2a7ae061a7377658fb704a0b919330fb8/supervisor/apps/app.py),
+[Docker app lifecycle](https://github.com/home-assistant/supervisor/blob/ca2273e2a7ae061a7377658fb704a0b919330fb8/supervisor/docker/app.py),
+[Docker interface](https://github.com/home-assistant/supervisor/blob/ca2273e2a7ae061a7377658fb704a0b919330fb8/supervisor/docker/interface.py).
+
+Thus a manually created/copied stopped container is not retained by a normal
+Supervisor start; a copied hook is lost. Restart through the app UI also passes
+through stop/start. The old console handoff's patch-then-app-restart sequence must
+not be assumed valid on this Supervisor version either. The immutable repair
+archive remains preserved; its existence is not lifecycle compatibility evidence.
+
+These are exact public-source findings, not fresh readback of the installed
+Supervisor version or proof of live behavior. No update, stop, start or credential
+change was performed. A supported durable pre-start/packaging route still needs
+review; direct Docker start or image-tag substitution is not an approved workaround.
+
 Before enabling application: inspect the actual installed Supervisor's update
 lifecycle and normal UI/CLI behavior, bind a review to that exact version and
-operation, and ensure no auto-start/watchdog path can run unguarded MA during
-update/staging. Do not replace this review with an operator confirmation flag.
+operation, ensure no auto-start/watchdog path can run unguarded MA during
+update/staging, and resolve the container-recreation blocker above. Do not replace
+this review with an operator confirmation flag.
 The script does not itself upgrade MA or manage Supervisor/watchdog settings.
 
 Once that gate and specific native activation authority exist, the intended
@@ -96,8 +127,9 @@ production operator gate or establish HA Supervisor behavior/ARM64 acceptance.
   usable restore access. Retain the old image and old native source/repair evidence.
 - First prepare/review the required new HS release, with version/bundle/CI; no
   release or merge is implied here. Check timers/jobs before its scoped restart.
-- Upgrade only the exact reviewed MA version while it remains stopped. If that
-  cannot be guaranteed, do not upgrade. Never broaden source/user permissions.
+- Do not upgrade until a Supervisor-compatible activation route is reviewed and
+  specifically approved. A stopped-update check alone is insufficient. Never
+  broaden source/user permissions or substitute a direct Docker start silently.
 - On source mismatch, unexpected running state, partial/uncertain copy or failed
   readback, leave MA stopped. Preserve staging/journal and inspect actual state.
 - Restoring `mass.py` only disables the 2.10.8 hook; it does not undo an image or
