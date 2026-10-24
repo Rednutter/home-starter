@@ -4,7 +4,7 @@ import hashlib
 import json
 from pathlib import Path
 
-EXPECTED = "fd26d680c1824eaf0f012e8e5860010a51ea41774f1c1be6d66352c838a2027f"  # pragma: allowlist secret -- public build manifest
+EXPECTED = "8ab3d73fad1636dec971038d921ddeb3d6851875f452accbee9ce0fec28c0afb"  # pragma: allowlist secret -- public build manifest
 
 
 def verify(root=None):

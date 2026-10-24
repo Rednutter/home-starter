@@ -1,5 +1,6 @@
 """Production discovery cards against isolated fictional MA adapters only."""
 
+import argparse
 import asyncio
 import base64
 import json
@@ -20,12 +21,12 @@ from homestarter.discovery_seeds import AUSTRALIAN_SEEDS, RADIO_SEEDS  # noqa: E
 from test_media_preview import parent_for, preview_state  # noqa: E402
 
 
-async def run():
+async def run(candidate=ROOT):
     output = ROOT / ".runtime/discovery-browser"
     output.mkdir(parents=True, exist_ok=True)
     with TemporaryDirectory(dir=ROOT / ".runtime") as temp, pytest.MonkeyPatch.context() as patch:
         state, surface, _ = preview_state.__wrapped__(Path(temp), patch)
-        patch.setattr(media_preview, "ASSET_ROOT", ROOT / "home_starter/server/homestarter/static/media-preview")
+        patch.setattr(media_preview, "ASSET_ROOT", Path(candidate).resolve() / "home_starter/server/homestarter/static/media-preview")
         original = state.music_runtime.command
         state.filters.extend(["radio", "pod"])
 
@@ -61,7 +62,9 @@ async def run():
                     ],
                 ]
             if name == "music/browse" and args["path"].startswith("radio:"):
-                raise RuntimeError("Synthetic directory browse failure")
+                if args["path"] == "radio://":
+                    return [{"name": "By popularity", "media_type": "folder", "path": "radio://popular"}]
+                return [record(str(n), "Example station " + str(n), "radio", "radio") for n in range(60)]
             if name == "music/search":
                 await asyncio.sleep(0.05)
                 seed = next((s for s in (*RADIO_SEEDS, *AUSTRALIAN_SEEDS) if s[0] == args["search_query"]), None)
@@ -104,17 +107,51 @@ async def run():
             page = await browser.new_page(extra_http_headers={"X-Remote-User-Id": "example-admin"}, viewport={"width": 1440, "height": 1000})
             page.set_default_timeout(10000)
             errors, writes = [], []
+            bootstrap_started, bootstrap_ready = asyncio.Event(), asyncio.Event()
+
+            async def delay_bootstrap(route):
+                bootstrap_started.set()
+                await bootstrap_ready.wait()
+                await route.continue_()
+
+            await page.route("**/audio/bootstrap", delay_bootstrap)
             page.on("pageerror", lambda error: errors.append(str(error)))
             page.on("request", lambda request: writes.append(request.url) if request.method == "POST" and not request.url.endswith("/read") else None)
-            await page.goto(str(server.make_url("/audio/#/discover-radio")))
-            await expect(page.locator(".discovery-grid .ed-card")).to_have_count(10)
+            await page.goto(str(server.make_url("/audio/#/discover-radio")), wait_until="domcontentloaded")
+            await asyncio.wait_for(bootstrap_started.wait(), 5)
+            await expect(page.locator(".library-rail nav")).to_be_visible()
+            await expect(page.get_by_text("Connecting your media sources…", exact=True)).to_be_visible()
+            await page.locator('.library-rail nav a[href="#/find-podcasts"]').click()
+            await page.locator('.library-rail nav a[href="#/discover-radio"]').click()
+            assert not state.media_preview.sessions
+            bootstrap_ready.set()
+            await expect(page.locator(".discovery-grid .ed-card")).to_have_count(24)
             await expect(page.get_by_role("heading", name="Around the Border")).to_be_visible()
             await expect(page.get_by_role("heading", name="Across Australia")).to_be_visible()
             await expect(page.locator(".discovery-grid .ed-card__select").first).to_be_hidden()
             await page.wait_for_function("document.querySelector('.discovery-grid img')?.naturalWidth > 0")
+            fail_next = [True]
+
+            async def fail_page_once(route):
+                body = route.request.post_data_json
+                if body.get("command") == "household/discovery" and body.get("args", {}).get("offset") == 24 and fail_next[0]:
+                    fail_next[0] = False
+                    await route.fulfill(status=503, content_type="application/json", body='{"error":"Synthetic page unavailable"}')
+                else:
+                    await route.continue_()
+
+            await page.route("**/audio/read", fail_page_once)
+            await page.get_by_role("navigation", name="Discovery pages").get_by_role("button", name="Next", exact=True).click()
+            await expect(page.get_by_text("Suggestions are temporarily unavailable.", exact=False)).to_be_visible()
+            await expect(page.get_by_role("heading", name="Around the Border")).to_be_visible()
+            await expect(page.get_by_role("navigation", name="Discovery pages")).to_contain_text("1–24 of 70")
+            await page.get_by_role("navigation", name="Discovery pages").get_by_role("button", name="Next", exact=True).click()
+            await expect(page.get_by_role("navigation", name="Discovery pages")).to_contain_text("25–48 of 70")
+            await page.get_by_role("navigation", name="Discovery pages").get_by_role("button", name="Previous", exact=True).click()
+            await expect(page.get_by_role("heading", name="Around the Border")).to_be_visible()
             old_art = await page.locator(".discovery-grid img").first.get_attribute("src")
             await page.locator(".library-rail select").select_option("one")
-            await expect(page.locator(".discovery-grid .ed-card")).to_have_count(10)
+            await expect(page.locator(".discovery-grid .ed-card")).to_have_count(24)
             assert await page.locator(".discovery-grid img").first.get_attribute("src") != old_art
             response = await page.request.get(old_art)
             assert response.status == 404
@@ -127,7 +164,7 @@ async def run():
             for width, height in [(1440, 1000), (1024, 768), (390, 844)]:
                 await page.set_viewport_size({"width": width, "height": height})
                 await page.locator('.library-rail nav a[href="#/discover-radio"]').click()
-                await expect(page.locator(".discovery-grid .ed-card")).to_have_count(10)
+                await expect(page.locator(".discovery-grid .ed-card")).to_have_count(24)
                 assert await page.evaluate("document.documentElement.scrollWidth<=innerWidth+1 && document.documentElement.scrollHeight<=innerHeight+1")
                 await page.screenshot(path=str(output / f"radio-{width}.png"))
             assert not errors and not writes, (errors, writes)
@@ -135,7 +172,10 @@ async def run():
             print(
                 json.dumps(
                     {
-                        "auto_radio": 10,
+                        "auto_radio": 24,
+                        "radio_total": 70,
+                        "shell_before_bootstrap": True,
+                        "page_failure_retry_and_back": True,
                         "auto_podcasts": 2,
                         "ambient_cards": 1,
                         "profile_art_revoked": True,
@@ -150,4 +190,6 @@ async def run():
 
 
 if __name__ == "__main__":
-    asyncio.run(run())
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("candidate", nargs="?", default=str(ROOT))
+    asyncio.run(run(parser.parse_args().candidate))

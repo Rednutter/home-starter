@@ -4,7 +4,7 @@
       <aside class="library-rail" aria-label="Household library">
         <a class="household-brand" href="#/artists">Household<span>Audio</span></a>
         <label for="preview-profile">Listening profile</label>
-        <select id="preview-profile" :disabled="switching || pending || selecting" :value="profile" @change="changeProfile(($event.target as HTMLSelectElement).value)">
+        <select id="preview-profile" :disabled="booting || switching || pending || selecting" :value="profile" @change="changeProfile(($event.target as HTMLSelectElement).value)">
           <option v-for="person in people" :value="person.id" :key="person.id">{{ person.name }}</option>
         </select>
         <p class="rail-label">YOUR LIBRARY</p>
@@ -24,8 +24,10 @@
         </header>
         <p class="source-caption">{{ realMode ? previewNotes : 'Combined catalogue categories · exact-identity deduplication · fictional ownership mappings' }}</p>
         <p v-if="readStatus" role="status" class="read-error">{{ readStatus }}</p>
-        <HouseholdActions v-if="releaseMode" />
-        <div v-if="!switching" class="native-library content-section" :key="profile + generation"><RouterView /></div>
+        <HouseholdActions v-if="releaseMode && !booting" />
+        <p v-if="booting" role="status">Connecting your media sources…</p>
+        <p v-else-if="realMode && !people.length" role="status">{{ previewNotes }}</p>
+        <div v-else-if="!switching" class="native-library content-section" :key="profile + generation"><RouterView /></div>
         <p v-else role="status">Opening your collection…</p>
       </main>
       <HouseholdPlayer v-if="releaseMode" />
@@ -45,7 +47,7 @@ import { store } from "@/plugins/store";
 import HouseholdPlayer from './HouseholdPlayer.vue';
 import HouseholdActions from './HouseholdActions.vue';
 import {currentMedia,pending,selecting} from './household';
-import { profile, generation, readStatus, switching, viewPreferences, clearReadFailures, realMode, releaseMode, people, previewNotes } from "./context";
+import { profile, generation, readStatus, switching, viewPreferences, clearReadFailures, realMode, releaseMode, people, previewNotes, booting } from "./context";
 const route = useRoute();
 watch(() => route.fullPath, () => { generation.value++; clearReadFailures();currentMedia.value=null; });
 const selectedName = computed(() => people.value.find(p => p.id === profile.value)?.name || "House");

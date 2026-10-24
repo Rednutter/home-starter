@@ -25,6 +25,7 @@ class MetadataPreview:
         self.directory_lookup = None
         self.discovery_children = {}
         self.discovery_cache = {}
+        self.catalogue_task = None
 
     async def policy(self, profile):
         person = next((p for p in self.profiles if p["id"] == profile), None)
@@ -41,15 +42,35 @@ class MetadataPreview:
         allowed = [s for s in sources if self.providers[s].get("available")]
         return allowed, fingerprint([self.house["epoch"], profile, user["user_id"], sorted(sources)])
 
-    async def prepare(self):
+    async def prepare(self, *, defer_catalogue=False):
         self.providers = {p["instance_id"]: p for p in await self.command("providers") if p.get("type") == "music"}
-        for profile in self.profiles:
+
+        async def saved_profile(profile):
             person = None if profile["id"] == "house" else profile["id"]
             view = await self.app_read("/api/listening/" + self.surface + ("?person=" + person if person else ""))
-            self.saved[profile["id"]] = {key: view.get(key, []) for key in ("favorites", "recent")}
-            self.discovery_children[profile["id"]] = view.get("browse") is not True
-        for category in ("artists", "albums", "playlists"):
-            offset, seen = 0, set()
+            return profile["id"], view
+
+        for identity, view in await asyncio.gather(*(saved_profile(p) for p in self.profiles)):
+            self.saved[identity] = {key: view.get(key, []) for key in ("favorites", "recent")}
+            self.discovery_children[identity] = view.get("browse") is not True
+        self.catalogue_pending = defer_catalogue
+        if not defer_catalogue:
+            await self.load_catalogue()
+
+    async def ensure_catalogue(self):
+        if not getattr(self, "catalogue_pending", False):
+            return
+        if self.catalogue_task is None:
+            self.catalogue_task = asyncio.create_task(asyncio.wait_for(self.load_catalogue(), 60))
+        # A cancelled browser read must not cancel another reader's shared load.
+        await asyncio.shield(self.catalogue_task)
+        self.catalogue_pending = False
+
+    async def load_catalogue(self):
+        categories = ("artists", "albums", "playlists")
+
+        async def library(category):
+            rows, offset, seen = [], 0, set()
             try:
                 while True:
                     page = await asyncio.wait_for(self.command("music/" + category + "/library_items", limit=500, offset=offset, summary=False), 15)
@@ -61,36 +82,45 @@ class MetadataPreview:
                     if page and identity in seen:
                         raise ValueError("Source did not advance its page")
                     seen.add(identity)
-                    self.rows[category].extend(page)
+                    rows.extend(page)
                     offset += len(page)
                     if len(page) < 500:
                         break
-                self.states.append({"category": category, "source": "MA combined library", "state": "ready"})
-                print("Read-only metadata captured: " + category + "=" + str(len(self.rows[category])), flush=True)
+                return [(category, rows, {"category": category, "source": "MA combined library", "state": "ready"})]
             except (TimeoutError, RuntimeError, ValueError):
-                self.states.append({"category": category, "source": "MA combined library", "state": "partial"})
-        # Separate account collections supplement MA's already merged library.
-        for provider in self.providers.values():
-            if provider.get("domain") != "spotify" or not provider.get("available"):
-                continue
+                return [(category, rows, {"category": category, "source": "MA combined library", "state": "partial"})]
+
+        async def account(provider):
             try:
-                root = await asyncio.wait_for(self.command("music/browse", path=provider["instance_id"] + "://"), 10)
-                for category in ("artists", "albums", "playlists"):
-                    folder = next(
-                        (
-                            r
-                            for r in root
-                            if r.get("media_type") == "folder" and (r.get("item_id") == category or str(r.get("name", "")).casefold() == category)
-                        ),
-                        None,
-                    )
-                    if folder:
-                        values = await asyncio.wait_for(self.command("music/browse", path=folder["path"]), 10)
-                        self.rows[category].extend(r for r in values if isinstance(r, dict) and r.get("media_type") != "folder")
-                        partial = any(r.get("media_type") == "folder" and r.get("name") != ".." for r in values)
-                        self.states.append({"category": category, "source": "Spotify account collection", "state": "partial" if partial else "ready"})
+                root = await asyncio.wait_for(self.command("music/browse", path=provider["instance_id"] + "://"), 3)
             except (TimeoutError, RuntimeError, ValueError):
-                self.states.append({"source": "Spotify account collection", "state": "unavailable"})
+                return [(None, [], {"source": "Spotify account collection", "state": "unavailable"})]
+
+            async def folder(category):
+                selected = next(
+                    (r for r in root if r.get("media_type") == "folder" and (r.get("item_id") == category or str(r.get("name", "")).casefold() == category)),
+                    None,
+                )
+                if not selected:
+                    return None
+                try:
+                    values = await asyncio.wait_for(self.command("music/browse", path=selected["path"]), 3)
+                    partial = any(r.get("media_type") == "folder" and r.get("name") != ".." for r in values)
+                    rows = [r for r in values if isinstance(r, dict) and r.get("media_type") != "folder"]
+                    return category, rows, {"category": category, "source": "Spotify account collection", "state": "partial" if partial else "ready"}
+                except (TimeoutError, RuntimeError, ValueError):
+                    return category, [], {"category": category, "source": "Spotify account collection", "state": "unavailable"}
+
+            return [r for r in await asyncio.gather(*(folder(c) for c in categories)) if r]
+
+        tasks = [*(library(c) for c in categories), *(account(p) for p in self.providers.values() if p.get("domain") == "spotify" and p.get("available"))]
+        results = await asyncio.gather(*tasks)
+        # Deterministic merge order, independent of network completion order.
+        for values in results:
+            for category, rows, state in values:
+                if category:
+                    self.rows[category].extend(rows)
+                self.states.append(state)
 
     async def models(self, profile, category):
         allowed, policy = await self.policy(profile)
@@ -121,6 +151,13 @@ class MetadataPreview:
         if set(args) & {"user", "token", "password", "url", "force_refresh"}:
             raise PermissionError("Unsupported read arguments.")
         allowed, policy = await self.policy(profile)
+        if getattr(self, "catalogue_pending", False) and (
+            command.startswith("music/") or command in {"household/favourites", "household/recent", "household/shelves"}
+        ):
+            await self.ensure_catalogue()
+            fresh_allowed, fresh_policy = await self.policy(profile)
+            if fresh_policy != policy or set(fresh_allowed) != set(allowed):
+                raise PermissionError("Source assignments changed while the catalogue loaded.")
         self.ledger.select(context, profile, generation, policy)
         binding = dict(self.ledger.contexts[context])
 
@@ -166,12 +203,16 @@ class MetadataPreview:
             return publish([item])[0] if item.get("provider") == "library" else None
 
         if command == "household/discovery":
-            if set(args) - {"category", "query"}:
+            if set(args) - {"category", "query", "offset", "limit"}:
                 raise PermissionError("Unsupported discovery request.")
+            offset, limit = args.get("offset", 0), args.get("limit")
+            if type(offset) is not int or not 0 <= offset <= 1_000_000 or (limit is not None and (type(limit) is not int or not 1 <= limit <= 100)):
+                raise PermissionError("Choose a supported discovery page.")
+            search_args = {k: v for k, v in args.items() if k in {"category", "query"}}
             # Reuse the existing listening permission projection, not names or
             # inferred age. Missing commissioning evidence stays restrictive.
             child = self.discovery_children.get(profile, True)
-            key = fingerprint([profile, policy, sorted(allowed), child, self.region, self.saved[profile], args])
+            key = fingerprint([profile, policy, sorted(allowed), child, self.region, self.saved[profile], search_args])
             cached = self.discovery_cache.get(key)
             now = time.monotonic()
             if cached and now - cached[0] < 300:
@@ -206,7 +247,11 @@ class MetadataPreview:
             values = merge(values, args["category"])
             if args["category"] == "radio":
                 values.sort(key=radio_rank)
-            result["items"] = publish(values)
+            result["total"] = len(values)
+            result["offset"] = offset
+            # Keep unpaged callers compatible; production explicitly asks for
+            # one page. Only that page receives artwork/selection capabilities.
+            result["items"] = publish(values[offset : offset + limit] if limit is not None else values[offset:])
             return result
 
         if command == "config/core/get_value" and args.get("domain") == "player_queues" and str(args.get("key", "")).startswith("default_click_action_"):
