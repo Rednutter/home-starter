@@ -88,3 +88,36 @@ the exact startup hook and restarting MA only. This affects playback/account
 enforcement and can briefly interrupt audio. No new credentials, provider/user
 permissions, ports or persistent remote access are required. Earlier approval
 for the old repair does not automatically approve this materially new artifact.
+
+## Prepared Linux CI startup gate (not yet executed)
+
+The separate `ma2108-runtime.yaml` workflow uses a fresh Ubuntu runner and the
+official MA 2.10.8 amd64 image pinned by digest. It pulls that public image without
+registry credentials, builds a disposable candidate image with build networking
+disabled, then runs baseline and candidate separately with `--network none`, no
+host ports/devices, read-only root, dropped capabilities, an unprivileged UID,
+resource limits and fresh tmpfs data/cache. Repository credentials are not persisted.
+No runtime data, logs or diagnostics are uploaded as artifacts; the harness emits
+fixed check labels and exception types only. There are no household mounts or inputs.
+
+The harness verifies actual MA/models versions, loopback-only network, safe-mode
+startup, the real loopback `/info` endpoint and bounded shutdown. Safe mode still
+loads upstream built-in providers; it must not load Spotify or configured external
+providers. The candidate case checks real source origins and command registration,
+then confirms an empty identity map cannot allocate a shared Spotify account.
+The source installer runs only in the disposable build layer and refuses mismatched
+official source. The original approved repair and live MA remain untouched.
+
+These checks are deliberately a startup/import gate, not full provider or household
+acceptance. Positive authenticated account enforcement, live provider/user context,
+group dissolution/DSP, long-lived teardown/reconnect and protected progress/transfer
+remain unverified. A network-none startup failure must be diagnosed without silently
+enabling networking or weakening controls. The job has a 15-minute outer deadline;
+startup and shutdown have separate 90/30-second limits.
+
+Publication scope adds only this workflow and `devtools/check_ma2108_runtime.py` to
+the already described candidate source/tests/docs. Public approval is still required
+before pushing the candidate or opening its PR. PR creation then triggers the new
+job and normal release checks; no workflow dispatch, new secrets, live deployment,
+MA upgrade or native activation is part of that publication. Initial Linux execution
+may reveal image/platform/startup incompatibilities that local syntax checks cannot.
