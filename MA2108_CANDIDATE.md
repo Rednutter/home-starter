@@ -121,3 +121,24 @@ before pushing the candidate or opening its PR. PR creation then triggers the ne
 job and normal release checks; no workflow dispatch, new secrets, live deployment,
 MA upgrade or native activation is part of that publication. Initial Linux execution
 may reveal image/platform/startup incompatibilities that local syntax checks cannot.
+
+### Extended runtime controller fixtures
+
+`check_ma2108_runtime_cases.py` runs inside the same isolated candidate server.
+It supplies synthetic provider descriptors/users and queue records to the actual
+guard/lease engine, verifying shared tier order, personal Renae routing, busy,
+stale-session refusal, persisted recovery and mismatched-account rejection.
+The source remains unchanged; no real Spotify backend or OAuth request is used.
+
+Actual MA group/DSP methods run with synthetic device actuators: playing/paused
+leader refusal, idle dissolution, disconnected/cancelled dissolution, membership
+DSP change and no restart of an emptied queue. The actual transfer controller,
+native locks and household journal run with a synthetic load failure, checking
+paused position/owner retention and uncertain retry without replay. Physical
+membership propagation, DSP output and real provider teardown remain unproven.
+
+The progress test invokes the production 2.10.8 entry guard for two synthetic
+owners and absent ownership, checking refusal before a music-controller write.
+It does not certify upstream's unmapped provider progress fallback or book resume;
+those remain explicitly unavailable. These fixtures are controller evidence, not
+full end-to-end account playback or hardware acceptance.

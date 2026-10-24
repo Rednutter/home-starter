@@ -38,12 +38,14 @@ jobs:
         shell: bash
         run: |
           cp devtools/check_ma2108_runtime.py .runtime/ma2108-ci/check.py
+          cp devtools/check_ma2108_runtime_cases.py .runtime/ma2108-ci/check_ma2108_runtime_cases.py
           cat > .runtime/ma2108-ci/Dockerfile <<'EOF'
           ARG MA_IMAGE
           FROM ${MA_IMAGE}
           COPY home_starter_ma /test/home_starter_ma
           COPY install_ma2108_candidate.py /test/install.py
           COPY check.py /test/check.py
+          COPY check_ma2108_runtime_cases.py /test/check_ma2108_runtime_cases.py
           RUN /app/venv/bin/python -c 'import importlib.util,runpy,sys; target=importlib.util.find_spec("music_assistant.mass").origin; sys.argv=["install.py","--source","/test/home_starter_ma","--target",target,"--apply"]; runpy.run_path("/test/install.py",run_name="__main__")'
           EOF
           docker build --network none --build-arg MA_IMAGE="$MA_IMAGE" -t hs-ma2108-ci .runtime/ma2108-ci

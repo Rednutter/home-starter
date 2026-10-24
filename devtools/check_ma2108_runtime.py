@@ -69,6 +69,9 @@ async def check(candidate):
             else:
                 raise AssertionError("Empty Spotify mapping unexpectedly allocated an account")
             print("PASS candidate source origins, registration and fail-closed provider absence", flush=True)
+            from check_ma2108_runtime_cases import run_cases
+
+            await run_cases(mass)
         else:
             assert command not in mass.command_handlers
             assert not hasattr(mass, "home_starter_account_guard")
