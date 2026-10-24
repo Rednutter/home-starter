@@ -10,6 +10,7 @@ import importlib.metadata
 import logging
 import os
 import socket
+import traceback
 from pathlib import Path
 
 
@@ -83,4 +84,11 @@ if __name__ == "__main__":
         asyncio.run(check(args.candidate))
     except Exception as exc:
         print("FAIL isolated MA runtime: " + type(exc).__name__, flush=True)
+        # These containers have only disposable synthetic state. Still omit
+        # exception messages and local variables: locations/errno suffice to
+        # diagnose platform prerequisites without emitting settings or payloads.
+        for frame in traceback.extract_tb(exc.__traceback__):
+            print(f"AT {Path(frame.filename).name}:{frame.lineno}:{frame.name}", flush=True)
+        if isinstance(exc, OSError):
+            print(f"ERRNO {exc.errno}", flush=True)
         raise SystemExit(1) from None
