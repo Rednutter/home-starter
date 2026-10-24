@@ -13,6 +13,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PIN = "dc3caf60f124301a32e21bcb053523d2451a6bfa"  # pragma: allowlist secret -- public reviewed upstream commit
 PREVIEW_FILES = {
+    "server/homestarter/listening.py",
+    "server/homestarter/ma_control_contract.py",
+    "server/homestarter/ma_release_review.py",
+    "server/homestarter/ma_account_guard.py",
+    "server/homestarter/ma_transfer.py",
+    "server/homestarter/media_identity.py",
+    "server/homestarter/listening_transport.py",
+    "server/homestarter/listening_groups.py",
+    "server/homestarter/listening_sessions.py",
+    "server/homestarter/listening_transfer.py",
     "server/homestarter/server.py",
     "server/homestarter/household_lan.py",
     "server/homestarter/music_runtime.py",

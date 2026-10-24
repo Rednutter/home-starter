@@ -1,0 +1,144 @@
+# MA 2.10.8 adaptation — local review candidate, not an upgrade recommendation
+
+Baseline: published HS 0.8.47 and official MA 2.10.8 commit
+24c14e8bf89de472ceb23ecbd33407bdfcccbd01. No live MA changes or publication.
+
+The approved old repair archive is immutable and remains the only previously
+approved artifact. This candidate is a separately generated archive and installer.
+Its mere existence does not authorise installation, a restart or expanded access.
+
+## Implemented candidate boundary
+
+- The existing default guard version allowlist and 2.10.7 transfer pins remain
+  unchanged. The new explicit native entry verifies eight exact upstream files,
+  the model version, source origins and live wrapper identities. Only its own
+  precisely defined startup insertion is normalised during source verification.
+- Normal transport, queue edits and group control continue using MA public APIs.
+  Their existing ownership, revision, occupied-player, uncertainty and capability
+  checks remain. They can accept a separate authenticated native contract for
+  2.10.8; matching read schemas or a version string alone cannot enable them.
+- Contract responses are strict, feature-specific, server/app-bound and expire
+  after five seconds. The service only obtains them over the existing bound MA
+  connection and existing administrator scope. Missing/invalid contracts leave
+  controls closed. Catalogue selection rechecks control authority before use.
+- Finite transfer reuses native transfer plus the existing owner-preserving
+  bridge, locks and uncertain-result journal. Protected Spotify/book/podcast
+  transfers remain excluded. No independent duplicate streams are introduced.
+- Audiobook/podcast progress and station-preview routing remain unavailable on
+  2.10.8 in this slice. They have not been promoted by a generic contract flag.
+- A stateless media-ID helper removes native discovery's dependency on UI/wall
+  services. The offline bundle contains 13 modules and no household data. The
+  legacy source installer also includes the helper dependencies; the frozen old
+  repair archive was not regenerated or altered.
+
+## Evidence and important finding
+
+The isolated Python 3.14 harness verifies downloaded Git-blob/SHA-256 identities
+before extracting exact official method bodies. It removes registration decorators
+for testing, without modifying method bodies, and uses in-memory doubles only.
+Passed cases cover playing, paused and idle transfer positions; radio starting at
+zero; stopped-player clock corrections; separate users resuming the same book;
+provider progress reports not echoing across accounts; external Spotify pause.
+
+An unmapped provider-origin progress report can cause upstream to update all
+users' playlog rows. Household code must reject unmapped ownership rather than
+call that fallback. The candidate deliberately leaves progress routing closed.
+
+These are method-level tests, not a running-MA or physical-house acceptance test.
+Existing isolated tests additionally cover pool isolation, owner preservation,
+stale revisions, expiry, changed sources and synthetic installation transactions.
+No household providers, discovery, playback or credentials were used.
+
+## Installer and rollback review
+
+The new installer defaults to check-only and requires an explicit MA mass.py
+target, MA 2.10.8/models 1.1.205, unchanged source pins and exact module hashes.
+Applying to a reviewed target stages only the candidate package and exact startup
+hook, retaining a verified .home-starter-2108-original backup. It performs no
+restart, account creation, provider configuration, authentication or network change.
+Unrelated existing adapter modules and conflicting backups cause refusal.
+
+Rollback requires verifying the backup against the original mass.py source pin,
+restoring that exact startup file and performing the separately authorised MA-only
+restart. Leave candidate modules for inspection; removing their startup import
+disables them. Never restore over unknown external edits without reconciliation.
+
+## Remaining gates
+
+Full MA startup/import, real provider/user context, group dissolution/DSP and
+long-lived teardown/reconnect behaviour require an isolated Linux MA runtime.
+This Windows host lacks POSIX resource; its official WebRTC build lacks OpenSSL
+development files, and Docker Linux is unavailable. Method extraction does not
+remove that gate. Cross-client native edits are not an atomic transaction.
+
+Before publication: review this candidate diff, finish applicable packaged browser
+checks and privacy, freeze a new source/artifact and run normal release CI.
+Before recommending the MA upgrade: complete Linux runtime validation and review
+the still-unsupported progress/station cases with an honest capability matrix.
+
+Specific public-publication approval must cover the new native candidate entry,
+installer/builder, control-contract service changes, identity-helper extraction,
+tests and documentation. Exclude runtime archives, source downloads, logs, private
+checkpoints, household evidence and the old native repair artifact.
+
+Specific native activation approval must cover installing the newly reviewed
+2.10.8 account-enforcement candidate and previously uninstalled finite-transfer
+bridge, registering their administrator-only contract/transfer commands, changing
+the exact startup hook and restarting MA only. This affects playback/account
+enforcement and can briefly interrupt audio. No new credentials, provider/user
+permissions, ports or persistent remote access are required. Earlier approval
+for the old repair does not automatically approve this materially new artifact.
+
+## Prepared Linux CI startup gate (not yet executed)
+
+The separate `ma2108-runtime.yaml` workflow uses a fresh Ubuntu runner and the
+official MA 2.10.8 amd64 image pinned by digest. It pulls that public image without
+registry credentials, builds a disposable candidate image with build networking
+disabled, then runs baseline and candidate separately with `--network none`, no
+host ports/devices, read-only root, dropped capabilities, an unprivileged UID,
+resource limits and fresh tmpfs data/cache. Repository credentials are not persisted.
+No runtime data, logs or diagnostics are uploaded as artifacts; the harness emits
+fixed check labels and exception types only. There are no household mounts or inputs.
+
+The harness verifies actual MA/models versions, loopback-only network, safe-mode
+startup, the real loopback `/info` endpoint and bounded shutdown. Safe mode still
+loads upstream built-in providers; it must not load Spotify or configured external
+providers. The candidate case checks real source origins and command registration,
+then confirms an empty identity map cannot allocate a shared Spotify account.
+The source installer runs only in the disposable build layer and refuses mismatched
+official source. The original approved repair and live MA remain untouched.
+
+These checks are deliberately a startup/import gate, not full provider or household
+acceptance. Positive authenticated account enforcement, live provider/user context,
+group dissolution/DSP, long-lived teardown/reconnect and protected progress/transfer
+remain unverified. A network-none startup failure must be diagnosed without silently
+enabling networking or weakening controls. The job has a 15-minute outer deadline;
+startup and shutdown have separate 90/30-second limits.
+
+Publication scope adds only this workflow and `devtools/check_ma2108_runtime.py` to
+the already described candidate source/tests/docs. Public approval is still required
+before pushing the candidate or opening its PR. PR creation then triggers the new
+job and normal release checks; no workflow dispatch, new secrets, live deployment,
+MA upgrade or native activation is part of that publication. Initial Linux execution
+may reveal image/platform/startup incompatibilities that local syntax checks cannot.
+
+### Extended runtime controller fixtures
+
+`check_ma2108_runtime_cases.py` runs inside the same isolated candidate server.
+It supplies synthetic provider descriptors/users and queue records to the actual
+guard/lease engine, verifying shared tier order, personal Renae routing, busy,
+stale-session refusal, persisted recovery and mismatched-account rejection.
+The source remains unchanged; no real Spotify backend or OAuth request is used.
+
+Actual MA group/DSP methods run with synthetic device actuators: playing/paused
+leader refusal, idle dissolution, disconnected/cancelled dissolution, membership
+DSP change and no restart of an emptied queue. The actual transfer controller,
+native locks and household journal run with a synthetic load failure, checking
+paused position/owner retention and uncertain retry without replay. Physical
+membership propagation, DSP output and real provider teardown remain unproven.
+
+The progress test invokes the production 2.10.8 entry guard for two synthetic
+owners and absent ownership, checking refusal before a music-controller write.
+It does not certify upstream's unmapped provider progress fallback or book resume;
+those remain explicitly unavailable. These fixtures are controller evidence, not
+full end-to-end account playback or hardware acceptance.

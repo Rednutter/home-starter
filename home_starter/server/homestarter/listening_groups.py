@@ -77,8 +77,13 @@ class Groups:
         )
 
     async def inspect(self, endpoint, connection, data, players, leader, desired, *, idle_start=False):
-        if not isinstance(endpoint, dict) or endpoint.get("version") != "2.10.7":
+        from .ma_control_contract import supports
+
+        if not supports(endpoint, "groups"):
             raise ValueError("Grouping needs the reviewed Music Assistant 2.10.7 connection.")
+        from .ma_control_contract import check_progress_start
+
+        check_progress_start(endpoint, data.get("leases", {}).get(leader, {}).get("kind"))
         permitted = {p["player_id"]: p for p in players if p["available"]}
         old = data.get("groups", {}).get(leader, {})
         involved = set(desired) | set(old.get("members", [leader]))
@@ -376,6 +381,9 @@ class Groups:
         profile = self.listening.profile(data, person)
         shared = self.listening.profile(data, None)["favorites"] if person else []
         item = await self.listening.item(body.get("item"), profile, shared)
+        from .ma_control_contract import check_progress_start
+
+        check_progress_start(endpoint, item["kind"])
         providers = (await self.listening.runtime.snapshot()).get("providers", [])
         await self.listening.record_access(endpoint, connection, item, scope, providers)
         listener = next((p["name"] for p in house["people"] if p["id"] == person), "House")

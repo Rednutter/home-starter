@@ -48,8 +48,9 @@ class BackendDiagnostics(logging.Handler):
 
 
 class AccountGuard:
-    def __init__(self, mass):
+    def __init__(self, mass, *, review=None):
         self.mass = mass
+        self.review = review
         self.error = None
         self.wrappers = {}
         self.soloist_runs = weakref.WeakKeyDictionary()
@@ -346,14 +347,17 @@ class AccountGuard:
             finally:
                 _pin.reset(marker)
 
+        @wraps(original_mappings)
         def mappings(mapping):
             candidates = original_mappings(mapping)
             lease = _pin.get()
             return [p for p in candidates if p.instance_id == lease["provider"]] if lease else candidates
 
+        @wraps(original_discover)
         async def discover(*args, **kwargs):
             return set() if _pin.get() else await original_discover(*args, **kwargs)
 
+        @wraps(original_stream)
         async def stream(streamdetails, *args, **kwargs):
             spotify = {p["id"] for p in self.providers() if p["domain"] == "spotify"}
             inherited = _pin.get()
@@ -402,7 +406,14 @@ class AccountGuard:
             write_private_json(self.check_path, self.playback_checks)
 
     async def status(self, verify: bool = False) -> dict:
-        healthy = self.mass.version in SUPPORTED_MA and all(getattr(self.mass.streams.audio, n) is h for n, h in self.wrappers.items())
+        reviewed = self.mass.version in SUPPORTED_MA
+        if self.review is not None:
+            from .ma_release_review import ReviewedRelease
+
+            reviewed = type(self.review) is ReviewedRelease and self.review.valid()
+        healthy = reviewed and all(getattr(self.mass.streams.audio, n) is h for n, h in self.wrappers.items())
+        if self.review is not None:
+            healthy = healthy and self.soloist_class is not None and self.soloist_class._acquire_run is self.soloist_handler
         healthy = healthy and (self.soloist_class is None or self.soloist_class._acquire_run is self.soloist_handler)
         integrity, distinct = self.account_integrity()
         healthy = healthy and integrity and (self.task is None or not self.task.done())
@@ -450,6 +461,10 @@ class AccountGuard:
     async def recover(self):
         while True:
             try:
+                if self.review is not None and self.soloist_class is None:
+                    # Provider dependencies may load after the startup hook. Stay
+                    # closed until the reviewed Soloist wrapper can be installed.
+                    self.wrap_soloist()
                 await self.engine.recover(self.providers())
                 self.error = None
             except Exception:
@@ -458,7 +473,7 @@ class AccountGuard:
             await asyncio.sleep(2)
 
 
-def install(mass):
+def install(mass, *, review=None):
     """Called immediately after MA registers core API handlers, before web serving."""
     from music_assistant_models.auth import Scope
 
@@ -472,9 +487,14 @@ def install(mass):
         "_discover_alternative_provider_mappings": {"queue_item", "busy_instances", "remaining"},
         "get_media_stream": {"streamdetails"},
     }
-    if mass.version not in SUPPORTED_MA or any(not params <= inspect.signature(getattr(audio, n)).parameters.keys() for n, params in required.items()):
+    reviewed = mass.version in SUPPORTED_MA
+    if review is not None:
+        from .ma_release_review import ReviewedRelease
+
+        reviewed = type(review) is ReviewedRelease and review.valid()
+    if not reviewed or any(not params <= inspect.signature(getattr(audio, n)).parameters.keys() for n, params in required.items()):
         raise RuntimeError("Home Starter account guard requires its verified Music Assistant version. Startup stopped safely.")
-    guard = AccountGuard(mass)
+    guard = AccountGuard(mass, review=review)
     guard.wrap()
     guard.wrap_soloist()
     mass.register_api_command("homestarter/account_status", guard.status, required_scope=Scope.USERS_MANAGE)

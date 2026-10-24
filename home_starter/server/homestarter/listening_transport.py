@@ -13,7 +13,9 @@ UNKNOWN = "The last control was not confirmed. Check current playback; it will n
 
 
 async def observe(listening, endpoint, connection, data, house, player):
-    if not isinstance(endpoint, dict) or endpoint.get("version") != "2.10.7":
+    from .ma_control_contract import supports
+
+    if not supports(endpoint, "transport"):
         raise ValueError("Shared controls need the reviewed Music Assistant version.")
     if not player.get("available") or not player.get("single"):
         raise ValueError("This speaker is unavailable or its group membership changed.")
@@ -89,6 +91,8 @@ async def observe(listening, endpoint, connection, data, house, player):
         actions.append("volume")
     if "next_previous" in features and lease.get("kind") not in {"audiobook", "podcast_episode", "radio"}:
         actions.extend(("next", "previous"))
+    if endpoint.get("version") == "2.10.8" and lease.get("kind") in {"audiobook", "podcast_episode"}:
+        actions = [action for action in actions if action != "play"]
     owner = next((p["name"] for p in house["people"] if lease["scope"] == "person:" + p["id"]), "House")
     playing = lease.get("item", {}).get("title") if lease.get("kind") == "radio" else current.get("name") or lease.get("item", {}).get("title")
     return {"player_id": pid, "revision": revision, "actions": actions, "owner": owner, "title": title(playing, radio=lease.get("kind") == "radio")}, lease

@@ -114,7 +114,10 @@ class QueueSessions:
 
     @staticmethod
     def issue(player, lease, version):
-        if "play_media" not in player.get("features", []) or version != "2.10.7":
+        from .ma_control_contract import supports
+
+        endpoint = version if isinstance(version, dict) else {"version": version}
+        if "play_media" not in player.get("features", []) or not supports(endpoint, "queue"):
             return "Queue changes are not supported for this speaker or Music Assistant version. Choose another speaker."
         if lease.get("kind") != "track" or lease.get("native_session") or lease.get("progress_route"):
             return "Queue changes for this source are not supported yet. Join listening or choose another speaker."
@@ -124,7 +127,7 @@ class QueueSessions:
         people = {"person:" + p["id"]: p["name"] for p in house["people"]}
         profile = data["profiles"].get(scope, {})
         result = []
-        version = endpoint.get("version") if isinstance(endpoint, dict) else None
+        version = endpoint
         providers = (await self.listening.runtime.snapshot()).get("providers", [])
         for player in players:
             pid = player["player_id"]
@@ -197,7 +200,7 @@ class QueueSessions:
             if lease["scope"] != scope:
                 profile["joined"] = membership
             return
-        version = endpoint.get("version") if isinstance(endpoint, dict) else None
+        version = endpoint
         providers = (await self.listening.runtime.snapshot()).get("providers", [])
         if action in {"queue_takeover_prepare", "queue_takeover"}:
             if lease.get("item", {}).get("catalogue_access"):

@@ -11,6 +11,7 @@ import time
 from copy import deepcopy
 
 from . import household_music
+from .ma_control_contract import supports
 from .music_runtime import MusicRuntimeError, digest, number
 
 UNKNOWN = (
@@ -64,13 +65,14 @@ class Transfers:
 
     async def capability(self):
         try:
-            value = await self.listening.runtime.command(
-                await self.listening.runtime.endpoint(), self.listening.runtime.connection(), "homestarter/transfer_status"
-            )
+            endpoint = await self.listening.runtime.endpoint()
+            if not supports(endpoint, "finite_transfer"):
+                return "Moving audio needs a reviewed native transfer connection."
+            value = await self.listening.runtime.command(endpoint, self.listening.runtime.connection(), "homestarter/transfer_status")
             if (
                 isinstance(value, dict)
                 and value.get("protocol") == 1
-                and value.get("version") == "2.10.7"
+                and value.get("version") == endpoint.get("version")
                 and value.get("pinned") is True
                 and value.get("native_user_preserved") is True
             ):
@@ -81,7 +83,7 @@ class Transfers:
 
     @staticmethod
     def issue(endpoint, lease, players):
-        if not isinstance(endpoint, dict) or endpoint.get("version") != "2.10.7":
+        if not supports(endpoint, "finite_transfer"):
             return "Moving audio needs a reviewed Music Assistant version."
         if not lease or lease.get("kind") not in {"track", "radio", "sound_effect"}:
             return "Moving audiobooks and podcasts is unavailable until native progress ownership can be preserved."
@@ -92,7 +94,7 @@ class Transfers:
         return None
 
     async def read(self, endpoint, connection, pid):
-        if not isinstance(endpoint, dict) or endpoint.get("version") != "2.10.7":
+        if not supports(endpoint, "finite_transfer"):
             raise MusicRuntimeError("Moving audio needs a reviewed Music Assistant version.")
         value = await self.listening.runtime.command(endpoint, connection, "homestarter/transfer_snapshot", queue_id=pid)
         if not isinstance(value, dict) or value.get("protocol") != 1 or "userid" not in value or not isinstance(value.get("revision"), str):

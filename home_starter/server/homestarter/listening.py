@@ -1007,6 +1007,9 @@ class ListeningRuntime:
         return access
 
     async def play(self, endpoint, connection, data, profile, scope, player, item, user, surface_id, *, discovery=None, before_start=None):
+        from .ma_control_contract import check_progress_start
+
+        check_progress_start(endpoint, item["kind"])
         pid = player["player_id"]
         sources = set(item.get("sources", [])) | household_music.item_sources(item)
         providers = (await self.runtime.snapshot()).get("providers", [])

@@ -1,0 +1,73 @@
+name: Isolated MA 2.10.8 runtime
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/ma2108-runtime.yaml'
+      - 'devtools/*ma2108*'
+      - 'devtools/ma2108_offline_payload.py'
+      - 'devtools/stage_ma2108_offline.sh'
+      - 'home_starter/server/homestarter/**'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/ma2108-runtime.yaml'
+      - 'devtools/*ma2108*'
+      - 'devtools/ma2108_offline_payload.py'
+      - 'devtools/stage_ma2108_offline.sh'
+      - 'home_starter/server/homestarter/**'
+
+permissions:
+  contents: read
+
+jobs:
+  runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Official public image identity, not a credential.
+      MA_IMAGE: ghcr.io/music-assistant/server@sha256:2a0536321d0554d6157504e8e477ef871dd41d466bdc22f250ccaff19f667e58 # pragma: allowlist secret
+      MA_ROLLBACK_IMAGE: ghcr.io/music-assistant/server@sha256:ac3263065888579ac69abe5c71ee33e3df1e39d4d42e5bc529dd8f81ea2c67c5 # pragma: allowlist secret -- public rollback runtime
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+      - name: Prepare candidate from this exact checkout
+        run: python devtools/prepare_ma2108_candidate.py .runtime/ma2108-ci
+      - name: Pull exact official runtime
+        run: docker pull "$MA_IMAGE"
+      - name: Build disposable candidate image without network
+        shell: bash
+        run: |
+          cp devtools/check_ma2108_runtime.py .runtime/ma2108-ci/check.py
+          cp devtools/check_ma2108_runtime_cases.py .runtime/ma2108-ci/check_ma2108_runtime_cases.py
+          cat > .runtime/ma2108-ci/Dockerfile <<'EOF'
+          ARG MA_IMAGE
+          FROM ${MA_IMAGE}
+          COPY home_starter_ma /test/home_starter_ma
+          COPY install_ma2108_candidate.py /test/install.py
+          COPY check.py /test/check.py
+          COPY check_ma2108_runtime_cases.py /test/check_ma2108_runtime_cases.py
+          RUN /app/venv/bin/python -c 'import importlib.util,runpy,sys; target=importlib.util.find_spec("music_assistant.mass").origin; sys.argv=["install.py","--source","/test/home_starter_ma","--target",target,"--apply"]; runpy.run_path("/test/install.py",run_name="__main__")'
+          EOF
+          docker build --network none --build-arg MA_IMAGE="$MA_IMAGE" -t hs-ma2108-ci .runtime/ma2108-ci
+      - name: Real baseline startup with no providers or external network
+        run: >-
+          docker run --rm --network none --read-only --user 65534:65534
+          --cap-drop ALL --security-opt no-new-privileges --memory 2g --cpus 2
+          --tmpfs /data:rw,mode=1777 --tmpfs /tmp:rw,mode=1777
+          --mount type=bind,src="${{ github.workspace }}/devtools/check_ma2108_runtime.py",dst=/test/check.py,readonly
+          --entrypoint /app/venv/bin/python "$MA_IMAGE" /test/check.py
+      - name: Real candidate startup and fail-closed contract
+        run: >-
+          docker run --rm --network none --read-only --user 65534:65534
+          --cap-drop ALL --security-opt no-new-privileges --memory 2g --cpus 2
+          --tmpfs /data:rw,mode=1777 --tmpfs /tmp:rw,mode=1777
+          --entrypoint /app/venv/bin/python hs-ma2108-ci /test/check.py --candidate
+      - name: Pull exact rollback runtime for offline-copy prerequisites
+        run: docker pull "$MA_ROLLBACK_IMAGE"
+      - name: Verify check-only gates and stopped-container copy procedure
+        run: python devtools/test_ma2108_offline_ci.py
