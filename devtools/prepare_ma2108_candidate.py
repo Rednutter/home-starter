@@ -4,7 +4,6 @@ import argparse
 import ast
 import hashlib
 import json
-import shutil
 import sys
 import tarfile
 from pathlib import Path
@@ -25,7 +24,7 @@ def prepare(output):
         if name in modules:
             continue
         path = source / (name + ".py")
-        body = path.read_bytes()
+        body = path.read_bytes().replace(b"\r\n", b"\n")
         modules[name] = body
         for node in ast.walk(ast.parse(body.decode())):
             if isinstance(node, ast.ImportFrom) and node.level == 1:
@@ -47,7 +46,8 @@ def prepare(output):
         "files": {name: hashlib.sha256(body).hexdigest() for name, body in files.items()},
     }
     (package / "contract.json").write_text(json.dumps(manifest, sort_keys=True, indent=2), encoding="utf-8", newline="\n")
-    shutil.copyfile(ROOT / "devtools/install_ma2108_candidate.py", output / "install_ma2108_candidate.py")
+    installer = (ROOT / "devtools/install_ma2108_candidate.py").read_bytes().replace(b"\r\n", b"\n")
+    (output / "install_ma2108_candidate.py").write_bytes(installer)
     archive = output / "ma2108-review-candidate.tar"
     with tarfile.open(archive, "w") as stream:
         for path in sorted(output.rglob("*")):

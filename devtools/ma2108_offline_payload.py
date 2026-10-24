@@ -7,7 +7,7 @@ import runpy
 import tarfile
 from pathlib import Path
 
-ARCHIVE_SHA256 = "c36159dccad87f6418b6e5a9883b595d9bd8d77e9a0c7f07e3e633a9dbf0022b"  # pragma: allowlist secret -- deterministic RC4 public source archive
+ARCHIVE_SHA256 = "1556814c2b172d9b184b4c20ef946527f4d1dfd394827bc488e0be28c8b229eb"  # pragma: allowlist secret -- canonical-LF RC5 public source archive
 # No installed Supervisor update lifecycle has yet been reviewed. Do not replace
 # this with an operator checkbox or infer approval from a stopped container.
 SUPERVISOR_REVIEWS = {}

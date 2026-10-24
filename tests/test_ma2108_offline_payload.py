@@ -56,7 +56,7 @@ def test_review_archive_is_reproducible_across_creation_permissions(tmp_path, mo
     source = tmp_path / "home_starter/server/homestarter"
     source.mkdir(parents=True)
     (source / "ma_release_review.py").write_bytes(b"from .helper import Example\n")
-    (source / "helper.py").write_bytes(b"class Example: pass\n")
+    (source / "helper.py").write_bytes(b"class Example: pass\r\n")
     installer = tmp_path / "devtools/install_ma2108_candidate.py"
     installer.parent.mkdir()
     installer.write_bytes(b"# Synthetic installer fixture\n")
@@ -64,6 +64,7 @@ def test_review_archive_is_reproducible_across_creation_permissions(tmp_path, mo
     old = os.umask(0o077)
     try:
         first = builder.prepare(tmp_path / ".runtime/first")
+        (source / "helper.py").write_bytes(b"class Example: pass\n")
         os.umask(0o022)
         second = builder.prepare(tmp_path / ".runtime/second")
     finally:
