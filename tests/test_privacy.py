@@ -36,6 +36,10 @@ def test_generated_release_exception_requires_exact_reviewed_manifest():
 
 
 def test_normal_docker_context_admits_only_exact_reviewed_media_files():
+    from homestarter.release_assets import verify
+
+    # Execute the same verifier Docker runs, not only the host manifest check.
+    verify()
     patterns = Path("home_starter/.dockerignore").read_text().splitlines()
     prefix = "server/homestarter/static/media-preview/"
     files = json.loads(Path("home_starter", prefix, "manifest.json").read_bytes())["files"]
