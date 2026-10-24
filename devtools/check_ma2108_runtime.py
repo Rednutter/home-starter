@@ -7,6 +7,7 @@ read-only root and ephemeral /data and /tmp. Output only fixed check labels.
 import argparse
 import asyncio
 import importlib.metadata
+import json
 import logging
 import os
 import socket
@@ -32,6 +33,10 @@ async def check(candidate):
     from music_assistant.mass import MusicAssistant
 
     logging.disable(logging.CRITICAL)
+    # Upstream's default Zeroconf InterfaceChoice.Default fails with ENODEV
+    # when there is no routed interface. Use its supported "all" setting in
+    # disposable data only: network-none still leaves just loopback available.
+    Path("/data/settings.json").write_text(json.dumps({"core": {"discovery": {"domain": "discovery", "values": {"zeroconf_interfaces": "all"}}}}))
     mass = MusicAssistant("/data", "/data/cache", safe_mode=True)
     try:
         await asyncio.wait_for(mass.start(), timeout=90)
