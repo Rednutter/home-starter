@@ -167,6 +167,16 @@ async def run(candidate=ROOT):
                 await expect(page.locator(".discovery-grid .ed-card")).to_have_count(24)
                 assert await page.evaluate("document.documentElement.scrollWidth<=innerWidth+1 && document.documentElement.scrollHeight<=innerHeight+1")
                 await page.screenshot(path=str(output / f"radio-{width}.png"))
+            state.music_runtime.endpoint.return_value["version"] = "2.10.8"
+            await page.reload(wait_until="domcontentloaded")
+            await expect(page.locator(".compatibility-notice")).to_contain_text("playback controls need compatibility review")
+            await expect(page.locator(".discovery-grid .ed-card")).to_have_count(24)
+            await expect(page.locator(".persistent-player .transport button:enabled")).to_have_count(0)
+            await page.locator(".outputs").click()
+            await expect(page.get_by_role("button", name="Use selected speaker", exact=True)).to_be_disabled()
+            await page.get_by_role("button", name="Close speakers and queue", exact=True).click()
+            await page.locator('.library-rail nav a[href="#/find-podcasts"]').click()
+            await expect(page.locator(".discovery-grid .ed-card")).to_have_count(2)
             assert not errors and not writes, (errors, writes)
             state.music_runtime.control.assert_not_awaited()
             print(
@@ -179,6 +189,7 @@ async def run(candidate=ROOT):
                         "auto_podcasts": 2,
                         "ambient_cards": 1,
                         "profile_art_revoked": True,
+                        "unknown_version_browsing_with_controls_disabled": True,
                         "viewports": [1440, 1024, 390],
                         "unexpected_writes": writes,
                         "page_errors": errors,

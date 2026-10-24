@@ -6,6 +6,7 @@ import asyncio
 import copy
 import time
 
+from .ma_compatibility import provider_contract, user_contract
 from .media_discovery import MediaDiscovery, radio_rank
 from .metadata_projection import ArtworkLedger, fingerprint, native_record, project, record_ids
 
@@ -26,24 +27,34 @@ class MetadataPreview:
         self.discovery_children = {}
         self.discovery_cache = {}
         self.catalogue_task = None
+        self.user_bindings = None
+        self.read_health = None
 
     async def policy(self, profile):
         person = next((p for p in self.profiles if p["id"] == profile), None)
         if not person:
             raise PermissionError("Choose a current household profile.")
         users = await self.command("auth/users")
-        matches = [u for u in users if str(u.get("display_name") or u.get("username") or "").strip().casefold() == person["name"].casefold()]
+        if user_contract(users) is None:
+            raise PermissionError("Native user response needs a compatibility check.")
+        matches = (
+            [u for u in users if u.get("user_id") == self.user_bindings.get(profile)]
+            if self.user_bindings is not None
+            else [u for u in users if str(u.get("display_name") or u.get("username") or "").strip().casefold() == person["name"].casefold()]
+        )
         if len(matches) != 1 or not matches[0].get("enabled", True):
             raise PermissionError("This profile's native source mapping needs checking.")
         user = matches[0]
         sources = user.get("provider_filter")
-        if not isinstance(sources, list) or not sources or not set(sources) <= self.providers.keys():
+        if not isinstance(sources, list) or not sources or any(not isinstance(s, str) for s in sources) or not set(sources) <= self.providers.keys():
             raise PermissionError("This profile's source filters are missing or changed.")
         allowed = [s for s in sources if self.providers[s].get("available")]
         return allowed, fingerprint([self.house["epoch"], profile, user["user_id"], sorted(sources)])
 
     async def prepare(self, *, defer_catalogue=False):
-        self.providers = {p["instance_id"]: p for p in await self.command("providers") if p.get("type") == "music"}
+        self.providers = provider_contract(await self.command("providers"))
+        if self.providers is None:
+            raise ValueError("Native provider response needs a compatibility check.")
 
         async def saved_profile(profile):
             person = None if profile["id"] == "house" else profile["id"]
@@ -150,6 +161,12 @@ class MetadataPreview:
             raise PermissionError("Unsupported read arguments.")
         if set(args) & {"user", "token", "password", "url", "force_refresh"}:
             raise PermissionError("Unsupported read arguments.")
+        if (
+            self.read_health is not None
+            and not self.read_health["features"]["catalogue_read_contract"]
+            and (command.startswith("music/") and command != "providers/icon" or command in {"household/favourites", "household/recent", "household/shelves"})
+        ):
+            raise ValueError("Library format needs a compatibility check. Radio and podcast discovery remain separate.")
         allowed, policy = await self.policy(profile)
         if getattr(self, "catalogue_pending", False) and (
             command.startswith("music/") or command in {"household/favourites", "household/recent", "household/shelves"}

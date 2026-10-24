@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.8.47
+
+- Add bounded read-contract checks and administrator diagnostics for MA updates,
+  keeping native playback/account enforcement and transfer compatibility separate.
+- Preserve verified native user identities in private server-bound checkpoints;
+  fail closed on missing filters, replaced users or changed connection identity.
+- Keep verified catalogue browsing available after an update, with an explicit
+  review notice and disabled controls outside the existing control baseline.
+- Revoke stale read contexts on version/schema changes without replaying commands.
+- Test official model serialization separately from synthetic and source-contract
+  checks. Full MA server/update playback acceptance remains unverified.
+- No live MA upgrade, native adapter installation, access or permission changes.
+
 ## 0.8.46
 
 - Mount navigation immediately while profiles/sources connect, without allowing

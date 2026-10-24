@@ -9,6 +9,16 @@ permissions:
   contents: read
 
 jobs:
+  model-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - run: pip install music-assistant-models==1.1.205
+      - run: python devtools/check_ma_model_contracts.py
+
   test:
     runs-on: ubuntu-latest
     steps:

@@ -7,6 +7,7 @@
  </footer>
  <section v-if="drawer" class="household-drawer" aria-label="Speakers and queue">
   <header><h2>Listening around the house</h2><button @click="drawer=false" aria-label="Close speakers and queue">Close</button></header>
+  <fieldset :disabled="!!compatibilityNotice" style="border:0;padding:0;margin:0;min-width:0">
   <p>Changing profile or selecting speakers does not interrupt playback.</p>
   <div class="speaker-choices"><label v-for="room in listening?.players || []" :key="room.entity_id"><input type="checkbox" :checked="speakers.includes(room.entity_id)" :disabled="pending || !!groupChange || !selectable(room)" @change="toggle(room.entity_id)"><strong>{{ room.name }}</strong><span>{{ !room.available?'Unavailable':!selectable(room)?'Cannot synchronise with this leader':room.state }}</span></label></div>
   <p v-if="speakers.length>1 && !transport?.actions?.length">Choose media and press Play to review a start on these idle speakers. One native group and one playback session will be used.</p><p v-if="speakers.length>1" role="status">{{ listening?.grouping?.reason || 'Grouped playback is not implemented in the household service yet. Choose one speaker; separate unsynchronised streams will not be started.' }}</p>
@@ -27,10 +28,12 @@
   <p v-if="listening?.sleep">A sleep timer is active for this session.</p>
   <ol aria-label="Selected room queue"><li v-for="row in session?.queue || []" :key="row.entry"><span>{{ row.title }}{{ row.current?' · playing':'' }}</span><button v-if="session.can_edit" :disabled="pending || !row.up" @click="action('queue_move',{entry:row.entry,value:-1,session:session.revision})">Up</button><button v-if="session.can_edit" :disabled="pending || !row.down" @click="action('queue_move',{entry:row.entry,value:1,session:session.revision})">Down</button><button v-if="session.can_edit" :disabled="pending || !row.remove" @click="action('queue_remove',{entry:row.entry,session:session.revision})">Remove</button></li></ol>
   <p v-if="!listening">Loading permitted household playback…</p>
+  </fieldset>
  </section>
 </template>
 <script setup lang="ts">
 import {ref,computed,watch} from 'vue';
+import {compatibilityNotice} from './context';
 import {listening,player,speakers,notice,pending,drawer,speakerSelectionDirty,selected,session,transport,canTransport,transportAction,action} from './household';
 const volume=ref<number|undefined>();
 const groupMove=computed(()=>listening.value?.group_transfer),moveTarget=ref(''),moveRooms=ref<string[]>([]);

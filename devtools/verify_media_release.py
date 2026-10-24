@@ -6,7 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 STATIC = ROOT / "home_starter/server/homestarter/static/media-preview"
-EXPECTED = "8ab3d73fad1636dec971038d921ddeb3d6851875f452accbee9ce0fec28c0afb"  # pragma: allowlist secret -- reviewed public manifest
+EXPECTED = "180ba432af1a922f339ef5236caec6d4a7aebda057ad50286a1409a5d6664e41"  # pragma: allowlist secret -- reviewed public manifest
 
 
 def verify():

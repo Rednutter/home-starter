@@ -179,7 +179,42 @@ class MusicRuntime:
             raise MusicRuntimeError("Music Assistant did not respond. Check it and retry.") from None
         if not isinstance(info, dict) or not isinstance(info.get("server_id"), str) or not info["server_id"]:
             raise MusicRuntimeError("Music Assistant server identity could not be checked.")
-        return {"address": address, "server_id": info["server_id"], "app": installed["slug"], "version": info.get("server_version")}
+        return {
+            "address": address,
+            "server_id": info["server_id"],
+            "app": installed["slug"],
+            "version": info.get("server_version"),
+            "schema_version": info.get("schema_version"),
+        }
+
+    async def read_compatibility(self):
+        """Administrative diagnostics only: no control, setup or checkpoint write."""
+        from .ma_compatibility import assess_reads, checkpoint_bindings
+
+        connection, endpoint = self.connection(), await self.endpoint()
+        house = self.store.load()
+        profiles = ["house", *[p["id"] for p in house["people"]]]
+        key = digest(
+            [house["epoch"], (connection or {}).get("server_id"), (connection or {}).get("app"), (connection or {}).get("generation"), sorted(profiles)]
+        )
+        try:
+            checkpoint = self.store.read(self.connection_path.parent / "music-read-bindings.json", None)
+            bindings = checkpoint_bindings(checkpoint, key, profiles)
+            state = "verified" if bindings else "missing_or_changed"
+        except (ValueError, OSError):
+            bindings, state = None, "invalid"
+
+        async def command(name, **args):
+            return await self.command(endpoint, connection, name, **args)
+
+        report = await assess_reads(command, endpoint, connection, bindings or {}, inspect_unbound=True)
+        report["binding_checkpoint"] = state
+        report["action"] = (
+            "Read contracts checked. Native account enforcement and transfer still require separate verification."
+            if state == "verified" and report["features"]["profile_filter_contract"]
+            else "Verify existing native profile identities before permitting catalogue access; no users or filters were changed."
+        )
+        return report
 
     async def command(self, endpoint, connection, command, **args):
         if command not in READ_COMMANDS:

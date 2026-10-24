@@ -18,8 +18,9 @@ from aiohttp import web
 
 from . import household_services
 from .catalogue_preview import MetadataPreview
+from .ma_compatibility import REVIEWED, assess_reads, checkpoint_bindings, legacy_bindings
 from .metadata_projection import native_artwork_path
-from .music_runtime import MusicRuntimeError, digest
+from .music_runtime import MusicRuntimeError, digest, private_write
 
 COOKIE = "media_preview_context"
 TTL = 1800
@@ -29,6 +30,7 @@ ASSET_ROOT = Path(__file__).parent / "static" / "media-preview"
 READS = {
     "providers",
     "auth/users",
+    "players/all",
     "music/browse",
     "music/search",
     "music/recommendations/items",
@@ -80,7 +82,7 @@ class PreviewService:
         house, surface = await self.authority(caller, surface)
         runtime = self.state.music_runtime
         connection, endpoint = runtime.connection(), await runtime.endpoint()
-        if not connection or endpoint["server_id"] != connection["server_id"] or endpoint["app"] != connection["app"] or endpoint.get("version") != "2.10.7":
+        if not connection or endpoint["server_id"] != connection["server_id"] or endpoint["app"] != connection["app"]:
             raise MusicRuntimeError("The reviewed Music Assistant connection is unavailable.")
 
         async def command(name, **args):
@@ -131,6 +133,34 @@ class PreviewService:
         # Establish only authority/profiles/providers before returning. Library
         # reads load their catalogue lazily; Radio/Podcasts never wait for it.
         await asyncio.wait_for(metadata.prepare(defer_catalogue=True), 15)
+        profile_ids = [p["id"] for p in metadata.profiles]
+        checkpoint_key = digest([house["epoch"], connection["server_id"], connection["app"], connection["generation"], sorted(profile_ids)])
+        checkpoint_path = self.state.household.path.parent / "music-read-bindings.json"
+        try:
+            bindings = checkpoint_bindings(self.state.household.read(checkpoint_path, None), checkpoint_key, profile_ids)
+        except ValueError as error:
+            raise MusicRuntimeError("Saved music profile identities need administrator review; existing data is preserved.") from error
+        users = await asyncio.wait_for(command("auth/users"), 2)
+        if bindings is None and endpoint.get("version") in REVIEWED:
+            bindings = legacy_bindings(metadata.profiles, users, metadata.providers) if isinstance(users, list) else {}
+
+        async def probe(name, **args):
+            if name == "providers":
+                return list(metadata.providers.values())
+            if name == "auth/users":
+                return users
+            return await command(name, **args)
+
+        health = await assess_reads(probe, endpoint, connection, bindings or {}, inspect_unbound=True)
+        if not bindings or not health["features"]["profile_filter_contract"]:
+            raise MusicRuntimeError("Music compatibility or verified profile identities need administrator review. No users or source filters were changed.")
+        if (
+            self.state.household.read(checkpoint_path, None) is None
+            or checkpoint_bindings(self.state.household.read(checkpoint_path, None), checkpoint_key, profile_ids) is None
+        ):
+            private_write(checkpoint_path, {"protocol": 1, "binding": checkpoint_key, "profiles": bindings})
+        health["control_review_required"] = endpoint.get("version") != "2.10.7"
+        metadata.user_bindings, metadata.read_health = bindings, health
         now = time.monotonic()
         self.sessions = {k: v for k, v in self.sessions.items() if v["expires"] > now}
         if len(self.sessions) >= 64:
@@ -142,10 +172,12 @@ class PreviewService:
             "surface": surface,
             "binding": self.binding(caller, house, surface, connection),
             "metadata": metadata,
+            "endpoint_contract": (endpoint.get("version"), endpoint.get("schema_version")),
         }
         return identity, {
             "surface": surface,
             "profiles": metadata.profiles,
+            "compatibility": health,
             "providers": [
                 {
                     "instance_id": p["instance_id"],
@@ -172,6 +204,13 @@ class PreviewService:
         if not connection or record["binding"] != self.binding(caller, house, surface, connection):
             self.sessions.pop(identity, None)
             raise PermissionError("Household or music connection changed. Reopen the preview.")
+        endpoint = await self.state.music_runtime.endpoint()
+        if endpoint.get("server_id") != connection["server_id"] or endpoint.get("app") != connection["app"]:
+            self.sessions.pop(identity, None)
+            raise PermissionError("Music server identity changed. Reconnect through the existing secure setup.")
+        if record["endpoint_contract"] != (endpoint.get("version"), endpoint.get("schema_version")):
+            self.sessions.pop(identity, None)
+            raise PermissionError("Music Assistant changed. Reload media to run compatibility checks; playback was not retried.")
         return record
 
     async def read(self, identity, caller, body):
@@ -206,6 +245,8 @@ class PreviewService:
         profile = body["profile"]
         record = await self.selected(identity, caller, None if profile == "house" else profile)
         metadata = record["metadata"]
+        if metadata.read_health.get("control_review_required"):
+            raise ValueError("Music Assistant updated: browsing is available; playback controls need compatibility review.")
         offered = metadata.offered.get(body["selection"])
         allowed, policy = await metadata.policy(profile)
         if not offered or offered["profile"] != profile or offered["policy"] != policy:
