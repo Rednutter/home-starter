@@ -106,7 +106,7 @@ def package(output):
                 "candidate": output.name,
                 "baseline_commit": baseline,
                 "preserved_controls": preserved,
-                "release_version": "0.8.45",
+                "release_version": "0.8.46",
                 "manifest_sha256": hashlib.sha256((destination / "manifest.json").read_bytes()).hexdigest(),
                 "asset_count": len(files),
             },

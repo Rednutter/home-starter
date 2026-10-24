@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.8.46
+
+- Mount navigation immediately while profiles/sources connect, without allowing
+  catalogue or playback actions before authority bootstrap completes.
+- Remove full catalogue scanning from bootstrap. Load library collections only
+  when needed, with concurrent independent source reads and honest partial states.
+- Page discovery results on the server: retain the full catalogue/count while
+  returning and issuing artwork/selection references for only 24 visible cards.
+- Preserve the previous page on failed paging; keep profile/source checks before
+  and after delayed reads, and share one cancellation-safe library load.
+- No hosting, credentials, native MA repair, playback or household access changes.
+
 ## 0.8.45
 
 - Populate Radio and Podcasts immediately with artwork-led native MA cards;

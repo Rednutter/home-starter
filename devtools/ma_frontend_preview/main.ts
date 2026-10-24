@@ -16,7 +16,7 @@ import PlaylistSharing from "./PlaylistSharing.vue";
 import Discovery from "./Discovery.vue";
 import { connectHousehold, currentMedia } from "./household";
 import HouseholdShelf from './HouseholdShelf.vue';
-import { profile, generation, readStatus, viewPreferences, readFailures, realMode, releaseMode, people, previewNotes } from "./context";
+import { profile, generation, readStatus, viewPreferences, readFailures, realMode, releaseMode, people, previewNotes, booting } from "./context";
 
 const previewBase = new URL('.', document.baseURI);
 const endpoint = (name: string) => releaseMode ? new URL(name, previewBase).href : '/__household/' + name;
@@ -84,6 +84,11 @@ async function start() {
   if (realMode) {
     people.value = [];
     for (const key of Object.keys(api.providers)) delete api.providers[key];
+  }
+  // Mount the usable navigation shell before network/catalogue work. Routes
+  // remain gated until the authority/profile bootstrap has succeeded.
+  const app = createApp(Shell); registerPlugins(app); app.mount("#app");
+  if (realMode) {
     try {
       const response = await fetch(endpoint('bootstrap'), { cache:"no-store", signal:AbortSignal.timeout(releaseMode ? 65000 : 10000) });
       if (!response.ok) throw Error("Real metadata bridge unavailable.");
@@ -91,9 +96,9 @@ async function start() {
       people.value = bootstrap.profiles; previewNotes.value = bootstrap.notes;
       for (const provider of bootstrap.providers) api.providers[provider.instance_id] = provider;
       if(releaseMode && bootstrap.surface)void connectHousehold(bootstrap.surface);
-    } catch { previewNotes.value = "Real metadata is unavailable. No fictional data has been substituted."; }
+    } catch { previewNotes.value = "Media sources are unavailable. Reload to reconnect; no playback was changed."; }
+    finally { booting.value = false; }
   }
-  const app = createApp(Shell); registerPlugins(app); app.mount("#app");
 }
 void start();
 

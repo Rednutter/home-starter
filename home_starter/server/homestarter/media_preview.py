@@ -128,7 +128,9 @@ class PreviewService:
         metadata.region = {k: configured.get(k) for k in ("id", "name", "country_code", "search_terms")}
         # Keep public directory enrichment optional. No new Internet endpoint is
         # needed for the production trial; absent fields retain honest labels.
-        await asyncio.wait_for(metadata.prepare(), 60)
+        # Establish only authority/profiles/providers before returning. Library
+        # reads load their catalogue lazily; Radio/Podcasts never wait for it.
+        await asyncio.wait_for(metadata.prepare(defer_catalogue=True), 15)
         now = time.monotonic()
         self.sessions = {k: v for k, v in self.sessions.items() if v["expires"] > now}
         if len(self.sessions) >= 64:
