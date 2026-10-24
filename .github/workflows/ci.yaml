@@ -16,7 +16,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.14"
-      - run: pip install music-assistant-models==1.1.205
+      - run: pip install music-assistant-models==1.1.205 mashumaro==3.20 orjson==3.11.6
       - run: python devtools/check_ma_model_contracts.py
 
   test:

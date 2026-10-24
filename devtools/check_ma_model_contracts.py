@@ -22,6 +22,7 @@ async def run():
     from music_assistant_models.player import DeviceInfo, Player
 
     assert version("music-assistant-models") == "1.1.205"
+    assert version("mashumaro") == "3.20" and version("orjson") == "3.11.6"
     user = User("example-user", "example", "user", provider_filter=["example-source"])
     artist = Artist(
         item_id="example-artist",
@@ -55,6 +56,7 @@ async def run():
     assert set(calls) == {"providers", "auth/users", "players/all", "music/artists/library_items"}
     return {
         "models_version": version("music-assistant-models"),
+        "serializer_versions": {name: version(name) for name in ("mashumaro", "orjson")},
         "python": sys.version.split()[0],
         "official_user_artist_player_roundtrips": True,
         "empty_filter_fails_closed": True,
