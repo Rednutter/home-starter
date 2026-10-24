@@ -21,6 +21,7 @@ from .settings import Secret
 from .supervisor import SupervisorError
 
 READ_COMMANDS = {
+    "homestarter/compatibility_status",
     "music/recommendations/items",
     "music/artists/artist_tracks",
     "music/albums/album_tracks",
@@ -179,13 +180,24 @@ class MusicRuntime:
             raise MusicRuntimeError("Music Assistant did not respond. Check it and retry.") from None
         if not isinstance(info, dict) or not isinstance(info.get("server_id"), str) or not info["server_id"]:
             raise MusicRuntimeError("Music Assistant server identity could not be checked.")
-        return {
+        endpoint = {
             "address": address,
             "server_id": info["server_id"],
             "app": installed["slug"],
             "version": info.get("server_version"),
             "schema_version": info.get("schema_version"),
         }
+        if endpoint["version"] == "2.10.8":
+            from .ma_control_contract import attestation
+
+            try:
+                connection = self.connection()
+                if connection and all(connection[k] == endpoint[k] for k in ("server_id", "app")):
+                    value = await asyncio.wait_for(self.command(endpoint, connection, "homestarter/compatibility_status"), 2)
+                    endpoint["_native_review"] = attestation(value, endpoint)
+            except (MusicRuntimeError, ValueError, KeyError, TimeoutError):
+                pass  # Uninstalled/unsupported native capability leaves controls closed.
+        return endpoint
 
     async def read_compatibility(self):
         """Administrative diagnostics only: no control, setup or checkpoint write."""

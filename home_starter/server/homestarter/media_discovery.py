@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 from .discovery_seeds import AUSTRALIAN_SEEDS, RADIO_SEEDS, reviewed_evidence
-from .metadata_projection import record_ids
+from .media_identity import record_ids
 
 
 def number(value):

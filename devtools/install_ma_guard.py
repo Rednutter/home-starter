@@ -15,7 +15,17 @@ from pathlib import Path
 BASELINE = "8c9baf664fa86cf1584635fc5a4879333c01a9981be3460cbfcdcf142c92a40e"
 ANCHOR = "        self._register_api_commands()\n"
 HOOK = ANCHOR + "        from home_starter_ma.ma_account_guard import install as install_household_guard\n        install_household_guard(self)\n"
-MODULES = ("household_music.py", "spotify_leases.py", "ma_account_guard.py", "ma_media.py", "media_discovery.py", "media_hygiene.py", "ma_radio.py")
+MODULES = (
+    "household_music.py",
+    "spotify_leases.py",
+    "ma_account_guard.py",
+    "ma_media.py",
+    "media_discovery.py",
+    "media_hygiene.py",
+    "ma_radio.py",
+    "discovery_seeds.py",
+    "media_identity.py",
+)
 SUPPORTED_VERSIONS = {"2.10.6", "2.10.7"}
 
 

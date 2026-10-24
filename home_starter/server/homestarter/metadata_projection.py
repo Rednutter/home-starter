@@ -9,6 +9,7 @@ import re
 from urllib.parse import urlsplit
 
 from .listening_collections import merge
+from .media_identity import record_ids as record_ids
 from .playlist_visibility import identities as playlist_identities
 from .playlist_visibility import rule_for, visible
 
@@ -143,14 +144,6 @@ def native_record(row, allowed):
         }
     result["household_provenance"] = sorted(source_ids(result) & set(allowed))
     return result
-
-
-def record_ids(row):
-    uris = {row.get("uri")}
-    for mapping in row.get("provider_mappings", []):
-        if mapping.get("provider_instance") and mapping.get("item_id"):
-            uris.add(mapping["provider_instance"] + "://" + row["media_type"] + "/" + str(mapping["item_id"]))
-    return {fingerprint(uri)[:24] for uri in uris if isinstance(uri, str)}
 
 
 def visible_playlist(row, profile, rules, saved):

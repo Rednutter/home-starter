@@ -27,8 +27,9 @@ def digest(value):
 
 
 class NativeTransfers:
-    def __init__(self, mass, *, source_root=None, auth=None):
+    def __init__(self, mass, *, source_root=None, auth=None, review=None):
         self.mass = mass
+        self.review = review
         self.root = source_root or Path(inspect.getsourcefile(type(mass.player_queues))).parent
         self.auth = auth
         self.native_transfer = mass.player_queues.transfer_queue
@@ -49,12 +50,20 @@ class NativeTransfers:
 
     async def status(self):
         try:
+            reviewed = False
+            if self.review is not None:
+                from .ma_release_review import ReviewedRelease
+
+                reviewed = type(self.review) is ReviewedRelease and self.review.valid()
             pinned = (
                 self.source_origin_ok
                 and self.mass.player_queues.transfer_queue == self.native_transfer
                 and self.mass.players.get_group_and_player_lock == self.player_lock
-                and self.mass.version == "2.10.7"
-                and all(hashlib.sha256((self.root / p).read_bytes()).hexdigest() == sha for p, sha in PINS.items())
+                and (
+                    reviewed
+                    if self.review is not None
+                    else self.mass.version == "2.10.7" and all(hashlib.sha256((self.root / p).read_bytes()).hexdigest() == sha for p, sha in PINS.items())
+                )
             )
         except (OSError, TypeError):
             pinned = False
@@ -213,11 +222,15 @@ class NativeTransfers:
 
 async def install(mass):
     """Explicit operator entry only; no source, account or permission changes."""
-    from music_assistant_models.auth import Scope
-
     adapter = NativeTransfers(mass)
     if not (await adapter.status())["pinned"]:
         raise RuntimeError("Native transfer compatibility mismatch; no commands installed.")
+    return register(mass, adapter)
+
+
+def register(mass, adapter):
+    from music_assistant_models.auth import Scope
+
     for name, handler in (("transfer_status", adapter.status), ("transfer_snapshot", adapter.snapshot), ("transfer", adapter.transfer)):
         mass.register_api_command("homestarter/" + name, handler, required_scope=Scope.USERS_MANAGE)
     return adapter

@@ -19,6 +19,7 @@ from aiohttp import web
 from . import household_services
 from .catalogue_preview import MetadataPreview
 from .ma_compatibility import REVIEWED, assess_reads, checkpoint_bindings, legacy_bindings
+from .ma_control_contract import supports
 from .metadata_projection import native_artwork_path
 from .music_runtime import MusicRuntimeError, digest, private_write
 
@@ -159,7 +160,7 @@ class PreviewService:
             or checkpoint_bindings(self.state.household.read(checkpoint_path, None), checkpoint_key, profile_ids) is None
         ):
             private_write(checkpoint_path, {"protocol": 1, "binding": checkpoint_key, "profiles": bindings})
-        health["control_review_required"] = endpoint.get("version") != "2.10.7"
+        health["control_review_required"] = not supports(endpoint, "transport")
         metadata.user_bindings, metadata.read_health = bindings, health
         now = time.monotonic()
         self.sessions = {k: v for k, v in self.sessions.items() if v["expires"] > now}
@@ -211,6 +212,7 @@ class PreviewService:
         if record["endpoint_contract"] != (endpoint.get("version"), endpoint.get("schema_version")):
             self.sessions.pop(identity, None)
             raise PermissionError("Music Assistant changed. Reload media to run compatibility checks; playback was not retried.")
+        record["metadata"].read_health["control_review_required"] = not supports(endpoint, "transport")
         return record
 
     async def read(self, identity, caller, body):
