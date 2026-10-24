@@ -45,3 +45,30 @@ def test_missing_or_changed_rollback_prerequisite_is_refused(key, value):
 def test_no_unreviewed_supervisor_can_enable_target_writes(version):
     with pytest.raises(ValueError, match="unreviewed"):
         supervisor_gate(version)
+
+
+def test_review_archive_is_reproducible_across_creation_permissions(tmp_path, monkeypatch):
+    import os
+    import tarfile
+
+    import prepare_ma2108_candidate as builder
+
+    source = tmp_path / "home_starter/server/homestarter"
+    source.mkdir(parents=True)
+    (source / "ma_release_review.py").write_bytes(b"from .helper import Example\n")
+    (source / "helper.py").write_bytes(b"class Example: pass\n")
+    installer = tmp_path / "devtools/install_ma2108_candidate.py"
+    installer.parent.mkdir()
+    installer.write_bytes(b"# Synthetic installer fixture\n")
+    monkeypatch.setattr(builder, "ROOT", tmp_path)
+    old = os.umask(0o077)
+    try:
+        first = builder.prepare(tmp_path / ".runtime/first")
+        os.umask(0o022)
+        second = builder.prepare(tmp_path / ".runtime/second")
+    finally:
+        os.umask(old)
+    assert first["archive_sha256"] == second["archive_sha256"]
+    with tarfile.open(tmp_path / ".runtime/second/ma2108-review-candidate.tar") as archive:
+        assert all(member.mode == 0o644 for member in archive)
+        assert b"\r\n" not in archive.extractfile("home_starter_ma/contract.json").read()

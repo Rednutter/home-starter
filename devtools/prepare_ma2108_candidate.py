@@ -46,7 +46,7 @@ def prepare(output):
         "source_pins": PINS,
         "files": {name: hashlib.sha256(body).hexdigest() for name, body in files.items()},
     }
-    (package / "contract.json").write_text(json.dumps(manifest, sort_keys=True, indent=2), encoding="utf-8")
+    (package / "contract.json").write_text(json.dumps(manifest, sort_keys=True, indent=2), encoding="utf-8", newline="\n")
     shutil.copyfile(ROOT / "devtools/install_ma2108_candidate.py", output / "install_ma2108_candidate.py")
     archive = output / "ma2108-review-candidate.tar"
     with tarfile.open(archive, "w") as stream:
@@ -54,6 +54,7 @@ def prepare(output):
             if path.is_file() and path != archive:
                 info = stream.gettarinfo(str(path), str(path.relative_to(output)))
                 info.mtime, info.uid, info.gid, info.uname, info.gname = 0, 0, 0, "", ""
+                info.mode = 0o644
                 with path.open("rb") as body:
                     stream.addfile(info, body)
     return {"modules": len(files), "archive_sha256": hashlib.sha256(archive.read_bytes()).hexdigest(), "installed": False, "runtime_accepted": False}

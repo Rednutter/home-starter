@@ -20,7 +20,7 @@ Helpers mount only the dedicated staging work directory, never `/data`, the
 Docker socket, household configuration or the backup archive. They add no ports.
 
 Prepare an existing authorised file-transfer path or existing USB media for the
-reviewed scripts, receipt and RC3 archive; do not expose a new file server or
+reviewed scripts, receipt and RC4 archive; do not expose a new file server or
 format media. Green staging/console access is still a practical prerequisite.
 
 ## Reviewed source and default behavior
@@ -28,13 +28,16 @@ format media. Green staging/console access is still a practical prerequisite.
 `stage_ma2108_offline.sh` defaults to check only. `--prepare` patches public-source
 copies in a new staging directory, leaving the real container unchanged. It
 requires a stopped target, exact immutable MA 2.10.8 image and eight source pins,
-the RC3 archive hash, a matching backup receipt and a locally available immutable
+the RC4 archive hash, a matching backup receipt and a locally available immutable
 MA 2.10.7 rollback image whose package version is checked without network access.
 Both official amd64 and arm64 image digests were obtained from the verified
 2.10.8 multiarchitecture index; Linux runtime CI exercises amd64 only.
 
-RC3 SHA-256:
-`a6323a20a15a4efcff1ca8cb87898be02e3940825bddb1079d29771acfad8598`.
+RC4 SHA-256:
+`c36159dccad87f6418b6e5a9883b595d9bd8d77e9a0c7f07e3e633a9dbf0022b`.
+This supersedes RC3 for the operator tool. Module source bytes are unchanged;
+RC4 fixes tar modes and manifest newlines so Windows/Linux generate identical
+archives. Previous archives are preserved, not silently overwritten.
 The original repair remains
 `b9a5e655229137606e90f35c1bce00ee59def01b238172d39ca30737b6020a1d`.
 
@@ -42,7 +45,7 @@ The eight positional arguments after the optional mode are:
 
 1. Confirmed MA container name (`app_d5369777_music_assistant` from records).
 2. Exact reviewed official 2.10.8 image digest, already present locally.
-3. Local RC3 archive path.
+3. Local RC4 archive path.
 4. New absolute `/mnt/data/supervisor/share/hs-ma2108-...` work directory.
 5. Existing backup archive path (read only for checksum on the host).
 6. Local backup receipt JSON path.
