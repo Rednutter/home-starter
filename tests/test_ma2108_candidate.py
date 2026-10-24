@@ -1,6 +1,7 @@
 """Unpublished candidate gates; no household connections or native activation."""
 
 import asyncio
+import inspect
 import shutil
 from pathlib import Path
 from types import SimpleNamespace as NS
@@ -143,6 +144,15 @@ async def test_catalogue_selection_rechecks_lost_native_control_authority(previe
 @pytest.fixture
 def guarded(tmp_path):
     yield from guarded_fixture.__wrapped__(tmp_path)
+
+
+def test_all_audio_wrappers_retain_the_original_source_identity(guarded):
+    guard, _, _, _, audio = guarded
+    for name, wrapper in guard.wrappers.items():
+        original = getattr(type(audio), name)
+        unwrapped = inspect.unwrap(wrapper)
+        assert getattr(unwrapped, "__func__", unwrapped) is original
+        assert inspect.getsourcefile(unwrapped) == inspect.getsourcefile(original)
 
 
 async def test_candidate_stays_closed_until_late_provider_wrapper_is_ready(guarded, monkeypatch):

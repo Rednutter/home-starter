@@ -347,14 +347,17 @@ class AccountGuard:
             finally:
                 _pin.reset(marker)
 
+        @wraps(original_mappings)
         def mappings(mapping):
             candidates = original_mappings(mapping)
             lease = _pin.get()
             return [p for p in candidates if p.instance_id == lease["provider"]] if lease else candidates
 
+        @wraps(original_discover)
         async def discover(*args, **kwargs):
             return set() if _pin.get() else await original_discover(*args, **kwargs)
 
+        @wraps(original_stream)
         async def stream(streamdetails, *args, **kwargs):
             spotify = {p["id"] for p in self.providers() if p["domain"] == "spotify"}
             inherited = _pin.get()
