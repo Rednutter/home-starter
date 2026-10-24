@@ -6,7 +6,7 @@
     <p role="status">{{ error || (loading?'Loading suggestions…':states.some(s=>s.state==='unavailable')?'Some sources are unavailable. Available suggestions are shown.':'') }}</p>
     <section v-for="section in sections" :key="section.title" class="discovery-section">
       <h2>{{ section.title }}</h2><p v-if="section.description">{{ section.description }}</p>
-      <DiscoveryGrid :items="section.items" :disabled="!releaseMode || pending || selecting" @choose="chooseMedia" />
+      <DiscoveryGrid :items="section.items" :disabled="!releaseMode || pending || selecting || !!compatibilityNotice" @choose="chooseMedia" />
     </section>
     <nav v-if="total>24" aria-label="Discovery pages"><button :disabled="loading || offset===0" @click="movePage(-24)">Previous</button><span>{{ offset+1 }}–{{ Math.min(total,offset+items.length) }} of {{ total }}</span><button :disabled="loading || offset+24>=total" @click="movePage(24)">Next</button></nav>
     <p v-if="!loading && searched && !items.length">No suggestions are available for this profile from the current sources. Search remains available; nothing has been added to your library.</p>
@@ -16,7 +16,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, onUnmounted } from 'vue';
 import api from '@/plugins/api';
-import { profile,releaseMode } from './context';
+import { profile,releaseMode,compatibilityNotice } from './context';
 import {pending,selecting,chooseMedia} from './household';
 import DiscoveryGrid from './DiscoveryGrid.vue';
 const props=defineProps<{category:string}>();

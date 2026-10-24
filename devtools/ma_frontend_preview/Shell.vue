@@ -24,6 +24,7 @@
         </header>
         <p class="source-caption">{{ realMode ? previewNotes : 'Combined catalogue categories · exact-identity deduplication · fictional ownership mappings' }}</p>
         <p v-if="readStatus" role="status" class="read-error">{{ readStatus }}</p>
+        <p v-if="compatibilityNotice" role="status" class="compatibility-notice">{{ compatibilityNotice }}</p>
         <HouseholdActions v-if="releaseMode && !booting" />
         <p v-if="booting" role="status">Connecting your media sources…</p>
         <p v-else-if="realMode && !people.length" role="status">{{ previewNotes }}</p>
@@ -47,7 +48,7 @@ import { store } from "@/plugins/store";
 import HouseholdPlayer from './HouseholdPlayer.vue';
 import HouseholdActions from './HouseholdActions.vue';
 import {currentMedia,pending,selecting} from './household';
-import { profile, generation, readStatus, switching, viewPreferences, clearReadFailures, realMode, releaseMode, people, previewNotes, booting } from "./context";
+import { profile, generation, readStatus, switching, viewPreferences, clearReadFailures, realMode, releaseMode, people, previewNotes, booting, compatibilityNotice } from "./context";
 const route = useRoute();
 watch(() => route.fullPath, () => { generation.value++; clearReadFailures();currentMedia.value=null; });
 const selectedName = computed(() => people.value.find(p => p.id === profile.value)?.name || "House");

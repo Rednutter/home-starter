@@ -16,7 +16,7 @@ import PlaylistSharing from "./PlaylistSharing.vue";
 import Discovery from "./Discovery.vue";
 import { connectHousehold, currentMedia } from "./household";
 import HouseholdShelf from './HouseholdShelf.vue';
-import { profile, generation, readStatus, viewPreferences, readFailures, realMode, releaseMode, people, previewNotes, booting } from "./context";
+import { profile, generation, readStatus, viewPreferences, readFailures, realMode, releaseMode, people, previewNotes, booting, compatibilityNotice } from "./context";
 
 const previewBase = new URL('.', document.baseURI);
 const endpoint = (name: string) => releaseMode ? new URL(name, previewBase).href : '/__household/' + name;
@@ -93,6 +93,7 @@ async function start() {
       const response = await fetch(endpoint('bootstrap'), { cache:"no-store", signal:AbortSignal.timeout(releaseMode ? 65000 : 10000) });
       if (!response.ok) throw Error("Real metadata bridge unavailable.");
       const bootstrap = await response.json();
+      compatibilityNotice.value = bootstrap.compatibility?.control_review_required ? "Music Assistant updated: browsing is available; playback controls need compatibility review." : "";
       people.value = bootstrap.profiles; previewNotes.value = bootstrap.notes;
       for (const provider of bootstrap.providers) api.providers[provider.instance_id] = provider;
       if(releaseMode && bootstrap.surface)void connectHousehold(bootstrap.surface);

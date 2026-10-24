@@ -372,6 +372,8 @@ async def api_music_runtime(request):
     state = await household_admin(request)
     try:
         runtime = state.music_runtime
+        if request.method == "GET" and request.query.get("compatibility") == "1":
+            return _json(await runtime.read_compatibility())
         if request.method == "POST":
             body = await household_body(request)
             action = request.match_info["action"]

@@ -10,4 +10,5 @@ export const releaseMode = import.meta.env.MODE === "household-release";
 export const realMode = releaseMode || import.meta.env.MODE === "real-readonly";
 export const booting = ref(realMode);
 export const previewNotes = ref("");
+export const compatibilityNotice = ref("");
 export const people = ref([{ id: "house", name: "House" }, { id: "alex", name: "Alex" }, { id: "sam", name: "Sam" }, { id: "casey", name: "Casey" }, { id: "jamie", name: "Jamie" }, { id: "riley", name: "Riley" }]);
